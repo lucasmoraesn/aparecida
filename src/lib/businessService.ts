@@ -10,21 +10,19 @@ export interface BusinessRegistration {
    whatsapp: string;
    phone?: string;
    description: string;
-   plan_id: number;
+   plan_id: string;
    status?: 'pending' | 'approved' | 'rejected';
    payment_status?: 'pending' | 'paid' | 'failed';
-   admin_email: string;
-   contact_email?: string;
    created_at?: string;
    updated_at?: string;
 }
 
 export interface BusinessPlan {
-   id: number;
-   name: string;
-   price: number;
-   features: string[];
-   is_active: boolean;
+  id: string;   
+  name: string;
+  price: number;
+  features: string[];
+  is_active: boolean;
 }
 
 export interface Payment {
@@ -43,12 +41,14 @@ export interface Payment {
 }
 
 export class BusinessService {
-   // Buscar planos disponíveis
+   private static API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+   // 🔹 Buscar planos (pode ir direto ao Supabase, só leitura)
    static async getPlans(): Promise<BusinessPlan[]> {
-   const { data, error } = await supabase
-      .from('business_plans')
-      .select('id, name, price, description, features')
-      .order('price', { ascending: true });
+      const { data, error } = await supabase
+         .from('business_plans')
+         .select('id, name, price, description, features')
+         .order('price', { ascending: true });
 
       if (error) {
          throw new Error(`Erro ao buscar planos: ${error.message}`);
@@ -57,96 +57,86 @@ export class BusinessService {
       return data.map(plan => ({
          ...plan,
          features: plan.features || [],
-         is_active: true // default, já que não existe mais a coluna
+         is_active: true
       }));
    }
 
-   // Salvar cadastro de negócio
+   // 🔹 Criar cadastro de negócio (chama backend!)
    static async createRegistration(registration: BusinessRegistration): Promise<number> {
-      const { data, error } = await supabase
-         .from('business_registrations')
-         .insert([registration])
-         .select('id')
-         .single();
-
-      if (error) {
-         throw new Error(`Erro ao criar cadastro: ${error.message}`);
+      const response = await fetch(`${this.API_BASE}/api/register-business`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(registration)
+      });
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         throw new Error(errorData.message || 'Erro ao criar cadastro');
       }
-
-      return data.id;
+      const result = await response.json();
+      return result.id;
    }
 
-   // Buscar cadastro por ID
+   // 🔹 Buscar cadastro por ID (somente leitura → Supabase)
    static async getRegistration(id: number): Promise<BusinessRegistration | null> {
       const { data, error } = await supabase
          .from('business_registrations')
          .select(`
-        *,
-        business_plans(name, price, features)
-      `)
+            *,
+            business_plans(name, price, features)
+         `)
          .eq('id', id)
          .single();
 
       if (error) {
-         if (error.code === 'PGRST116') {
-            return null; // Não encontrado
-         }
+         if (error.code === 'PGRST116') return null;
          throw new Error(`Erro ao buscar cadastro: ${error.message}`);
       }
 
       return data;
    }
 
-   // Criar pagamento
+   // 🔹 Criar pagamento (chama backend!)
    static async createPayment(payment: Payment): Promise<number> {
-      const { data, error } = await supabase
-         .from('payments')
-         .insert([payment])
-         .select('id')
-         .single();
-
-      if (error) {
-         throw new Error(`Erro ao criar pagamento: ${error.message}`);
+      const response = await fetch(`${this.API_BASE}/api/create-payment`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(payment)
+      });
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         throw new Error(errorData.message || 'Erro ao criar pagamento');
       }
-
-      return data.id;
+      const result = await response.json();
+      return result.id;
    }
 
-   // Atualizar status do pagamento
+   // 🔹 Atualizar status do pagamento (backend)
    static async updatePaymentStatus(paymentId: number, status: Payment['status'], providerPaymentId?: string): Promise<void> {
-      const updateData: any = { status };
-      if (providerPaymentId) {
-         updateData.provider_payment_id = providerPaymentId;
-      }
-
-      const { error } = await supabase
-         .from('payments')
-         .update(updateData)
-         .eq('id', paymentId);
-
-      if (error) {
-         throw new Error(`Erro ao atualizar pagamento: ${error.message}`);
+      const response = await fetch(`${this.API_BASE}/api/update-payment-status`, {
+         method: 'PUT',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ paymentId, status, providerPaymentId })
+      });
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         throw new Error(errorData.message || 'Erro ao atualizar pagamento');
       }
    }
 
-   // Atualizar status do cadastro
+   // 🔹 Atualizar status do cadastro (backend)
    static async updateRegistrationStatus(registrationId: number, status: BusinessRegistration['status'], paymentStatus?: BusinessRegistration['payment_status']): Promise<void> {
-      const updateData: any = { status };
-      if (paymentStatus) {
-         updateData.payment_status = paymentStatus;
-      }
-
-      const { error } = await supabase
-         .from('business_registrations')
-         .update(updateData)
-         .eq('id', registrationId);
-
-      if (error) {
-         throw new Error(`Erro ao atualizar cadastro: ${error.message}`);
+      const response = await fetch(`${this.API_BASE}/api/update-registration-status`, {
+         method: 'PUT',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ registrationId, status, paymentStatus })
+      });
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         throw new Error(errorData.message || 'Erro ao atualizar cadastro');
       }
    }
 
-   // Buscar pagamento por ID
+   // 🔹 Buscar pagamento por ID (somente leitura → Supabase)
    static async getPayment(id: number): Promise<Payment | null> {
       const { data, error } = await supabase
          .from('payments')
@@ -155,110 +145,29 @@ export class BusinessService {
          .single();
 
       if (error) {
-         if (error.code === 'PGRST116') {
-            return null;
-         }
+         if (error.code === 'PGRST116') return null;
          throw new Error(`Erro ao buscar pagamento: ${error.message}`);
       }
 
       return data;
    }
 
-   // Enviar e-mail para administrador
+   // 🔹 Enviar e-mail para administrador (simulado)
    static async sendAdminEmail(registration: BusinessRegistration): Promise<void> {
-      // Aqui você implementaria a integração com seu serviço de e-mail
-      // Por exemplo, usando Resend, SendGrid, ou uma API própria
-
       const emailData = {
-         to: registration.admin_email,
+         to: "admin@aparecida.com",
          subject: 'Novo Cadastro de Estabelecimento - Aparecida',
          html: `
-        <h2>Novo Cadastro de Estabelecimento</h2>
-        <p><strong>Nome:</strong> ${registration.establishment_name}</p>
-        <p><strong>Categoria:</strong> ${registration.category}</p>
-        <p><strong>Endereço:</strong> ${registration.address}</p>
-        <p><strong>WhatsApp:</strong> ${registration.whatsapp}</p>
-        <p><strong>Descrição:</strong> ${registration.description}</p>
-        <p><strong>Data do Cadastro:</strong> ${new Date().toLocaleString('pt-BR')}</p>
-        <br>
-        <p>Acesse o painel administrativo para revisar e aprovar este cadastro.</p>
-      `
+            <h2>Novo Cadastro</h2>
+            <p><strong>Nome:</strong> ${registration.establishment_name}</p>
+            <p><strong>Categoria:</strong> ${registration.category}</p>
+            <p><strong>Endereço:</strong> ${registration.address}</p>
+            <p><strong>WhatsApp:</strong> ${registration.whatsapp}</p>
+            <p><strong>Descrição:</strong> ${registration.description}</p>
+            <p><strong>Data do Cadastro:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+         `
       };
-
-      // Simular envio de e-mail (substitua pela implementação real)
-      console.log('E-mail para administrador:', emailData);
-
-      // Exemplo com fetch para uma API de e-mail:
-      /*
-      try {
-        const response = await fetch('/api/send-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(emailData),
-        });
-        
-        if (!response.ok) {
-          throw new Error('Falha ao enviar e-mail');
-        }
-      } catch (error) {
-        console.error('Erro ao enviar e-mail:', error);
-        // Não falhar o cadastro por erro de e-mail
-      }
-      */
-   }
-
-   // Aprovar cadastro e criar estabelecimento
-   static async approveRegistration(registrationId: number): Promise<void> {
-      const registration = await this.getRegistration(registrationId);
-      if (!registration) {
-         throw new Error('Cadastro não encontrado');
-      }
-
-      // Determinar a tabela baseada na categoria
-      let targetTable: string;
-      switch (registration.category.toLowerCase()) {
-         case 'hotel':
-         case 'pousada':
-            targetTable = 'hotels';
-            break;
-         case 'restaurante':
-         case 'lanchonete':
-         case 'pizzaria':
-            targetTable = 'restaurants';
-            break;
-         case 'loja':
-         case 'artigos religiosos':
-         case 'souvenirs':
-            targetTable = 'shops';
-            break;
-         default:
-            targetTable = 'attractions';
-      }
-
-      // Inserir na tabela apropriada
-      const establishmentData = {
-         name: registration.establishment_name,
-         category: registration.category,
-         rating: 0.0,
-         address: registration.address,
-         phone: registration.phone || '',
-         whatsapp: registration.whatsapp,
-         image: registration.photos[0] || '',
-         description: registration.description,
-         featured: false
-      };
-
-      const { error } = await supabase
-         .from(targetTable)
-         .insert([establishmentData]);
-
-      if (error) {
-         throw new Error(`Erro ao criar estabelecimento: ${error.message}`);
-      }
-
-      // Atualizar status do cadastro para aprovado
-      await this.updateRegistrationStatus(registrationId, 'approved', 'paid');
+      console.log("📧 Email simulado:", emailData);
    }
 }
+
