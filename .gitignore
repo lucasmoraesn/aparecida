@@ -35,7 +35,15 @@ dist-ssr
 .env.development.local
 .env.production.local
 .env.test.local
+/server/.env
+/src/.env
 
 # Test / Coverage
 coverage/
 *.lcov
+
+# Supabase
+.supabase/
+
+# Ngrok
+*.ngrok.log
