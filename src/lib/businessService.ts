@@ -62,19 +62,22 @@ export class BusinessService {
    }
 
    // 🔹 Criar cadastro de negócio (chama backend!)
-   static async createRegistration(registration: BusinessRegistration): Promise<number> {
+      static async createRegistration(registration: BusinessRegistration): Promise<string> {
       const response = await fetch(`${this.API_BASE}/api/register-business`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify(registration)
+         body: JSON.stringify(registration),
       });
+
       if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));
          throw new Error(errorData.message || 'Erro ao criar cadastro');
       }
+
       const result = await response.json();
-      return result.id;
-   }
+      return result.business.id;
+      }
+
 
    // 🔹 Buscar cadastro por ID (somente leitura → Supabase)
    static async getRegistration(id: number): Promise<BusinessRegistration | null> {

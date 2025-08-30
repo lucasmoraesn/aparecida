@@ -31,74 +31,51 @@ export class MercadoPagoSandboxService {
    private static readonly NGROK_URL = import.meta.env.VITE_PUBLIC_URL_NGROK || window.location.origin;
 
 
-   // Verificar credenciais
-   private static checkCredentials(): void {
-      if (!this.ACCESS_TOKEN || !this.PUBLIC_KEY) {
-         throw new Error('Credenciais do Mercado Pago Sandbox não configuradas');
-      }
-   }
+   // Verificar credenciais (você já tem assim)
+private static checkCredentials(): void {
+  if (!this.PUBLIC_KEY) {
+    throw new Error('Credenciais do Mercado Pago Sandbox não configuradas');
+  }
+}
 
-   // Criar preferência de pagamento (recomendado para Sandbox)
-   static async createPaymentPreference(request: SandboxPaymentRequest): Promise<SandboxPaymentResponse> {
-      this.checkCredentials();
+// Use a URL da sua API (defina em VITE_API_URL no .env do front)
+private static readonly API_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_PUBLIC_URL_NGROK ||
+  window.location.origin;
 
-      const preferenceData = {
-         items: [
-            {
-               title: request.description,
-               unit_price: request.amount,
-               quantity: 1,
-            }
-         ],
-         payer: {
-            email: request.payer_email
-         },
-         external_reference: request.external_reference,
-         notification_url: `${this.NGROK_URL}/api/payment-webhook`,
-         back_urls: {
-            success: `${this.NGROK_URL}/payment/success`,
-            failure: `${this.NGROK_URL}/payment/failure`,
-            pending: `${this.NGROK_URL}/payment/pending`
-         },
-         auto_return: 'approved',
-         payment_methods: {
-            excluded_payment_types: [],
-            installments: 1
-         }
-      };
+// Criar preferência de pagamento (chama o BACKEND)
+static async createPaymentPreference(request: SandboxPaymentRequest): Promise<SandboxPaymentResponse> {
+  this.checkCredentials();
 
-      try {
-         const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
-            method: 'POST',
-            headers: {
-               'Authorization': `Bearer ${this.ACCESS_TOKEN}`,
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(preferenceData)
-         });
+  try {
+    const resp = await fetch(`${this.API_URL}/api/create-preference`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request), // { amount, description, payer_email, external_reference }
+    });
 
-         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Erro ao criar preferência: ${errorData.message || response.statusText}`);
-         }
+    const data = await resp.json();
+    if (!resp.ok) {
+      throw new Error(data?.message || 'Falha ao criar preferência de pagamento');
+    }
 
-         const preference = await response.json();
-         console.log('Preferência criada:', preference);
+    // data do backend deve conter init_point (ou sandbox_init_point)
+    return {
+      id: data.id,
+      status: 'pending',
+      payment_method_id: 'preference',
+      payment_type_id: 'preference',
+      transaction_amount: request.amount,
+      external_reference: request.external_reference,
+      init_point: data.init_point || data.sandbox_init_point || '',
+    };
+  } catch (err) {
+    console.error('Erro ao criar preferência de pagamento:', err);
+    throw new Error('Falha ao criar preferência de pagamento');
+  }
+}
 
-         return {
-            id: preference.id,
-            status: 'pending',
-            payment_method_id: 'preference',
-            payment_type_id: 'preference',
-            transaction_amount: request.amount,
-            external_reference: request.external_reference,
-            init_point: preference.init_point
-         };
-      } catch (error) {
-         console.error('Erro ao criar preferência de pagamento:', error);
-         throw new Error('Falha ao criar preferência de pagamento');
-      }
-   }
 
    // Criar pagamento PIX direto (alternativa)
    static async createPixPayment(request: SandboxPaymentRequest): Promise<SandboxPaymentResponse> {

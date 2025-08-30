@@ -15,6 +15,7 @@ const Payment: React.FC = () => {
   const [paymentUrl, setPaymentUrl] = useState<string>('');
   const [error, setError] = useState<string>('');
 
+  console.log('DEBUG VITE_MP_PUBLIC_KEY =', import.meta.env.VITE_MP_PUBLIC_KEY);
   const { registrationId, formData, plan } = location.state || {};
 
   if (!formData || !plan) {
@@ -59,29 +60,41 @@ const Payment: React.FC = () => {
         throw new Error('ID do cadastro não encontrado');
       }
 
-      const paymentRequest = {
-        amount: plan.price,
-        description: `Cadastro - ${formData.establishmentName}`,
-        payer_email: 'test_user_123456@testuser.com', // Email de teste do Sandbox
-        payment_method: paymentMethod,
-        external_reference: registrationId.toString()
-      };
-
-      let paymentResponse;
+      let paymentResponse: any;
 
       if (paymentMethod === 'preference') {
-        // Criar preferência de pagamento (recomendado)
-        paymentResponse = await MercadoPagoSandboxService.createPaymentPreference(paymentRequest);
-        setPaymentUrl(paymentResponse.init_point || '');
+        // Payload SEM payment_method para preference/checkout
+        const preferenceRequest = {
+          amount: plan.price,
+          description: `Cadastro - ${formData.establishmentName}`,
+          payer_email: 'test_user_123456@testuser.com', // Email de teste do Sandbox
+          external_reference: registrationId.toString(),
+        };
+
+        // O service está tipado exigindo payment_method; usamos assertion local
+        paymentResponse = await MercadoPagoSandboxService.createPaymentPreference(
+          preferenceRequest as any
+        );
+
+        setPaymentUrl(
+          (paymentResponse && (paymentResponse.init_point || paymentResponse.sandbox_init_point)) || ''
+        );
       } else {
-        // Criar pagamento PIX direto
-        paymentResponse = await MercadoPagoSandboxService.createPixPayment(paymentRequest);
-        setPixCode(paymentResponse.pix_code || '');
-        setPixExpiresAt(paymentResponse.pix_expires_at || '');
+        // PIX direto – aqui sim precisa de payment_method: 'pix'
+        const pixRequest = {
+          amount: plan.price,
+          description: `Cadastro - ${formData.establishmentName}`,
+          payer_email: 'test_user_123456@testuser.com', // Email de teste do Sandbox
+          payment_method: 'pix' as const,
+          external_reference: registrationId.toString(),
+        };
+
+        paymentResponse = await MercadoPagoSandboxService.createPixPayment(pixRequest as any);
+        setPixCode((paymentResponse && paymentResponse.pix_code) || '');
+        setPixExpiresAt((paymentResponse && paymentResponse.pix_expires_at) || '');
       }
 
       console.log('Pagamento criado:', paymentResponse);
-
     } catch (error) {
       console.error('Erro ao processar pagamento:', error);
       setError(error instanceof Error ? error.message : 'Erro ao processar pagamento');
@@ -266,8 +279,6 @@ const Payment: React.FC = () => {
                 </div>
               )}
 
-
-
               {/* Mensagem de Erro */}
               {error && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -281,10 +292,16 @@ const Payment: React.FC = () => {
               {/* Botão de Pagamento */}
               <button
                 onClick={handlePayment}
-                disabled={isProcessing || (paymentMethod === 'preference' && paymentUrl)}
+                disabled={isProcessing || (paymentMethod === 'preference' && !!paymentUrl)}
                 className="w-full mt-6 bg-blue-600 text-white py-3 px-6 rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isProcessing ? 'Processando...' : paymentMethod === 'pix' && !pixCode ? 'Gerar PIX' : paymentMethod === 'preference' && paymentUrl ? 'Checkout Criado' : `Criar Pagamento R$ ${plan.price.toFixed(2).replace('.', ',')}`}
+                {isProcessing
+                  ? 'Processando...'
+                  : paymentMethod === 'pix' && !pixCode
+                  ? 'Gerar PIX'
+                  : paymentMethod === 'preference' && paymentUrl
+                  ? 'Checkout Criado'
+                  : `Criar Pagamento R$ ${plan.price.toFixed(2).replace('.', ',')}`}
               </button>
 
               <p className="text-xs text-gray-500 mt-4 text-center">

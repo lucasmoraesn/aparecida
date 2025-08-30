@@ -5,6 +5,7 @@ import { MercadoPagoConfig, PreApproval } from "mercadopago";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
+console.log("[MP_ACCESS_TOKEN]", process.env.MP_ACCESS_TOKEN);
 
 console.log("[MP_ACCESS_TOKEN length]", process.env.MP_ACCESS_TOKEN?.length);
 
@@ -136,6 +137,57 @@ app.post("/api/register-business", async (req, res) => {
       message: err.message,
       details: err.response?.data || null,
     });
+  }
+});
+
+/* =============================
+   CADASTRAR NEGÓCIO + CRIAR ASSINATURA
+============================= */
+app.post("/api/register-business", async (req, res) => {
+  // ... (seu código atual)
+});
+
+/* =============================
+   CRIAR PREFERÊNCIA (Checkout Pro)
+============================= */
+app.post('/api/create-preference', async (req, res) => {
+  try {
+    const pref = {
+      items: [
+        {
+          title: req.body.description,
+          unit_price: req.body.amount,
+          quantity: 1,
+        },
+      ],
+      payer: { email: req.body.payer_email },
+      external_reference: req.body.external_reference,
+      back_urls: {
+        success: `${process.env.VITE_PUBLIC_URL_NGROK}/payment/success`,
+        failure: `${process.env.VITE_PUBLIC_URL_NGROK}/payment/failure`,
+        pending: `${process.env.VITE_PUBLIC_URL_NGROK}/payment/pending`,
+      },
+      auto_return: 'approved',
+      notification_url: `${process.env.VITE_PUBLIC_URL_NGROK}/api/payment-webhook`,
+    };
+
+    const r = await fetch('https://api.mercadopago.com/checkout/preferences', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+      },
+      body: JSON.stringify(pref),
+    });
+
+    const data = await r.json();
+    if (!r.ok) {
+      return res.status(r.status).json({ message: data?.message || 'Erro ao criar preferência' });
+    }
+    res.json(data);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: e.message || 'Erro interno' });
   }
 });
 
