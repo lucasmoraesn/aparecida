@@ -1,23 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, MapPin, Calendar, Users, Play, Star, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 const Hero = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState('Todas as categorias');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 0.8;
-    }
-  }, []);
-
   const categories = [
-    { id: 'todas', name: 'Todas as categorias', options: [] },
+    {
+      id: 'todas',
+      name: 'Todas as categorias',
+      options: []
+    },
     {
       id: 'hoteis',
       name: 'Hotéis e Pousadas',
@@ -73,6 +70,20 @@ const Hero = () => {
         'Santuário Nacional',
         'Centro de Eventos'
       ]
+    },
+    {
+      id: 'eventos',
+      name: 'Eventos',
+      options: [
+        'Missa da Mãe Aparecida',
+        'Procissão das Velas',
+        'Festa de Nossa Senhora',
+        'Celebração da Padroeira',
+        'Encontro de Caravanas',
+        'Retiro Espiritual',
+        'Novena de Nossa Senhora',
+        'Celebração Eucarística'
+      ]
     }
   ];
 
@@ -80,7 +91,75 @@ const Hero = () => {
 
   // Handle search button click
   const handleSearch = () => {
-    if (selectedCategory === 'Hotéis e Pousadas') {
+    // Se há um termo de busca específico, priorizar ele
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
+
+      // Verificar se o termo de busca corresponde a alguma categoria
+      if (searchLower.includes('hotel') || searchLower.includes('hoteis') || searchLower.includes('pousada') || searchLower.includes('hospedagem') || searchLower.includes('acomodação')) {
+        navigate('/hoteis');
+        return;
+      }
+
+      if (searchLower.includes('restaurante') || searchLower.includes('comida') || searchLower.includes('jantar') || searchLower.includes('almoço') || searchLower.includes('lanche') || searchLower.includes('pizzaria')) {
+        navigate('/restaurantes');
+        return;
+      }
+
+      if (searchLower.includes('loja') || searchLower.includes('religioso') || searchLower.includes('artigo') || searchLower.includes('souvenir') || searchLower.includes('vela') || searchLower.includes('terço')) {
+        navigate('/lojas-religiosas');
+        return;
+      }
+
+      if (searchLower.includes('ponto') || searchLower.includes('turístico') || searchLower.includes('atração') || searchLower.includes('basílica') || searchLower.includes('museu') || searchLower.includes('mirante')) {
+        navigate('/pontos-turisticos');
+        return;
+      }
+
+      if (searchLower.includes('evento') || searchLower.includes('missa') || searchLower.includes('procissão') || searchLower.includes('festa') || searchLower.includes('celebração') || searchLower.includes('caravana')) {
+        navigate('/eventos');
+        return;
+      }
+
+      // Verificar se o termo corresponde a alguma opção específica do dropdown
+      const allOptions = categories.flatMap(cat => cat.options);
+      const matchingOption = allOptions.find(option =>
+        option.toLowerCase().includes(searchLower) || searchLower.includes(option.toLowerCase())
+      );
+
+      if (matchingOption) {
+        // Encontrar a categoria da opção correspondente
+        const matchingCategory = categories.find(cat => cat.options.includes(matchingOption));
+        if (matchingCategory) {
+          if (matchingCategory.name === 'Hotéis e Pousadas') {
+            navigate('/hoteis');
+            return;
+          } else if (matchingCategory.name === 'Restaurantes') {
+            navigate('/restaurantes');
+            return;
+          } else if (matchingCategory.name === 'Lojas Religiosas') {
+            navigate('/lojas-religiosas');
+            return;
+          } else if (matchingCategory.name === 'Pontos Turísticos') {
+            navigate('/pontos-turisticos');
+            return;
+          } else if (matchingCategory.name === 'Eventos') {
+            navigate('/eventos');
+            return;
+          }
+        }
+      }
+
+      // Se não encontrou correspondência específica, navegar para home com o termo de busca
+      navigate('/', { state: { searchTerm: searchTerm.trim() } });
+      return;
+    }
+
+    // Se não há termo de busca, usar a categoria selecionada
+    if (!selectedCategory || selectedCategory === 'Todas as categorias') {
+      // Se não há categoria selecionada ou é "Todas as categorias", navegar para página que mostra todas as categorias
+      navigate('/produtos', { state: { showAllCategories: true } });
+    } else if (selectedCategory === 'Hotéis e Pousadas') {
       navigate('/hoteis');
     } else if (selectedCategory === 'Restaurantes') {
       navigate('/restaurantes');
@@ -88,8 +167,10 @@ const Hero = () => {
       navigate('/lojas-religiosas');
     } else if (selectedCategory === 'Pontos Turísticos') {
       navigate('/pontos-turisticos');
+    } else if (selectedCategory === 'Eventos') {
+      navigate('/eventos');
     } else {
-      // For "Todas as categorias" or specific search terms, navigate to home
+      // Fallback para home
       navigate('/');
     }
   };
@@ -123,43 +204,12 @@ const Hero = () => {
     <section className="relative h-screen overflow-hidden">
       {/* Video Background */}
       <div className="absolute inset-0">
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          loop
-          playsInline
+        <img
+          src="/aparecida.jpg"
+          alt="Aparecida do Norte"
           className="w-full h-full object-cover"
-          poster="https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
-        >
-          <source src="https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" type="video/mp4" />
-        </video>
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
-      </div>
-
-      {/* Floating Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute top-20 left-10 w-20 h-20 opacity-20"
-          animate={{ y: [0, -20, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Star className="w-full h-full text-yellow-400" />
-        </motion.div>
-        <motion.div
-          className="absolute top-40 right-20 w-16 h-16 opacity-15"
-          animate={{ y: [0, 15, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Star className="w-full h-full text-blue-400" />
-        </motion.div>
-        <motion.div
-          className="absolute bottom-40 left-20 w-12 h-12 opacity-10"
-          animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Star className="w-full h-full text-yellow-300" />
-        </motion.div>
       </div>
 
       {/* Content */}
@@ -167,7 +217,7 @@ const Hero = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Main Title */}
           <motion.h1
-            className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
+            className="text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-tight"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2 }}
@@ -176,7 +226,7 @@ const Hero = () => {
               Descubra Aparecida
             </span>
             <motion.span
-              className="block text-white mt-2"
+              className="block text-white mt-2 text-4xl md:text-6xl lg:text-7xl"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.5 }}
@@ -187,7 +237,7 @@ const Hero = () => {
 
           {/* Subtitle */}
           <motion.p
-            className="text-xl md:text-2xl mb-12 max-w-4xl mx-auto text-gray-200 leading-relaxed"
+            className="text-lg md:text-xl mb-8 max-w-3xl mx-auto text-white font-bold leading-relaxed"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.8 }}
@@ -198,7 +248,7 @@ const Hero = () => {
 
           {/* Search Box */}
           <motion.div
-            className="bg-white/10 backdrop-blur-md rounded-3xl p-8 max-w-5xl mx-auto mb-12 border border-white/20 relative z-20"
+            className="bg-white/10 backdrop-blur-md rounded-3xl p-6 max-w-5xl mx-auto mb-8 border border-white/20 relative z-20"
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 1, delay: 1.1 }}
@@ -211,66 +261,43 @@ const Hero = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full px-6 py-4 rounded-xl border-0 bg-white/90 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-yellow-400 focus:bg-white transition-all duration-300 text-lg"
+                  className="w-full px-4 py-2.5 rounded-xl border-0 bg-white/90 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all duration-75 text-base"
                 />
               </div>
-              <div className="flex-1 relative dropdown-container z-50">
-                <button
+              <div className="flex-1 relative dropdown-container">
+                <div 
+                  className="w-full px-4 py-2.5 rounded-xl border-0 bg-white/90 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all duration-75 text-base cursor-pointer flex justify-between items-center"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="w-full px-6 py-4 rounded-xl border-0 bg-white/90 text-gray-800 focus:ring-2 focus:ring-yellow-400 focus:bg-white transition-all duration-300 text-lg flex items-center justify-between"
                 >
-                  <span>{selectedCategory}</span>
-                  <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Dropdown Menu */}
+                  <span>{selectedCategory || 'Categoria'}</span>
+                  <ChevronDown className="w-5 h-5" />
+                </div>
+                
                 {isDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-[9999] max-h-80 overflow-y-auto"
-                  >
-                    {categories.map((category) => (
-                      <div key={category.id}>
-                        <button
+                  <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div className="max-h-60 overflow-y-auto py-1">
+                      {categories.map((category) => (
+                        <div 
+                          key={category.id} 
+                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
                           onClick={() => {
                             setSelectedCategory(category.name);
                             setIsDropdownOpen(false);
                           }}
-                          className={`w-full px-6 py-4 text-left hover:bg-blue-50 transition-colors duration-200 ${selectedCategory === category.name ? 'bg-blue-100 text-blue-600 font-semibold' : 'text-gray-800'
-                            }`}
                         >
                           {category.name}
-                        </button>
-
-                        {/* Sub-options for selected category */}
-                        {selectedCategory === category.name && category.options.length > 0 && (
-                          <div className="border-t border-gray-100">
-                            {category.options.map((option, index) => (
-                              <button
-                                key={index}
-                                onClick={() => {
-                                  setSearchTerm(option);
-                                  setIsDropdownOpen(false);
-                                }}
-                                className="w-full px-6 py-3 text-left text-sm text-gray-600 hover:bg-gray-50 transition-colors duration-200 pl-12"
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </motion.div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
               <motion.button
                 onClick={handleSearch}
-                className="bg-gradient-to-r from-blue-600 to-yellow-500 hover:from-blue-700 hover:to-yellow-600 text-white px-8 py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-300 text-lg shadow-lg hover:shadow-xl"
+                className="bg-white/90 text-blue-800 hover:bg-white hover:text-blue-900 px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-75 text-base shadow-md hover:shadow-lg ml-2"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.075 }}
               >
                 <Search className="w-5 h-5" />
                 Buscar
@@ -286,25 +313,28 @@ const Hero = () => {
             transition={{ duration: 1, delay: 1.4 }}
           >
             <motion.div
-              className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-8 py-4 border border-white/20 hover:bg-white/20 transition-all duration-300 cursor-pointer"
+              className="flex items-center gap-3 rounded-full px-8 py-4 transition-all duration-75 cursor-pointer"
               whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ duration: 0.075 }}
             >
-              <MapPin className="w-5 h-5 text-yellow-400" />
-              <span className="font-medium">Centro Histórico</span>
+              <MapPin className="w-5 h-5 text-white" />
+              <span className="font-medium text-white text-lg">Centro Histórico</span>
             </motion.div>
             <motion.div
-              className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-8 py-4 border border-white/20 hover:bg-white/20 transition-all duration-300 cursor-pointer"
+              className="flex items-center gap-3 rounded-full px-8 py-4 transition-all duration-75 cursor-pointer"
               whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ duration: 0.075 }}
             >
-              <Calendar className="w-5 h-5 text-yellow-400" />
-              <span className="font-medium">Eventos do Mês</span>
+              <Calendar className="w-5 h-5 text-white" />
+              <span className="font-medium text-white text-lg">Eventos Principais</span>
             </motion.div>
             <motion.div
-              className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-8 py-4 border border-white/20 hover:bg-white/20 transition-all duration-300 cursor-pointer"
+              className="flex items-center gap-3 rounded-full px-8 py-4 transition-all duration-75 cursor-pointer"
               whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ duration: 0.075 }}
             >
-              <Users className="w-5 h-5 text-yellow-400" />
-              <span className="font-medium">Grupos & Caravanas</span>
+              <Users className="w-5 h-5 text-white" />
+              <span className="font-medium text-white text-lg">Grupos e Caravanas</span>
             </motion.div>
           </motion.div>
 

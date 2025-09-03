@@ -62,6 +62,32 @@ const BusinessRegistration: React.FC = () => {
     'Outro',
   ];
 
+  // Função para obter o limite de fotos baseado no plano
+  const getPhotoLimit = (planId: string): number => {
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return 5; // Default para plano básico
+
+    switch (plan.name.toLowerCase()) {
+      case 'básico':
+        return 5;
+      case 'intermediário':
+        return 10;
+      case 'premium':
+        return Infinity; // Ilimitado
+      default:
+        return 5;
+    }
+  };
+
+  // Função para obter o texto do limite de fotos
+  const getPhotoLimitText = (planId: string): string => {
+    const limit = getPhotoLimit(planId);
+    if (limit === Infinity) {
+      return 'Fotos ilimitadas';
+    }
+    return `Máximo ${limit} fotos`;
+  };
+
   useEffect(() => {
     const loadPlans = async () => {
       try {
@@ -123,17 +149,38 @@ const BusinessRegistration: React.FC = () => {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
+
+    // Se mudou o plano, validar fotos existentes
+    if (field === 'plan' && formData.photos.length > 0) {
+      const newLimit = getPhotoLimit(value);
+      if (formData.photos.length > newLimit) {
+        setFormData(prev => ({ ...prev, photos: [] }));
+        setErrors(prev => ({ ...prev, photos: `O plano selecionado permite apenas ${newLimit} fotos. Por favor, selecione novamente.` }));
+      }
+    }
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+
     if (files.length < 3) {
       setErrors((prev) => ({ ...prev, photos: 'Mínimo de 3 fotos obrigatório' }));
       return;
     }
-    if (files.length > 10) {
-      setErrors((prev) => ({ ...prev, photos: 'Máximo de 10 fotos permitido' }));
-      return;
+
+    // Verificar limite baseado no plano selecionado
+    if (formData.plan) {
+      const limit = getPhotoLimit(formData.plan);
+      if (limit !== Infinity && files.length > limit) {
+        setErrors((prev) => ({ ...prev, photos: `Máximo de ${limit} fotos permitido para o plano selecionado` }));
+        return;
+      }
+    } else {
+      // Se não há plano selecionado, limitar a 5 fotos (plano básico)
+      if (files.length > 5) {
+        setErrors((prev) => ({ ...prev, photos: 'Selecione um plano primeiro para saber o limite de fotos' }));
+        return;
+      }
     }
 
     const validFiles = files.filter(
@@ -184,6 +231,9 @@ const BusinessRegistration: React.FC = () => {
     }
     if (!formData.plan) {
       newErrors.plan = 'Escolha um plano';
+    }
+    if (!formData.payerEmail.trim()) {
+      newErrors.payerEmail = 'E-mail para pagamento é obrigatório';
     }
     if (!formData.acceptTerms) {
       newErrors.acceptTerms = 'Aceite os termos é obrigatório';
@@ -240,13 +290,55 @@ const BusinessRegistration: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white rounded-lg shadow-lg p-8 mt-20">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Cadastre seu Negócio</h1>
             <p className="text-gray-600">Conecte-se com milhares de peregrinos em Aparecida</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Planos - MOVIDO PARA O TOPO */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-4">
+                Escolha seu Plano * (Escolha primeiro para saber o limite de fotos)
+              </label>
+              {loadingPlans ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Carregando planos...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {plans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${formData.plan === plan.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      onClick={() => handleInputChange('plan', plan.id)}
+                    >
+                      <div className="text-center">
+                        <h3 className="font-semibold text-lg">{plan.name}</h3>
+                        <p className="text-2xl font-bold text-blue-600 mt-2">
+                          R$ {plan.price.toFixed(2).replace('.', ',')}/mês
+                        </p>
+                        <ul className="mt-4 space-y-2 text-sm">
+                          {plan.features.map((feature, index) => (
+                            <li key={index} className="flex items-center">
+                              <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {errors.plan && <p className="text-red-500 text-sm mt-1">{errors.plan}</p>}
+            </div>
+
             {/* Nome do Estabelecimento */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -256,9 +348,8 @@ const BusinessRegistration: React.FC = () => {
                 type="text"
                 value={formData.establishmentName}
                 onChange={(e) => handleInputChange('establishmentName', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.establishmentName ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.establishmentName ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Digite o nome do seu estabelecimento"
               />
               {errors.establishmentName && (
@@ -272,9 +363,8 @@ const BusinessRegistration: React.FC = () => {
               <select
                 value={formData.category}
                 onChange={(e) => handleInputChange('category', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.category ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category ? 'border-red-500' : 'border-gray-300'
+                  }`}
               >
                 <option value="">Selecione uma categoria</option>
                 {categories.map((category) => (
@@ -293,9 +383,8 @@ const BusinessRegistration: React.FC = () => {
                 type="text"
                 value={formData.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.address ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.address ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Rua, número, bairro, cidade, estado, CEP"
               />
               {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
@@ -312,19 +401,23 @@ const BusinessRegistration: React.FC = () => {
                   type="text"
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.location ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.location ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   placeholder="Digite o endereço ou arraste o marcador no mapa"
                 />
               </div>
               {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
             </div>
 
-            {/* Fotos */}
+            {/* Fotos - AGORA COM LIMITE DINÂMICO */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fotos do Estabelecimento * (3-10 imagens)
+                Fotos do Estabelecimento *
+                {formData.plan ? (
+                  <span className="text-blue-600 font-normal"> ({getPhotoLimitText(formData.plan)})</span>
+                ) : (
+                  <span className="text-gray-500 font-normal"> (Selecione um plano primeiro)</span>
+                )}
               </label>
               <div className="relative">
                 <Camera className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
@@ -333,19 +426,27 @@ const BusinessRegistration: React.FC = () => {
                   multiple
                   accept="image/jpeg,image/png"
                   onChange={handlePhotoChange}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.photos ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  disabled={!formData.plan}
+                  className={`w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.photos ? 'border-red-500' : 'border-gray-300'
+                    } ${!formData.plan ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 />
               </div>
               {formData.photos.length > 0 && (
                 <div className="mt-2">
                   <p className="text-sm text-gray-600">
                     {formData.photos.length} foto(s) selecionada(s)
+                    {formData.plan && getPhotoLimit(formData.plan) !== Infinity && (
+                      <span className="text-blue-600"> de {getPhotoLimit(formData.plan)}</span>
+                    )}
                   </p>
                 </div>
               )}
               {errors.photos && <p className="text-red-500 text-sm mt-1">{errors.photos}</p>}
+              {!formData.plan && (
+                <p className="text-sm text-gray-500 mt-1">
+                  ⚠️ Selecione um plano para poder fazer upload de fotos
+                </p>
+              )}
             </div>
 
             {/* WhatsApp */}
@@ -355,9 +456,8 @@ const BusinessRegistration: React.FC = () => {
                 type="tel"
                 value={formData.whatsapp}
                 onChange={(e) => handleInputChange('whatsapp', formatWhatsApp(e.target.value))}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.whatsapp ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.whatsapp ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="+55 (11) 99999-9999"
               />
               {errors.whatsapp && <p className="text-red-500 text-sm mt-1">{errors.whatsapp}</p>}
@@ -386,9 +486,8 @@ const BusinessRegistration: React.FC = () => {
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={4}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.description ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Descreva seu negócio, serviços oferecidos, horários de funcionamento, etc."
               />
               {errors.description && (
@@ -396,67 +495,23 @@ const BusinessRegistration: React.FC = () => {
               )}
             </div>
 
-            {/* Planos */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">
-                Escolha seu Plano *
-              </label>
-              {loadingPlans ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="text-gray-600 mt-2">Carregando planos...</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {plans.map((plan) => (
-                    <div
-                      key={plan.id}
-                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                        formData.plan === plan.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => handleInputChange('plan', plan.id)}
-                    >
-                      <div className="text-center">
-                        <h3 className="font-semibold text-lg">{plan.name}</h3>
-                        <p className="text-2xl font-bold text-blue-600 mt-2">
-                          R$ {plan.price.toFixed(2).replace('.', ',')}/mês
-                        </p>
-                        <ul className="mt-4 space-y-2 text-sm">
-                          {plan.features.map((feature, index) => (
-                            <li key={index} className="flex items-center">
-                              <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {errors.plan && <p className="text-red-500 text-sm mt-1">{errors.plan}</p>}
-            </div>
-
             {/* E-mail para Pagamento */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  E-mail para Pagamento *
-                </label>
-                <input
-                  type="email"
-                  value={formData.payerEmail}
-                  onChange={(e) => handleInputChange('payerEmail', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.payerEmail ? 'border-red-500' : 'border-gray-300'
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                E-mail para Pagamento *
+              </label>
+              <input
+                type="email"
+                value={formData.payerEmail}
+                onChange={(e) => handleInputChange('payerEmail', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.payerEmail ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="exemplo@teste.com"
-                />
-                {errors.payerEmail && (
-                  <p className="text-red-500 text-sm mt-1">{errors.payerEmail}</p>
-                )}
-              </div>
+                placeholder="exemplo@teste.com"
+              />
+              {errors.payerEmail && (
+                <p className="text-red-500 text-sm mt-1">{errors.payerEmail}</p>
+              )}
+            </div>
 
 
             {/* Aceite dos termos */}

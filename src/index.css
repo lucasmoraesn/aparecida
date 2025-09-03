@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Estilo personalizado para o dropdown do select */
+@layer base {
+  select option {
+    border-radius: 8px;
+  }
+  
+  /* Estilo para navegadores webkit (Chrome, Safari) */
+  select::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  select::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Estilo para o dropdown no Firefox */
+  @-moz-document url-prefix() {
+    select {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    select option {
+      border-radius: 8px;
+      padding: 8px;
+    }
+  }
+}
+
 /* Variáveis CSS personalizadas para a paleta religiosa */
 :root {
   --primary-blue: #1e3a8a;

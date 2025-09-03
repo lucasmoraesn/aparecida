@@ -154,14 +154,11 @@ const allEvents = [
 const AllEvents = () => {
    return (
       <div className="min-h-screen bg-gray-50">
-         <div className="bg-white shadow-sm">
+         <div className="bg-white shadow-sm mt-20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-               <div className="text-center mb-12">
-                  <h1 className="text-4xl font-bold text-gray-800 mb-4">
-                     Todos os Eventos
-                  </h1>
-                  <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                     Confira todos os eventos religiosos e culturais de Aparecida do Norte
+               <div className="text-center mb-8">
+                  <p className="text-gray-800 text-3xl font-bold max-w-4xl mx-auto leading-relaxed">
+                     CONFIRA TODOS OS EVENTOS RELIGIOSOS E CULTURAIS DE APARECIDA DO NORTE
                   </p>
                </div>
             </div>
@@ -238,9 +235,6 @@ const AllEvents = () => {
 
                         <div className="flex items-center justify-between">
                            <span className="text-sm text-gray-600">Evento Gratuito</span>
-                           <button className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                              Participar
-                           </button>
                         </div>
                      </div>
                   </div>

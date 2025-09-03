@@ -94,40 +94,43 @@ const Home = () => {
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="h-full"
               >
                 <Link
                   to={category.to}
-                  className="group block"
+                  className="group block h-full"
                 >
                   <motion.div
-                    className="bg-white rounded-3xl shadow-lg p-8 text-center hover-lift border border-gray-100 relative overflow-hidden"
+                    className="bg-white rounded-3xl shadow-lg p-8 text-center hover-lift border border-gray-100 relative overflow-hidden h-full flex flex-col"
                     whileHover={{ scale: 1.02 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.075 }}
                   >
                     {/* Background Gradient */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+                    <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-5 transition-opacity duration-75`}></div>
 
                     {/* Image */}
                     <motion.div
-                      className="relative w-full h-48 rounded-2xl overflow-hidden mb-6 group-hover:scale-105 transition-transform duration-300 shadow-lg"
-                      whileHover={{ rotate: 1 }}
+                      className="relative w-full h-48 rounded-2xl overflow-hidden mb-6 group-hover:scale-105 transition-transform duration-75 shadow-lg"
+                      transition={{ duration: 0.075 }}
                     >
                       <img
                         src={category.image}
                         alt={category.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-75"
                         loading="lazy"
                       />
-                      <div className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-20 group-hover:opacity-30 transition-opacity duration-300`}></div>
+                      <div className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-20 group-hover:opacity-30 transition-opacity duration-75`}></div>
                     </motion.div>
 
                     {/* Content */}
-                    <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-blue-600 transition-colors duration-300">
-                      {category.title}
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">
-                      {category.description}
-                    </p>
+                    <div className="flex-1 flex flex-col justify-center">
+                      <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-blue-600 transition-colors duration-75">
+                        {category.title}
+                      </h3>
+                      <p className="text-gray-600 leading-relaxed">
+                        {category.description}
+                      </p>
+                    </div>
                   </motion.div>
                 </Link>
               </motion.div>
@@ -184,7 +187,7 @@ const Home = () => {
           >
             <Link
               to="/todos-eventos"
-              className="bg-gradient-to-r from-blue-600 to-yellow-500 hover:from-blue-700 hover:to-yellow-600 text-white px-10 py-4 rounded-xl font-semibold text-lg transition-all duration-300 inline-flex items-center gap-2 shadow-lg hover:shadow-xl"
+              className="bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-900 hover:to-blue-950 text-white px-10 py-4 rounded-xl font-semibold text-lg transition-all duration-75 inline-flex items-center gap-2 shadow-lg hover:shadow-xl"
             >
               Ver Todos os Eventos
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
