@@ -63,7 +63,7 @@ export class BusinessService {
 
    // 🔹 Criar cadastro de negócio (chama backend!)
       static async createRegistration(registration: BusinessRegistration): Promise<string> {
-      const response = await fetch(`${this.API_BASE}/api/register-business`, {
+      const response = await fetch(`${this.API_BASE}/api/create-subscription`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify(registration),

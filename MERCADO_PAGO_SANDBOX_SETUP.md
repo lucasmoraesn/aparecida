@@ -1,11 +1,21 @@
 # 🚀 Configuração Completa do Mercado Pago Sandbox
 
+## ⚠️ IMPORTANTE: MUDANÇA NO FORMATO DAS CREDENCIAIS (2024/2025)
+
+**As credenciais de teste do Mercado Pago agora começam com `APP_USR` em vez de `TEST`!**
+
+- ✅ **Novo formato:** `APP_USR-xxxx-xxxx-xxxx`
+- ❌ **Formato antigo:** `TEST-xxxx-xxxx-xxxx`
+
+Esta mudança foi feita para padronizar as chaves geradas para aplicações no Mercado Pago. As credenciais continuam sendo específicas para o ambiente de teste (sandbox) e funcionam da mesma forma.
+
 ## 📋 Pré-requisitos
 
 - ✅ Conta de vendedor no Mercado Pago Sandbox
 - ✅ Conta de comprador no Mercado Pago Sandbox
 - ✅ URL pública do Ngrok configurada
 - ✅ Projeto Vite funcionando
+- ✅ **Credenciais atualizadas com formato APP_USR**
 
 ## 🔧 Passo 1: Configurar Variáveis de Ambiente
 
@@ -17,9 +27,10 @@ SUPABASE_PASSWORD=@Varredor27@@
 SUPABASE_URL=https://rhkwickoweflamflgzeo.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoa3dpY2tvd2VmbGFtZmxnemVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NjIyODMsImV4cCI6MjA3MDMzODI4M30.Pz7Vsh0HQL17g-CRWJD7CHrX_KzN4YYFl57XxxNjJUQ
 
-# Mercado Pago Sandbox Configuration
-VITE_MERCADO_PAGO_ACCESS_TOKEN=TEST-6778337907288253-081509-fae473f1aecdc8ae99fa7b36f36ca582-1666
-VITE_MERCADO_PAGO_PUBLIC_KEY=TEST-4cd61fa6-80df-4f81-bed7-2aba066e63fb
+# Mercado Pago Sandbox Configuration (NOVO FORMATO APP_USR)
+# ⚠️ IMPORTANTE: As credenciais de teste agora começam com APP_USR em vez de TEST
+VITE_MERCADO_PAGO_ACCESS_TOKEN=APP_USR-4608108578465711-101014-7a20dddc6a29e8ba910afa03de6da1d9-2631380670
+VITE_MERCADO_PAGO_PUBLIC_KEY=APP_USR-bb931ba5-fd10-4522-b446-6073b7aacff1
 
 # Vite Environment Variables (para o frontend)
 VITE_SUPABASE_URL=https://rhkwickoweflamflgzeo.supabase.co
@@ -550,8 +561,8 @@ export default function handler(req, res) {
 
 ```env
 # Mercado Pago Sandbox Configuration
-VITE_MERCADO_PAGO_ACCESS_TOKEN=TEST-seu_access_token_aqui
-VITE_MERCADO_PAGO_PUBLIC_KEY=TEST-sua_public_key_aqui
+VITE_MERCADO_PAGO_ACCESS_TOKEN=APP_USR-4608108578465711-101014-7a20dddc6a29e8ba910afa03de6da1d9-2631380670
+VITE_MERCADO_PAGO_PUBLIC_KEY=APP_USR-bb931ba5-fd10-4522-b446-6073b7aacff1
 ```
 
 ## 🧪 Passo 6: Testar o Fluxo Completo

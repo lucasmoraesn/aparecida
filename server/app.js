@@ -22,7 +22,8 @@ app.use(express.json());
 app.use(cors({ origin: ["http://localhost:5173", /\.ngrok-free\.app$/] }));
 
 const MP_USE_SANDBOX = (String(process.env.MP_USE_SANDBOX || '').toLowerCase() === 'true')
-  || (process.env.MP_ACCESS_TOKEN || '').toUpperCase().startsWith('TEST');
+  || (process.env.MP_ACCESS_TOKEN || '').toUpperCase().startsWith('TEST')
+  || (process.env.MP_ACCESS_TOKEN || '').startsWith('APP_USR');
 const MP_API_BASE = MP_USE_SANDBOX ? 'https://api.mercadopago.com/sandbox' : 'https://api.mercadopago.com';
 
 // Supabase client
@@ -30,6 +31,22 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 
 // Health-check
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// =============================
+// WEBHOOK Mercado Pago
+// =============================
+app.post("/api/payment-webhook", async (req, res) => {
+  try {
+    console.log("📩 Webhook recebido do Mercado Pago:");
+    console.log(JSON.stringify(req.body, null, 2));
+
+    // Envie 200 OK para confirmar o recebimento
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("❌ Erro no webhook:", error);
+    res.sendStatus(500);
+  }
+});
 
 // Keep the create-subscription endpoint minimal (same logic as index.js)
  app.post('/api/create-subscription', async (req, res) => {
@@ -58,7 +75,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 
        // Inserir cadastro
        const { data: regData, error: regError } = await supabase
-         .from('business_registration')
+         .from('business_registrations')
          .insert([{
            establishment_name,
            category,
@@ -141,7 +158,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
      const mpStatus = data.status || null;
 
      try {
-       await supabase.from('mp_subscriptions').insert([{ mp_subscription_id: mpSubscriptionId, mp_init_point: mpInitPoint, status: mpStatus, raw_response: data }]);
+       await supabase.from('mp_subscription').insert([{ mp_subscription_id: mpSubscriptionId, mp_init_point: mpInitPoint, status: mpStatus, raw_response: data }]);
      } catch (dbErr) {
        console.warn('failed to persist mp_subscriptions:', dbErr?.message || dbErr);
      }

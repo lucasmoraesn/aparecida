@@ -20,8 +20,8 @@ SUPABASE_URL=https://rhkwickoweflamflgzeo.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoa3dpY2tvd2VmbGFtZmxnemVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NjIyODMsImV4cCI6MjA3MDMzODI4M30.Pz7Vsh0HQL17g-CRWJD7CHrX_KzN4YYFl57XxxNjJUQ
 
 # Mercado Pago Sandbox Configuration
-VITE_MERCADO_PAGO_ACCESS_TOKEN=TEST-6778337907288253-081509-fae473f1aecdc8ae99fa7b36f36ca582-1666
-VITE_MERCADO_PAGO_PUBLIC_KEY=TEST-4cd61fa6-80df-4f81-bed7-2aba066e63fb
+VITE_MERCADO_PAGO_ACCESS_TOKEN=APP_USR-4608108578465711-101014-7a20dddc6a29e8ba910afa03de6da1d9-2631380670
+VITE_MERCADO_PAGO_PUBLIC_KEY=APP_USR-bb931ba5-fd10-4522-b446-6073b7aacff1
 
 # Vite Environment Variables
 VITE_SUPABASE_URL=https://rhkwickoweflamflgzeo.supabase.co
@@ -39,7 +39,7 @@ VITE_NGROK_URL=https://sua-url-ngrok.ngrok.io
 1. Acesse: https://www.mercadopago.com.br/developers/panel/credentials
 2. Selecione "Sandbox"
 3. Copie o **Access Token** e **Public Key**
-4. Substitua no `.env.local` (mantenha o prefixo `TEST-`)
+4. Substitua no `.env.local` (novo formato `APP_USR`)
 
 ### 3. Configurar Ngrok:
 
@@ -95,7 +95,7 @@ ngrok http 5173
 3. Reiniciar o servidor após criar `.env.local`
 
 ### Erro de credenciais:
-1. Verificar se as credenciais começam com `TEST-`
+1. Verificar se as credenciais começam com `APP_USR` (novo formato)
 2. Confirmar se estão no painel Sandbox
 3. Verificar se não há espaços extras
 

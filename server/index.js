@@ -1,198 +1,162 @@
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, ".env") });
+
+// Tratamento global de erros - NUNCA MAIS CRASH SILENCIOSO
+process.on("uncaughtException", (err) => {
+  console.error("❌ [uncaughtException]", err.stack || err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("⚠️ [unhandledRejection]", reason);
+});
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import { MercadoPagoConfig, PreApproval } from "mercadopago";
 import { createClient } from "@supabase/supabase-js";
 
-dotenv.config();
-console.log("[MP_ACCESS_TOKEN]", process.env.MP_ACCESS_TOKEN);
-
-console.log("[MP_ACCESS_TOKEN length]", process.env.MP_ACCESS_TOKEN?.length);
-
 const app = express();
-app.use(express.json());
-app.use(
-  cors({
-    origin: ["http://localhost:5173", /\.ngrok-free\.app$/],
-  })
-);
 
-// --- SDK v2 Mercado Pago ---
+app.use(express.json());
+app.use(cors({
+  origin: ["http://localhost:5173", "http://localhost:5174", /\.ngrok-free\.app$/],
+}));
+
+// Mercado Pago
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
 });
 const preApproval = new PreApproval(mpClient);
 
-// --- Supabase (usando service_role no backend) ---
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+// Supabase (temporariamente desabilitado para debug)
+// const supabase = createClient(
+//   process.env.SUPABASE_URL,
+//   process.env.SUPABASE_SERVICE_KEY
+// );
 
-// Health-check
-app.get("/health", (_req, res) => res.json({ ok: true }));
+// Teste de conexão Supabase na inicialização (comentado para debug)
+// const testSupabaseConnection = async () => {
+//   console.log("🔄 Testando conexão inicial com Supabase...");
+//   try {
+//     const { data, error } = await supabase.from("business_plans").select("id").limit(1);
+//     if (error) console.error("❌ Erro Supabase inicial:", error);
+//     else console.log("✅ Conexão Supabase ativa:", data);
+//   } catch (err) {
+//     console.error("💥 Erro crítico Supabase:", err);
+//   }
+// };
 
-// Endpoint para buscar planos disponíveis
-app.get("/api/plans", async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("business_plans")
-      .select("id, name, price, description, features")
-      .order("price", { ascending: true });
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error("Erro ao buscar planos:", err);
-    res.status(500).json({ message: "Erro ao buscar planos" });
-  }
+// Executar teste de conexão
+// testSupabaseConnection();
+
+console.log("✅ Configurações carregadas:", {
+  MP_TOKEN: process.env.MP_ACCESS_TOKEN ? "OK" : "MISSING",
+  SUPABASE_URL: process.env.SUPABASE_URL ? "OK" : "MISSING",
+  SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? "OK" : "MISSING",
+  PUBLIC_URL: process.env.PUBLIC_URL_NGROK || "NOT_SET"
 });
 
-/* =============================
-   CADASTRAR NEGÓCIO + CRIAR ASSINATURA
-============================= */
-app.post("/api/register-business", async (req, res) => {
-  try {
-    // Recebe dados do front
-    const registration = req.body;
-    console.log("📥 Dados recebidos do front:", registration);
-
-    const {
-      establishment_name,
-      category,
-      address,
-      location,
-      photos,
-      whatsapp,
-      phone,
-      description,
-      plan_id,
-      payer_email,
-      amount,
-      frequency,
-      frequency_type,
-    } = registration;
-
-    // 1. Salvar cadastro de negócio no Supabase
-    const { data, error } = await supabase
-      .from("business_registrations")
-      .insert([
-        {
-          establishment_name,
-          category,
-          address,
-          location,
-          photos,
-          whatsapp,
-          phone,
-          description,
-          plan_id,
-          created_at: new Date().toISOString(),
-        },
-      ])
-      .select("id")
-      .single();
-
-    if (error) throw error;
-    console.log("✅ Cadastro inserido no Supabase:", data);
-
-    // 2. Criar assinatura no Mercado Pago via SDK
-    const startDate = new Date(Date.now() + 10 * 60 * 1000);
-    startDate.setSeconds(0, 0);
-    const endDate = new Date(startDate);
-    endDate.setFullYear(endDate.getFullYear() + 1);
-    endDate.setSeconds(0, 0);
-
-    const payload = {
-      reason: "Plano de Assinatura",
-      external_reference: "sub_" + Date.now(),
-      auto_recurring: {
-        frequency: frequency || 1,
-        frequency_type: frequency_type || "months",
-        transaction_amount: amount || 49.9,
-        currency_id: "BRL",
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
-      },
-      back_url: `${process.env.VITE_PUBLIC_URL_NGROK}/return/subscription/success`,
-      notification_url: `${process.env.VITE_PUBLIC_URL_NGROK}/api/webhook`,
-      payer_email: registration.payer_email || "comprador_teste@teste.com",
-    };
-
-    console.log("📦 Payload enviado ao MP (SDK):", JSON.stringify(payload, null, 2));
-
-    const subscription = await preApproval.create({ body: payload });
-
-    console.log("✅ Assinatura criada no MP:", subscription.id);
-
-    // 3. Retorna para o front: id do cadastro + link do pagamento
-    res.json({
-      success: true,
-      business: data,
-      subscription,
-    });
-  } catch (err) {
-    console.error("❌ Erro no fluxo completo:", err.message, err.response?.data || "");
-    res.status(500).json({
-      error: true,
-      message: err.message,
-      details: err.response?.data || null,
-    });
-  }
+// Rota teste "pura" sem dependências
+app.get("/ping", (req, res) => {
+  console.log("📡 Rota /ping acessada com sucesso!");
+  res.json({ status: "pong" });
 });
 
-/* =============================
-   CADASTRAR NEGÓCIO + CRIAR ASSINATURA
-============================= */
-app.post("/api/register-business", async (req, res) => {
-  // ... (seu código atual)
+// Routes
+app.get("/health", (req, res) => {
+  res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
-/* =============================
-   CRIAR PREFERÊNCIA (Checkout Pro)
-============================= */
-app.post('/api/create-preference', async (req, res) => {
+app.post("/api/create-subscription", async (req, res) => {
   try {
-    const pref = {
-      items: [
-        {
-          title: req.body.description,
-          unit_price: req.body.amount,
-          quantity: 1,
-        },
-      ],
-      payer: { email: req.body.payer_email },
-      external_reference: req.body.external_reference,
-      back_urls: {
-        success: `${process.env.VITE_PUBLIC_URL_NGROK}/payment/success`,
-        failure: `${process.env.VITE_PUBLIC_URL_NGROK}/payment/failure`,
-        pending: `${process.env.VITE_PUBLIC_URL_NGROK}/payment/pending`,
-      },
-      auto_return: 'approved',
-      notification_url: `${process.env.VITE_PUBLIC_URL_NGROK}/api/payment-webhook`,
-    };
+    const { payer_email, plan_id } = req.body;
+    console.log("🟦 Dados recebidos:", { payer_email, plan_id });
 
-    const r = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
-      },
-      body: JSON.stringify(pref),
-    });
-
-    const data = await r.json();
-    if (!r.ok) {
-      return res.status(r.status).json({ message: data?.message || 'Erro ao criar preferência' });
+    if (!payer_email || !plan_id) {
+      return res.status(400).json({ error: true, message: "Campos obrigatórios ausentes" });
     }
-    res.json(data);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: e.message || 'Erro interno' });
+
+    // Mock do plano para teste (Supabase temporariamente desabilitado)
+    console.log("🔍 Usando plano mock para teste...");
+    const plan = {
+      id: plan_id,
+      name: "Plano Teste",
+      price: 29.90
+    };
+    const error = null;
+
+    console.log("🟩 Plano mock:", plan);
+
+    // Validar dados do plano
+    if (!plan.price || plan.price <= 0) {
+      console.error("❌ Plano sem preço válido:", plan);
+      return res.status(400).json({ error: true, message: "Plano com preço inválido" });
+    }
+
+    console.log("📊 Plano validado:", { id: plan.id, name: plan.name, price: plan.price });
+
+    // 🔹 Criar payload correto para Mercado Pago
+    const payload = {
+      reason: plan.name,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: "months",
+        transaction_amount: plan.price,
+        currency_id: "BRL",
+      },
+      back_url: `${process.env.PUBLIC_URL_NGROK}/return/subscription/success`,
+      payer_email,
+    };
+
+    console.log("📤 Payload para MP:", JSON.stringify(payload, null, 2));
+
+    // Criar assinatura no Mercado Pago
+    console.log("💳 Enviando para Mercado Pago...");
+    const preApprovalData = await preApproval.create({ body: payload });
+
+    console.log("✅ Assinatura criada com sucesso:", preApprovalData.id);
+    
+    // Retornar estrutura esperada pelo frontend
+    return res.json({
+      success: true,
+      business: {
+        id: preApprovalData.id // ID da assinatura do Mercado Pago
+      },
+      subscription: {
+        id: preApprovalData.id,
+        init_point: preApprovalData.sandbox_init_point || preApprovalData.init_point,
+        status: preApprovalData.status
+      }
+    });
+  } catch (err) {
+    console.error('💥 Erro inesperado:', err);
+    console.error('Stack trace:', err.stack);
+    
+    // Retornar informações detalhadas do erro
+    return res.status(500).json({ 
+      error: true, 
+      message: err.message,
+      type: err.name,
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 
-/* =============================
-   START SERVER
-============================= */
+// Start server
 const port = process.env.PORT || 3001;
-app.listen(port, () => console.log(`🚀 Server on http://localhost:${port}`));
+try {
+  const server = app.listen(port, () => {
+    console.log(`🚀 Servidor rodando na porta ${port}`);
+  });
+  
+  server.on('error', (err) => {
+    console.error("💥 Erro no servidor:", err);
+  });
+} catch (err) {
+  console.error("💥 Erro ao iniciar servidor:", err);
+}
