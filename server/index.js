@@ -17,7 +17,7 @@ process.on("unhandledRejection", (reason, promise) => {
 
 import express from "express";
 import cors from "cors";
-import { MercadoPagoConfig, PreApproval } from "mercadopago";
+import { MercadoPagoConfig, PreApproval, Preference } from "mercadopago";
 import { createClient } from "@supabase/supabase-js";
 
 const app = express();
@@ -143,6 +143,59 @@ app.post("/api/create-subscription", async (req, res) => {
       message: err.message,
       type: err.name,
       details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+  }
+});
+
+// Rota para criar preferência de pagamento único (checkout normal)
+app.post("/api/create-preference", async (req, res) => {
+  console.log("🟦 [API] /api/create-preference chamada!");
+  console.log("🟩 Dados recebidos:", req.body);
+  try {
+    const { title, quantity, price } = req.body;
+    console.log("� Dados processados:", { title, quantity, price });
+
+    const client = new MercadoPagoConfig({
+      accessToken: process.env.MP_ACCESS_TOKEN,
+    });
+    const preference = new Preference(client);
+
+    const result = await preference.create({
+      body: {
+        items: [
+          {
+            title: title || "Plano Premium",
+            quantity: quantity || 1,
+            unit_price: Number(price || 199.9),
+            currency_id: "BRL",
+          },
+        ],
+        back_urls: {
+          success: `${process.env.PUBLIC_URL_NGROK}/return/payment/success`,
+          failure: `${process.env.PUBLIC_URL_NGROK}/return/payment/failure`,
+          pending: `${process.env.PUBLIC_URL_NGROK}/return/payment/pending`,
+        },
+        auto_return: "approved",
+      },
+    });
+
+    console.log("✅ Preferência criada com sucesso:", result.id);
+
+    res.status(200).json({
+      success: true,
+      init_point: result.sandbox_init_point || result.init_point,
+    });
+  } catch (error) {
+    console.error("❌ Erro ao criar preferência de pagamento:", error);
+    console.error("💥 Detalhes do erro:", {
+      message: error.message,
+      status: error.status,
+      cause: error.cause
+    });
+    res.status(500).json({
+      success: false,
+      message: "Erro ao criar preferência de pagamento",
+      error: error.message,
     });
   }
 });
