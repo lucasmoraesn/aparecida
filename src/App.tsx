@@ -10,7 +10,6 @@ import TouristAttractions from './pages/TouristAttractions';
 import Events from './pages/Events';
 import AllEvents from './pages/AllEvents';
 import BusinessRegistration from './pages/BusinessRegistration';
-import Payment from './pages/Payment';
 
 function App() {
   return (
@@ -25,7 +24,6 @@ function App() {
         <Route path="/eventos" element={<Events />} />
         <Route path="/todos-eventos" element={<AllEvents />} />
         <Route path="/cadastrar-negocio" element={<BusinessRegistration />} />
-        <Route path="/payment" element={<Payment />} />
       </Routes>
       <Footer />
     </div>

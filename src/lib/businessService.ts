@@ -61,8 +61,8 @@ export class BusinessService {
       }));
    }
 
-   // 🔹 Criar cadastro de negócio + assinatura (chama backend!)
-   static async registerBusiness(registration: BusinessRegistration): Promise<{ business_id: string; checkout_link: string }> {
+   // 🔹 Criar cadastro de negócio + pagamento PagBank (chama backend!)
+   static async registerBusiness(registration: BusinessRegistration): Promise<{ success: boolean; business_id: string; order_id: string; status: string; message: string }> {
       const response = await fetch(`${this.API_BASE}/api/register-business`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
@@ -75,10 +75,7 @@ export class BusinessService {
       }
 
       const result = await response.json();
-      return {
-         business_id: result.business.id,
-         checkout_link: result.subscription.checkout_link
-      };
+      return result;
    }
 
    // 🔹 Criar cadastro de negócio apenas (sem assinatura - DEPRECATED)

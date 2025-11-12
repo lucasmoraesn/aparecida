@@ -300,16 +300,22 @@ const BusinessRegistration: React.FC = () => {
       // Processar pagamento direto com PagBank
       const response = await BusinessService.registerBusiness(registrationData);
       
+      console.log('✅ Resposta do backend:', response);
+      
       // Pagamento foi processado - mostrar resultado
-      if (response.success) {
-        alert('✅ Pagamento aprovado! Seu estabelecimento foi cadastrado com sucesso.');
+      if (response.success && response.status === 'PAID') {
+        alert(`✅ ${response.message}\n\nID do Pedido: ${response.order_id}\nStatus: ${response.status}`);
+        navigate('/');
+      } else if (response.success) {
+        alert(`⏳ ${response.message}\n\nSeu pagamento está sendo processado.`);
         navigate('/');
       } else {
-        throw new Error('Pagamento não aprovado');
+        throw new Error(response.message || 'Pagamento não aprovado');
       }
     } catch (error) {
-      console.error('Erro ao enviar formulário:', error);
-      alert('Erro ao enviar formulário. Tente novamente.');
+      console.error('❌ Erro ao enviar formulário:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      alert(`❌ Erro ao processar pagamento:\n\n${errorMessage}\n\nTente novamente.`);
     } finally {
       setIsSubmitting(false);
     }
