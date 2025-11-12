@@ -5,12 +5,16 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "start:prod": "NODE_ENV=production node index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Backend do projeto Aparecida (Node + Express + Supabase + Mercado Pago)",
+  "description": "Backend do projeto Aparecida (Node + Express + Supabase + Mercado Pago + PagBank)",
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
     "axios": "^1.13.2",
@@ -20,6 +24,7 @@
     "node-fetch": "^2.7.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "vitest": "^1.6.1"
   }
 }
