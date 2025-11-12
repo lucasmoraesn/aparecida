@@ -163,19 +163,19 @@ app.post('/api/create-preference', async (req, res) => {
       payer: { email: req.body.payer_email },
       external_reference: req.body.external_reference,
       back_urls: {
-        success: `${process.env.VITE_PUBLIC_URL_NGROK}/payment/success`,
-        failure: `${process.env.VITE_PUBLIC_URL_NGROK}/payment/failure`,
-        pending: `${process.env.VITE_PUBLIC_URL_NGROK}/payment/pending`,
+        success: `${process.env.PUBLIC_URL_NGROK}/payment/success`,
+        failure: `${process.env.PUBLIC_URL_NGROK}/payment/failure`,
+        pending: `${process.env.PUBLIC_URL_NGROK}/payment/pending`,
       },
       auto_return: 'approved',
-      notification_url: `${process.env.VITE_PUBLIC_URL_NGROK}/api/payment-webhook`,
+      notification_url: `${process.env.PUBLIC_URL_NGROK}/api/payment-webhook`,
     };
 
     const r = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
       },
       body: JSON.stringify(pref),
     });
@@ -188,6 +188,65 @@ app.post('/api/create-preference', async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: e.message || 'Erro interno' });
+  }
+});
+
+/* =============================
+   WEBHOOK DE PAGAMENTO (Checkout Pro)
+============================= */
+app.post('/api/payment-webhook', async (req, res) => {
+  try {
+    console.log('📩 Webhook recebido do Mercado Pago:', req.body);
+
+    const { type, data } = req.body;
+
+    // Webhook do MP envia notification type "payment"
+    if (type === 'payment' && data?.id) {
+      const paymentId = data.id;
+      
+      // Consultar detalhes do pagamento na API do MP
+      const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('❌ Erro ao consultar pagamento:', response.statusText);
+        return res.status(200).json({ received: true }); // Retorna 200 para não reenviar
+      }
+
+      const payment = await response.json();
+      console.log('💳 Detalhes do pagamento:', payment);
+
+      const externalReference = payment.external_reference;
+      const status = payment.status;
+
+      if (externalReference) {
+        // Atualizar status no Supabase
+        const { error: updateError } = await supabase
+          .from('business_registrations')
+          .update({ 
+            payment_status: status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', externalReference);
+
+        if (updateError) {
+          console.error('❌ Erro ao atualizar status no Supabase:', updateError);
+        } else {
+          console.log(`✅ Status do pedido ${externalReference} atualizado para: ${status}`);
+        }
+      }
+    }
+
+    // Sempre retornar 200 para o MP não reenviar
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error('❌ Erro no webhook:', error);
+    res.status(200).json({ received: true }); // Retorna 200 mesmo com erro
   }
 });
 
