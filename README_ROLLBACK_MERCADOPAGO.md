@@ -44,11 +44,13 @@ Reverter a integração do PagBank e restaurar o Mercado Pago (Checkout Pro) com
 cd server
 cp .env.example .env
 # Edite .env com suas credenciais
+# Access Token começa com APP_USR-
 
 # Frontend
 cd ..
 cp .env.local.example .env.local
 # Edite .env.local com suas credenciais
+# Public Key começa com TEST- (sandbox) ou PROD- (produção)
 ```
 
 ### 2. Instalar dependências

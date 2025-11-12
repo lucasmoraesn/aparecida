@@ -45,18 +45,21 @@ Comprador (Buyer): Para fazer compras
 1. Faça login com a conta de **vendedor de teste**
 2. Acesse: https://www.mercadopago.com.br/developers/panel/credentials
 3. Vá em **Credenciais de teste**
-4. Copie o **Access Token**
+4. Copie o **Access Token** (começa com `APP_USR-`)
 
 ```
 Exemplo:
-TEST-1234567890123456-010100-abcdef1234567890abcdef1234567890-123456789
+APP_USR-1234567890123456-010100-abcdef1234567890abcdef1234567890-123456789
 ```
 
 ### Public Key (Frontend - Opcional)
-Se precisar usar o SDK no frontend:
+Se precisar usar o SDK no frontend (começa com `TEST-` no sandbox ou `PROD-` em produção):
 ```
-Exemplo:
-TEST-abc123-010100-def456-ghi789
+Exemplo Sandbox:
+TEST-abc12345-678901-def234-ghi567890
+
+Exemplo Produção:
+PROD-abc12345-678901-def234-ghi567890
 ```
 
 ---
@@ -65,8 +68,8 @@ TEST-abc123-010100-def456-ghi789
 
 ### Backend (`server/.env`)
 ```env
-# Mercado Pago
-MERCADO_PAGO_ACCESS_TOKEN=TEST-1234567890123456-010100-abcdef1234567890abcdef1234567890-123456789
+# Mercado Pago (Access Token começa com APP_USR-)
+MERCADO_PAGO_ACCESS_TOKEN=APP_USR-1234567890123456-010100-abcdef1234567890abcdef1234567890-123456789
 
 # URL pública (ngrok ou similar) para webhooks
 PUBLIC_URL_NGROK=https://seu-dominio.ngrok-free.app
@@ -81,8 +84,8 @@ PORT=3001
 
 ### Frontend (`.env.local`)
 ```env
-# Mercado Pago
-VITE_MERCADO_PAGO_PUBLIC_KEY=TEST-abc123-010100-def456-ghi789
+# Mercado Pago (Public Key começa com TEST- no sandbox ou PROD- em produção)
+VITE_MERCADO_PAGO_PUBLIC_KEY=TEST-abc12345-678901-def234-ghi567890
 
 # URL pública (ngrok ou similar) - usada para back_urls
 VITE_PUBLIC_URL_NGROK=https://seu-dominio.ngrok-free.app

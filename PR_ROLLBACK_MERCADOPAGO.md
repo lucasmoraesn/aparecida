@@ -53,10 +53,12 @@ Este PR reverte a integração do PagBank e restaura o **Mercado Pago (Checkout 
 cd server
 cp .env.example .env
 # Edite .env com credenciais de teste do MP
+# Access Token começa com APP_USR-
 
 # Frontend
 cp .env.local.example .env.local
 # Edite .env.local com credenciais de teste do MP
+# Public Key começa com TEST- (sandbox) ou PROD- (produção)
 ```
 
 ### 2. Iniciar ngrok
