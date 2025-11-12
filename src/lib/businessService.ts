@@ -61,8 +61,28 @@ export class BusinessService {
       }));
    }
 
-   // 🔹 Criar cadastro de negócio (chama backend!)
-      static async createRegistration(registration: BusinessRegistration): Promise<string> {
+   // 🔹 Criar cadastro de negócio + assinatura (chama backend!)
+   static async registerBusiness(registration: BusinessRegistration): Promise<{ business_id: string; checkout_link: string }> {
+      const response = await fetch(`${this.API_BASE}/api/register-business`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(registration),
+      });
+
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         throw new Error(errorData.message || 'Erro ao criar cadastro');
+      }
+
+      const result = await response.json();
+      return {
+         business_id: result.business.id,
+         checkout_link: result.subscription.checkout_link
+      };
+   }
+
+   // 🔹 Criar cadastro de negócio apenas (sem assinatura - DEPRECATED)
+   static async createRegistration(registration: BusinessRegistration): Promise<string> {
       const response = await fetch(`${this.API_BASE}/api/register-business`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
@@ -76,7 +96,7 @@ export class BusinessService {
 
       const result = await response.json();
       return result.business.id;
-      }
+   }
 
 
    // 🔹 Buscar cadastro por ID (somente leitura → Supabase)

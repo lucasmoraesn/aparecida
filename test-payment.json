@@ -1,0 +1,18 @@
+﻿{
+  "establishment_name": "Restaurante Teste PagBank",
+  "category": "Restaurante",
+  "address": "Rua Teste, 123 - Centro",
+  "location": "Aparecida, SP",
+  "photos": ["https://exemplo.com/foto1.jpg"],
+  "whatsapp": "12999887766",
+  "phone": "1233445566",
+  "description": "Restaurante de teste para validar integração PagBank",
+  "plan_id": "b6192eba-cf12-4bbf-bd91-686d961b1f13",
+  "payer_email": "comprador@teste.com.br",
+  "card_number": "4111111111111111",
+  "card_exp_month": "12",
+  "card_exp_year": "2030",
+  "card_security_code": "123",
+  "card_holder_name": "JOSE SILVA TESTE",
+  "card_holder_tax_id": "12345678909"
+}

@@ -13,10 +13,11 @@
   "description": "Backend do projeto Aparecida (Node + Express + Supabase + Mercado Pago)",
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
+    "axios": "^1.13.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
-    "mercadopago": "^2.0.0"
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

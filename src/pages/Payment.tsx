@@ -304,9 +304,11 @@ const Payment: React.FC = () => {
                   : `Criar Pagamento R$ ${plan.price.toFixed(2).replace('.', ',')}`}
               </button>
 
-              <p className="text-xs text-gray-500 mt-4 text-center">
-                <strong>MODO SANDBOX:</strong> Use os dados de teste do Mercado Pago para testar o pagamento.
-              </p>
+              {import.meta.env.VITE_MERCADO_PAGO_ACCESS_TOKEN?.startsWith('TEST-') && (
+                <p className="text-xs text-gray-500 mt-4 text-center">
+                  <strong>MODO SANDBOX:</strong> Use os dados de teste do Mercado Pago para testar o pagamento.
+                </p>
+              )}
 
               <p className="text-xs text-gray-500 mt-4 text-center">
                 Ao finalizar o pagamento, você concorda com nossos{' '}

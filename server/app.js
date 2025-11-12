@@ -5,6 +5,9 @@ import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
+console.log("🚀 APP.JS INICIADO - Servidor app.js está rodando!");
+console.log("🔑 Token carregado:", process.env.MERCADO_PAGO_ACCESS_TOKEN?.slice(0, 10) + "...");
+
 // Normalize and validate public URL (ngrok) for callbacks
 const rawPublicUrl = process.env.VITE_PUBLIC_URL_NGROK || process.env.PUBLIC_URL_NGROK || process.env.PUBLIC_URL || process.env.VITE_PUBLIC_URL;
 let BACK_URL_BASE = null;
@@ -22,8 +25,8 @@ app.use(express.json());
 app.use(cors({ origin: ["http://localhost:5173", /\.ngrok-free\.app$/] }));
 
 const MP_USE_SANDBOX = (String(process.env.MP_USE_SANDBOX || '').toLowerCase() === 'true')
-  || (process.env.MP_ACCESS_TOKEN || '').toUpperCase().startsWith('TEST');
-const MP_API_BASE = MP_USE_SANDBOX ? 'https://api.mercadopago.com/sandbox' : 'https://api.mercadopago.com';
+  || (process.env.MERCADO_PAGO_ACCESS_TOKEN || '').toUpperCase().startsWith('TEST');
+const MP_API_BASE = "https://api.mercadopago.com";
 
 // Supabase client
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -83,7 +86,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
        amount = plan.price;
        frequency = 1;
        frequency_type = 'months';
-       payer_email = body.payer_email || 'test_user@example.com';
+       payer_email = body.payer_email || 'test_user_3786201454678535828@testuser.com';
 
        payload = {
          reason: plan.name || 'Plano de Assinatura',
@@ -104,7 +107,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
        amount = Number(body.amount) || 10.0;
        frequency = Number(body.frequency) || 1;
        frequency_type = body.frequency_type || 'months';
-       payer_email = body.payer_email || 'test_user@example.com';
+       payer_email = body.payer_email || 'test_user_3786201454678535828@testuser.com';
 
        payload = {
          reason: body.planTitle || 'Plano de Assinatura',
@@ -122,14 +125,29 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
        };
      }
 
-     if (typeof fetch === 'undefined') {
-       const mod = await import('node-fetch');
+     if (typeof fetch === "undefined") {
+       const mod = await import("node-fetch");
        global.fetch = mod.default;
      }
 
+     const MP_API_BASE = "https://api.mercadopago.com";
+
+     console.log("🔍 MP DEBUG:", {
+       tokenPrefix: process.env.MERCADO_PAGO_ACCESS_TOKEN?.slice(0, 6),
+       tokenLength: process.env.MERCADO_PAGO_ACCESS_TOKEN?.length,
+     });
+
+     console.log("🔍 MP DEBUG:", {
+       tokenPrefix: process.env.MERCADO_PAGO_ACCESS_TOKEN?.slice(0, 5),
+       url: `${MP_API_BASE}/preapproval`,
+     });
+
      const r = await fetch(`${MP_API_BASE}/preapproval`, {
-       method: 'POST',
-       headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+       method: "POST",
+       headers: {
+         Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+         "Content-Type": "application/json",
+       },
        body: JSON.stringify(payload),
      });
 
