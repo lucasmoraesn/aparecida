@@ -95,32 +95,10 @@ app.post("/api/register-business", async (req, res) => {
     if (error) throw error;
     console.log("✅ Cadastro inserido no Supabase:", data);
 
-    // 2. Criar assinatura (Preapproval) no Mercado Pago
-    const preapprovalBody = {
-      back_url: `${process.env.PUBLIC_URL_NGROK}/subscription/success`,
-      reason: `Plano de Assinatura - ${establishment_name}`,
-      external_reference: data.id.toString(),
-      payer_email: payer_email || "test_user_123456@testuser.com",
-      auto_recurring: {
-        frequency: frequency || 1,
-        frequency_type: frequency_type || "months",
-        transaction_amount: amount || 49.9,
-        currency_id: "BRL",
-      },
-    };
-
-    console.log("📦 Payload Preapproval enviado ao MP:", JSON.stringify(preapprovalBody, null, 2));
-
-    const subscription = await preApproval.create({ body: preapprovalBody });
-
-    console.log("✅ Assinatura criada no MP:", subscription);
-
-    // 3. Retorna init_point para o front redirecionar
+    // 2. Retorna apenas o businessId para o front
     res.json({
       success: true,
-      business: data,
-      init_point: subscription.init_point || subscription.sandbox_init_point,
-      preapproval_id: subscription.id,
+      businessId: data.id,
     });
   } catch (err) {
     console.error("❌ Erro no fluxo completo:", err.message, err.response?.data || "");
@@ -128,6 +106,85 @@ app.post("/api/register-business", async (req, res) => {
       error: true,
       message: err.message,
       details: err.response?.data || null,
+    });
+  }
+});
+
+/* =============================
+   CRIAR ASSINATURA (Preapproval)
+============================= */
+app.post('/api/create-subscription', async (req, res) => {
+  try {
+    const { planId, businessId, customer } = req.body;
+    console.log("📥 Criando assinatura:", { planId, businessId, customer });
+
+    // 1. Buscar informações do plano
+    const { data: plan, error: planError } = await supabase
+      .from('business_plans')
+      .select('name, price')
+      .eq('id', planId)
+      .single();
+
+    if (planError) throw new Error('Plano não encontrado');
+
+    // 2. Criar preapproval no Mercado Pago
+    const preapprovalBody = {
+      back_url: `${process.env.PUBLIC_URL_NGROK}/subscription/success?business_id=${businessId}`,
+      reason: plan.name,
+      external_reference: businessId.toString(),
+      payer_email: customer.email,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: 'months',
+        transaction_amount: plan.price,
+        currency_id: 'BRL',
+      },
+    };
+
+    console.log("📦 Payload Preapproval:", JSON.stringify(preapprovalBody, null, 2));
+
+    const mpResponse = await preApproval.create({ body: preapprovalBody });
+
+    console.log("✅ Preapproval criado no MP:", mpResponse.id);
+
+    // 3. Salvar assinatura no banco
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .insert([{
+        business_id: businessId,
+        preapproval_id: mpResponse.id,
+        plan_id: planId,
+        status: 'pending',
+        amount_cents: Math.round(plan.price * 100),
+        frequency: 1,
+        frequency_type: 'months',
+        customer_email: customer.email,
+        customer_name: customer.name || null,
+        customer_tax_id: customer.tax_id || null,
+      }])
+      .select()
+      .single();
+
+    if (subError) {
+      console.error("❌ Erro ao salvar assinatura:", subError);
+      throw new Error('Erro ao salvar assinatura no banco');
+    }
+
+    console.log("✅ Assinatura salva no DB:", subscription.id);
+
+    // 4. Retornar init_point para redirecionamento
+    res.json({
+      success: true,
+      init_point: mpResponse.init_point || mpResponse.sandbox_init_point,
+      preapproval_id: mpResponse.id,
+      subscription_id: subscription.id,
+    });
+
+  } catch (err) {
+    console.error("❌ Erro ao criar assinatura:", err.message);
+    res.status(500).json({
+      error: true,
+      message: err.message,
     });
   }
 });
@@ -227,11 +284,11 @@ app.post('/api/payment-webhook', async (req, res) => {
       }
     }
 
-    // Webhook de assinatura (authorized_payment)
+    // Webhook de pagamento autorizado da assinatura (authorized_payment)
     if (type === 'authorized_payment' && data?.id) {
       const authorizedPaymentId = data.id;
       
-      console.log('💰 Cobrança autorizada da assinatura:', authorizedPaymentId);
+      console.log('💰 Cobrança autorizada:', authorizedPaymentId);
       
       // Consultar detalhes da cobrança
       const response = await fetch(`https://api.mercadopago.com/authorized_payments/${authorizedPaymentId}`, {
@@ -251,12 +308,83 @@ app.post('/api/payment-webhook', async (req, res) => {
       console.log('💳 Detalhes da cobrança:', authorizedPayment);
 
       const preapprovalId = authorizedPayment.preapproval_id;
-      const status = authorizedPayment.status;
+      const paymentStatus = authorizedPayment.status;
+      const amount = authorizedPayment.transaction_amount;
 
       if (preapprovalId) {
-        // Buscar business_id via preapproval_id (você pode guardar isso no DB)
-        // Por ora, apenas logamos
-        console.log(`✅ Cobrança ${authorizedPaymentId} da assinatura ${preapprovalId}: ${status}`);
+        // Buscar assinatura pelo preapproval_id
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('id, business_id')
+          .eq('preapproval_id', preapprovalId)
+          .single();
+
+        if (subscription) {
+          // Registrar pagamento
+          await supabase
+            .from('payments')
+            .insert([{
+              business_id: subscription.business_id,
+              subscription_id: subscription.id,
+              mp_payment_id: authorizedPaymentId,
+              status: paymentStatus,
+              amount_cents: Math.round(amount * 100),
+              payment_method: 'subscription',
+              paid_at: paymentStatus === 'approved' ? new Date().toISOString() : null,
+            }]);
+
+          // Atualizar assinatura para 'active' e calcular next_charge_at
+          if (paymentStatus === 'approved') {
+            const nextCharge = new Date();
+            nextCharge.setMonth(nextCharge.getMonth() + 1);
+
+            await supabase
+              .from('subscriptions')
+              .update({
+                status: 'active',
+                next_charge_at: nextCharge.toISOString(),
+              })
+              .eq('id', subscription.id);
+
+            console.log(`✅ Pagamento ${authorizedPaymentId} registrado e assinatura ${subscription.id} ativada`);
+          }
+        }
+      }
+    }
+
+    // Webhook de mudanças no preapproval (paused, cancelled, etc)
+    if (type === 'preapproval' && data?.id) {
+      const preapprovalId = data.id;
+      
+      console.log('📋 Atualização de preapproval:', preapprovalId);
+      
+      // Consultar detalhes do preapproval
+      const response = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('❌ Erro ao consultar preapproval:', response.statusText);
+        return res.status(200).json({ received: true });
+      }
+
+      const preapproval = await response.json();
+      console.log('📄 Detalhes do preapproval:', preapproval);
+
+      const status = preapproval.status;
+
+      // Atualizar status da assinatura no banco
+      const { error: updateError } = await supabase
+        .from('subscriptions')
+        .update({ status: status })
+        .eq('preapproval_id', preapprovalId);
+
+      if (!updateError) {
+        console.log(`✅ Assinatura ${preapprovalId} atualizada para: ${status}`);
       }
     }
 

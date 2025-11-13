@@ -61,8 +61,8 @@ export class BusinessService {
       }));
    }
 
-   // 🔹 Criar cadastro de negócio + assinatura (chama backend!)
-      static async createRegistration(registration: BusinessRegistration): Promise<{ businessId: string; initPoint: string; preapprovalId: string }> {
+   // 🔹 Criar cadastro de negócio (apenas salva no DB)
+   static async createRegistration(registration: BusinessRegistration): Promise<number> {
       const response = await fetch(`${this.API_BASE}/api/register-business`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
@@ -75,12 +75,29 @@ export class BusinessService {
       }
 
       const result = await response.json();
-      return {
-         businessId: result.business.id,
-         initPoint: result.init_point,
-         preapprovalId: result.preapproval_id
-      };
+      return result.businessId;
+   }
+
+   // 🔹 Criar assinatura (preapproval)
+   static async createSubscription(planId: number, businessId: number, customer: { email: string; name?: string; tax_id?: string }): Promise<{ initPoint: string; preapprovalId: string; subscriptionId: number }> {
+      const response = await fetch(`${this.API_BASE}/api/create-subscription`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ planId, businessId, customer }),
+      });
+
+      if (!response.ok) {
+         const errorData = await response.json().catch(() => ({}));
+         throw new Error(errorData.message || 'Erro ao criar assinatura');
       }
+
+      const result = await response.json();
+      return {
+         initPoint: result.init_point,
+         preapprovalId: result.preapproval_id,
+         subscriptionId: result.subscription_id,
+      };
+   }
 
 
    // 🔹 Buscar cadastro por ID (somente leitura → Supabase)

@@ -273,13 +273,27 @@ const BusinessRegistration: React.FC = () => {
         payer_email: formData.payerEmail,
       };
 
-      const { businessId, initPoint, preapprovalId } = await BusinessService.createRegistration(registrationData);
-      await BusinessService.sendAdminEmail(registrationData);
+      // 1. Criar cadastro do negócio
+      const businessId = await BusinessService.createRegistration(registrationData);
+      console.log('✅ Cadastro criado:', businessId);
 
-      console.log('✅ Cadastro criado:', { businessId, preapprovalId });
+      // 2. Criar assinatura
+      const { initPoint, preapprovalId, subscriptionId } = await BusinessService.createSubscription(
+        selectedPlan.id,
+        businessId,
+        {
+          email: formData.payerEmail,
+          name: formData.establishmentName,
+        }
+      );
+
+      console.log('✅ Assinatura criada:', { subscriptionId, preapprovalId });
       console.log('🔗 Redirecionando para assinatura MP:', initPoint);
 
-      // Redirecionar para o checkout de assinatura do Mercado Pago
+      // 3. Enviar email admin (opcional, não bloqueante)
+      BusinessService.sendAdminEmail(registrationData).catch(console.error);
+
+      // 4. Redirecionar para o checkout de assinatura do Mercado Pago
       window.location.href = initPoint;
     } catch (error) {
       console.error('Erro ao enviar formulário:', error);

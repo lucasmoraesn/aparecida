@@ -11,6 +11,7 @@ import Events from './pages/Events';
 import AllEvents from './pages/AllEvents';
 import BusinessRegistration from './pages/BusinessRegistration';
 import Payment from './pages/Payment';
+import SubscriptionSuccess from './pages/SubscriptionSuccess';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/todos-eventos" element={<AllEvents />} />
         <Route path="/cadastrar-negocio" element={<BusinessRegistration />} />
         <Route path="/payment" element={<Payment />} />
+        <Route path="/subscription/success" element={<SubscriptionSuccess />} />
       </Routes>
       <Footer />
     </div>
