@@ -5,9 +5,9 @@ import { MercadoPagoConfig, PreApproval } from "mercadopago";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
-console.log("[MP_ACCESS_TOKEN]", process.env.MP_ACCESS_TOKEN);
+console.log("[MERCADO_PAGO_ACCESS_TOKEN]", process.env.MERCADO_PAGO_ACCESS_TOKEN);
 
-console.log("[MP_ACCESS_TOKEN length]", process.env.MP_ACCESS_TOKEN?.length);
+console.log("[MERCADO_PAGO_ACCESS_TOKEN length]", process.env.MERCADO_PAGO_ACCESS_TOKEN?.length);
 
 const app = express();
 app.use(express.json());
@@ -19,7 +19,7 @@ app.use(
 
 // --- SDK v2 Mercado Pago ---
 const mpClient = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN,
+  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
 });
 const preApproval = new PreApproval(mpClient);
 
