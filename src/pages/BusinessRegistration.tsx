@@ -273,12 +273,14 @@ const BusinessRegistration: React.FC = () => {
         payer_email: formData.payerEmail,
       };
 
-      const registrationId = await BusinessService.createRegistration(registrationData);
+      const { businessId, initPoint, preapprovalId } = await BusinessService.createRegistration(registrationData);
       await BusinessService.sendAdminEmail(registrationData);
 
-      navigate('/payment', {
-        state: { registrationId, formData, plan: selectedPlan },
-      });
+      console.log('✅ Cadastro criado:', { businessId, preapprovalId });
+      console.log('🔗 Redirecionando para assinatura MP:', initPoint);
+
+      // Redirecionar para o checkout de assinatura do Mercado Pago
+      window.location.href = initPoint;
     } catch (error) {
       console.error('Erro ao enviar formulário:', error);
       alert('Erro ao enviar formulário. Tente novamente.');

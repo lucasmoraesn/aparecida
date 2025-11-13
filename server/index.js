@@ -95,40 +95,32 @@ app.post("/api/register-business", async (req, res) => {
     if (error) throw error;
     console.log("✅ Cadastro inserido no Supabase:", data);
 
-    // 2. Criar assinatura no Mercado Pago via SDK
-    const startDate = new Date(Date.now() + 10 * 60 * 1000);
-    startDate.setSeconds(0, 0);
-    const endDate = new Date(startDate);
-    endDate.setFullYear(endDate.getFullYear() + 1);
-    endDate.setSeconds(0, 0);
-
-    const payload = {
-      reason: "Plano de Assinatura",
-      external_reference: "sub_" + Date.now(),
+    // 2. Criar assinatura (Preapproval) no Mercado Pago
+    const preapprovalBody = {
+      back_url: `${process.env.PUBLIC_URL_NGROK}/subscription/success`,
+      reason: `Plano de Assinatura - ${establishment_name}`,
+      external_reference: data.id.toString(),
+      payer_email: payer_email || "test_user_123456@testuser.com",
       auto_recurring: {
         frequency: frequency || 1,
         frequency_type: frequency_type || "months",
         transaction_amount: amount || 49.9,
         currency_id: "BRL",
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
       },
-      back_url: `${process.env.VITE_PUBLIC_URL_NGROK}/return/subscription/success`,
-      notification_url: `${process.env.VITE_PUBLIC_URL_NGROK}/api/webhook`,
-      payer_email: registration.payer_email || "comprador_teste@teste.com",
     };
 
-    console.log("📦 Payload enviado ao MP (SDK):", JSON.stringify(payload, null, 2));
+    console.log("📦 Payload Preapproval enviado ao MP:", JSON.stringify(preapprovalBody, null, 2));
 
-    const subscription = await preApproval.create({ body: payload });
+    const subscription = await preApproval.create({ body: preapprovalBody });
 
-    console.log("✅ Assinatura criada no MP:", subscription.id);
+    console.log("✅ Assinatura criada no MP:", subscription);
 
-    // 3. Retorna para o front: id do cadastro + link do pagamento
+    // 3. Retorna init_point para o front redirecionar
     res.json({
       success: true,
       business: data,
-      subscription,
+      init_point: subscription.init_point || subscription.sandbox_init_point,
+      preapproval_id: subscription.id,
     });
   } catch (err) {
     console.error("❌ Erro no fluxo completo:", err.message, err.response?.data || "");
@@ -138,13 +130,6 @@ app.post("/api/register-business", async (req, res) => {
       details: err.response?.data || null,
     });
   }
-});
-
-/* =============================
-   CADASTRAR NEGÓCIO + CRIAR ASSINATURA
-============================= */
-app.post("/api/register-business", async (req, res) => {
-  // ... (seu código atual)
 });
 
 /* =============================
@@ -239,6 +224,39 @@ app.post('/api/payment-webhook', async (req, res) => {
         } else {
           console.log(`✅ Status do pedido ${externalReference} atualizado para: ${status}`);
         }
+      }
+    }
+
+    // Webhook de assinatura (authorized_payment)
+    if (type === 'authorized_payment' && data?.id) {
+      const authorizedPaymentId = data.id;
+      
+      console.log('💰 Cobrança autorizada da assinatura:', authorizedPaymentId);
+      
+      // Consultar detalhes da cobrança
+      const response = await fetch(`https://api.mercadopago.com/authorized_payments/${authorizedPaymentId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('❌ Erro ao consultar cobrança:', response.statusText);
+        return res.status(200).json({ received: true });
+      }
+
+      const authorizedPayment = await response.json();
+      console.log('💳 Detalhes da cobrança:', authorizedPayment);
+
+      const preapprovalId = authorizedPayment.preapproval_id;
+      const status = authorizedPayment.status;
+
+      if (preapprovalId) {
+        // Buscar business_id via preapproval_id (você pode guardar isso no DB)
+        // Por ora, apenas logamos
+        console.log(`✅ Cobrança ${authorizedPaymentId} da assinatura ${preapprovalId}: ${status}`);
       }
     }
 

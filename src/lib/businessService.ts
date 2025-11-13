@@ -61,8 +61,8 @@ export class BusinessService {
       }));
    }
 
-   // 🔹 Criar cadastro de negócio (chama backend!)
-      static async createRegistration(registration: BusinessRegistration): Promise<string> {
+   // 🔹 Criar cadastro de negócio + assinatura (chama backend!)
+      static async createRegistration(registration: BusinessRegistration): Promise<{ businessId: string; initPoint: string; preapprovalId: string }> {
       const response = await fetch(`${this.API_BASE}/api/register-business`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
@@ -75,7 +75,11 @@ export class BusinessService {
       }
 
       const result = await response.json();
-      return result.business.id;
+      return {
+         businessId: result.business.id,
+         initPoint: result.init_point,
+         preapprovalId: result.preapproval_id
+      };
       }
 
 
