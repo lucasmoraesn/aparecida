@@ -273,12 +273,16 @@ const BusinessRegistration: React.FC = () => {
         payer_email: formData.payerEmail,
       };
 
+      console.log('📤 Dados sendo enviados:', registrationData);
+
       // 1. Criar cadastro do negócio
+      console.log('🔄 Criando cadastro do negócio...');
       const businessId = await BusinessService.createRegistration(registrationData);
-      console.log('✅ Cadastro criado:', businessId);
+      console.log('✅ Cadastro criado com ID:', businessId);
 
       // 2. Criar assinatura
-      const { initPoint, preapprovalId, subscriptionId } = await BusinessService.createSubscription(
+      console.log('🔄 Criando assinatura para business:', businessId);
+      const { checkoutUrl, subscriptionId } = await BusinessService.createSubscription(
         selectedPlan.id,
         businessId,
         {
@@ -287,17 +291,21 @@ const BusinessRegistration: React.FC = () => {
         }
       );
 
-      console.log('✅ Assinatura criada:', { subscriptionId, preapprovalId });
-      console.log('🔗 Redirecionando para assinatura MP:', initPoint);
+      console.log('✅ Assinatura criada:', { subscriptionId });
+      console.log('🔗 Redirecionando para checkout de pagamento:', checkoutUrl);
 
       // 3. Enviar email admin (opcional, não bloqueante)
       BusinessService.sendAdminEmail(registrationData).catch(console.error);
 
-      // 4. Redirecionar para o checkout de assinatura do Mercado Pago
-      window.location.href = initPoint;
-    } catch (error) {
-      console.error('Erro ao enviar formulário:', error);
-      alert('Erro ao enviar formulário. Tente novamente.');
+      // 4. Redirecionar para o checkout de pagamento (Stripe)
+      window.location.href = checkoutUrl;
+    } catch (error: any) {
+      console.error('❌ Erro ao enviar formulário:', error);
+      console.error('❌ Mensagem do erro:', error?.message);
+      console.error('❌ Stack do erro:', error?.stack);
+      
+      const errorMessage = error?.message || 'Erro desconhecido ao enviar formulário';
+      alert(`Erro: ${errorMessage}\n\nVerifique o console (F12) para mais detalhes.`);
     } finally {
       setIsSubmitting(false);
     }

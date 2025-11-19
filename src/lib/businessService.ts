@@ -41,20 +41,22 @@ export interface Payment {
 }
 
 export class BusinessService {
-   private static API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+   private static API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_PUBLIC_URL_NGROK || "http://localhost:3001";
 
-   // 🔹 Buscar planos (pode ir direto ao Supabase, só leitura)
+   // 🔹 Buscar planos via backend (evita problemas de RLS)
    static async getPlans(): Promise<BusinessPlan[]> {
-      const { data, error } = await supabase
-         .from('business_plans')
-         .select('id, name, price, description, features')
-         .order('price', { ascending: true });
+      const response = await fetch(`${this.API_BASE}/api/plans`, {
+         method: 'GET',
+         headers: { 'Content-Type': 'application/json' },
+      });
 
-      if (error) {
-         throw new Error(`Erro ao buscar planos: ${error.message}`);
+      if (!response.ok) {
+         throw new Error(`Erro ao buscar planos: ${response.statusText}`);
       }
 
-      return data.map(plan => ({
+      const data = await response.json();
+      
+      return data.map((plan: any) => ({
          ...plan,
          features: plan.features || [],
          is_active: true
@@ -62,41 +64,69 @@ export class BusinessService {
    }
 
    // 🔹 Criar cadastro de negócio (apenas salva no DB)
-   static async createRegistration(registration: BusinessRegistration): Promise<number> {
+   static async createRegistration(registration: BusinessRegistration): Promise<string> {
+      console.log('🔗 URL da API:', this.API_BASE);
+      console.log('📤 Enviando cadastro:', registration);
+      
       const response = await fetch(`${this.API_BASE}/api/register-business`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify(registration),
       });
 
+      console.log('📥 Status da resposta:', response.status, response.statusText);
+
       if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));
-         throw new Error(errorData.message || 'Erro ao criar cadastro');
+         console.error('❌ Erro do servidor:', errorData);
+         throw new Error(errorData.message || `Erro ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
-      return result.businessId;
+      console.log('📥 Resultado do servidor:', result);
+      return result.business_id || result.businessId;
    }
 
-   // 🔹 Criar assinatura (preapproval)
-   static async createSubscription(planId: number, businessId: number, customer: { email: string; name?: string; tax_id?: string }): Promise<{ initPoint: string; preapprovalId: string; subscriptionId: number }> {
+   // 🔹 Criar assinatura
+   // TODO: Integrar com Stripe Checkout
+   static async createSubscription(
+      planId: string, 
+      businessId: string, 
+      customer: { email: string; name?: string; tax_id?: string }
+   ): Promise<{ checkoutUrl: string; subscriptionId: string }> {
+      console.log('📤 Criando assinatura:', { planId, businessId, customer });
+      
       const response = await fetch(`${this.API_BASE}/api/create-subscription`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ planId, businessId, customer }),
       });
 
+      console.log('📥 Status da resposta (subscription):', response.status, response.statusText);
+
       if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));
-         throw new Error(errorData.message || 'Erro ao criar assinatura');
+         console.error('❌ Erro ao criar assinatura:', errorData);
+         
+         // Se retornar 501 (Not Implemented), significa que Stripe ainda não foi configurado
+         if (response.status === 501) {
+            throw new Error('Sistema de pagamento ainda não configurado. Entre em contato com o suporte.');
+         }
+         
+         throw new Error(errorData.message || errorData.error || `Erro ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
-      return {
-         initPoint: result.init_point,
-         preapprovalId: result.preapproval_id,
-         subscriptionId: result.subscription_id,
-      };
+      console.log('📥 Resultado da assinatura:', result);
+      
+      // TODO: Quando Stripe estiver integrado, retornar:
+      // return {
+      //    checkoutUrl: result.checkout_url,
+      //    subscriptionId: result.subscription_id,
+      // };
+      
+      // TEMPORÁRIO: Lançar erro informativo
+      throw new Error('Sistema de pagamento em manutenção. Tente novamente mais tarde.');
    }
 
 

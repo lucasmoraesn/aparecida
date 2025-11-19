@@ -1,33 +1,49 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { MercadoPagoConfig, PreApproval } from "mercadopago";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
-console.log("[MERCADO_PAGO_ACCESS_TOKEN]", process.env.MERCADO_PAGO_ACCESS_TOKEN);
-
-console.log("[MERCADO_PAGO_ACCESS_TOKEN length]", process.env.MERCADO_PAGO_ACCESS_TOKEN?.length);
+console.log('🔍 DEBUG index.js:');
+console.log('  PUBLIC_URL_NGROK:', process.env.PUBLIC_URL_NGROK);
+console.log('  SUPABASE_URL:', process.env.SUPABASE_URL);
 
 const app = express();
+
 app.use(express.json());
+
+// CORS configurado para aceitar requisições do frontend
 app.use(
   cors({
-    origin: ["http://localhost:5173", /\.ngrok-free\.app$/],
+    origin: true,
+    credentials: true
   })
 );
 
-// --- SDK v2 Mercado Pago ---
-const mpClient = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
+// Middleware para debug de requisições
+app.use((req, res, next) => {
+  res.setHeader('ngrok-skip-browser-warning', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Log de todas as requisições para debug
+  console.log(`📥 ${req.method} ${req.path}`, {
+    origin: req.headers.origin,
+    userAgent: req.headers['user-agent']?.substring(0, 50)
+  });
+  
+  next();
 });
-const preApproval = new PreApproval(mpClient);
 
 // --- Supabase (usando service_role no backend) ---
+console.log("[SUPABASE_URL]", process.env.SUPABASE_URL);
+console.log("[SUPABASE_SERVICE_KEY]", process.env.SUPABASE_SERVICE_KEY?.slice(0, 20) + "...");
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
+console.log("✅ Supabase client created");
 
 // Health-check
 app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -54,7 +70,7 @@ app.post("/api/register-business", async (req, res) => {
   try {
     // Recebe dados do front
     const registration = req.body;
-    console.log("📥 Dados recebidos do front:", registration);
+    console.log("📥 Dados recebidos do front:", JSON.stringify(registration, null, 2));
 
     const {
       establishment_name,
@@ -72,327 +88,324 @@ app.post("/api/register-business", async (req, res) => {
       frequency_type,
     } = registration;
 
+    // Validação de campos obrigatórios
+    if (!establishment_name || !category || !address || !location || !photos || !whatsapp || !description || !plan_id) {
+      console.error("❌ Campos obrigatórios faltando:", {
+        establishment_name: !!establishment_name,
+        category: !!category,
+        address: !!address,
+        location: !!location,
+        photos: !!photos,
+        whatsapp: !!whatsapp,
+        description: !!description,
+        plan_id: !!plan_id
+      });
+      return res.status(400).json({
+        error: true,
+        message: "Campos obrigatórios faltando"
+      });
+    }
+
+    console.log("✅ Validação de campos passou");
+
     // 1. Salvar cadastro de negócio no Supabase
+    const insertData = {
+      establishment_name,
+      category,
+      address,
+      location,
+      photos,
+      whatsapp,
+      phone,
+      description,
+      plan_id: parseInt(plan_id), // Garantir que é número
+      created_at: new Date().toISOString(),
+    };
+    
+    console.log("📦 Dados a serem inseridos:", JSON.stringify(insertData, null, 2));
+    
     const { data, error } = await supabase
       .from("business_registrations")
-      .insert([
-        {
-          establishment_name,
-          category,
-          address,
-          location,
-          photos,
-          whatsapp,
-          phone,
-          description,
-          plan_id,
-          created_at: new Date().toISOString(),
-        },
-      ])
+      .insert([insertData])
       .select("id")
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("❌ Erro detalhado do Supabase:", JSON.stringify(error, null, 2));
+      throw new Error(`Erro no Supabase: ${error.message} - ${error.details || ''} - ${error.hint || ''}`);
+    }
     console.log("✅ Cadastro inserido no Supabase:", data);
 
     // 2. Retorna apenas o businessId para o front
     res.json({
       success: true,
-      businessId: data.id,
+      business_id: data.id,
+      businessId: data.id, // Compatibilidade
     });
   } catch (err) {
-    console.error("❌ Erro no fluxo completo:", err.message, err.response?.data || "");
+    console.error("❌ Erro no fluxo completo:");
+    console.error("   Message:", err.message);
+    console.error("   Stack:", err.stack);
+    console.error("   Details:", err.response?.data || err.details || "");
+    
     res.status(500).json({
       error: true,
-      message: err.message,
-      details: err.response?.data || null,
+      message: err.message || "Erro ao processar cadastro",
+      details: err.details || err.response?.data || err.hint || null,
+      code: err.code || null
     });
   }
 });
 
 /* =============================
-   CRIAR ASSINATURA (Preapproval)
+   CRIAR ASSINATURA
+   TODO: Integrar com Stripe Subscriptions
+   
+   Referências:
+   - Stripe Checkout: https://stripe.com/docs/checkout
+   - Stripe Subscriptions: https://stripe.com/docs/billing/subscriptions/build-subscriptions
+   
+   Passos necessários:
+   1. Criar Stripe Customer com customer.email
+   2. Criar Stripe Price baseado no planPrice
+   3. Criar Stripe Checkout Session com mode='subscription'
+   4. Retornar session.url para redirect
+   5. Configurar webhook do Stripe para processar eventos
 ============================= */
 app.post('/api/create-subscription', async (req, res) => {
   try {
     const { planId, businessId, customer } = req.body;
     console.log("📥 Criando assinatura:", { planId, businessId, customer });
 
-    // 1. Buscar informações do plano
+    // Validar email do cliente
+    if (!customer || !customer.email) {
+      return res.status(400).json({ error: 'Email do cliente é obrigatório' });
+    }
+
+    // 1. Buscar plano
     const { data: plan, error: planError } = await supabase
       .from('business_plans')
-      .select('name, price')
+      .select('*')
       .eq('id', planId)
       .single();
 
-    if (planError) throw new Error('Plano não encontrado');
+    if (planError || !plan) {
+      return res.status(404).json({ error: 'Plano não encontrado' });
+    }
 
-    // 2. Criar preapproval no Mercado Pago
-    const preapprovalBody = {
-      back_url: `${process.env.PUBLIC_URL_NGROK}/subscription/success?business_id=${businessId}`,
-      reason: plan.name,
-      external_reference: businessId.toString(),
-      payer_email: customer.email,
-      auto_recurring: {
-        frequency: 1,
-        frequency_type: 'months',
-        transaction_amount: plan.price,
-        currency_id: 'BRL',
-      },
-    };
+    console.log("🔍 Dados do plano carregado do Supabase:", plan);
 
-    console.log("📦 Payload Preapproval:", JSON.stringify(preapprovalBody, null, 2));
+    // Validar e converter price
+    const planPrice = Number(plan.price);
+    if (isNaN(planPrice) || planPrice <= 0) {
+      console.error("❌ ERRO: plan.price é inválido:", plan.price);
+      return res.status(500).json({ 
+        error: 'Preço do plano inválido',
+        details: `O plano ${plan.name} tem price inválido: ${plan.price}`
+      });
+    }
 
-    const mpResponse = await preApproval.create({ body: preapprovalBody });
+    console.log("✅ Preço do plano validado:", planPrice);
 
-    console.log("✅ Preapproval criado no MP:", mpResponse.id);
-
-    // 3. Salvar assinatura no banco
+    // 2. Criar assinatura "pending" no banco
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
-      .insert([{
+      .insert({
         business_id: businessId,
-        preapproval_id: mpResponse.id,
         plan_id: planId,
         status: 'pending',
-        amount_cents: Math.round(plan.price * 100),
+        amount_cents: Math.round(planPrice * 100),
         frequency: 1,
         frequency_type: 'months',
         customer_email: customer.email,
         customer_name: customer.name || null,
         customer_tax_id: customer.tax_id || null,
-      }])
+      })
       .select()
       .single();
 
     if (subError) {
-      console.error("❌ Erro ao salvar assinatura:", subError);
-      throw new Error('Erro ao salvar assinatura no banco');
+      console.error("❌ Erro ao criar assinatura no banco:", subError);
+      return res.status(500).json({ error: 'Erro ao criar assinatura no banco' });
     }
 
-    console.log("✅ Assinatura salva no DB:", subscription.id);
+    console.log("✅ Assinatura criada no DB:", subscription.id);
 
-    // 4. Retornar init_point para redirecionamento
-    res.json({
-      success: true,
-      init_point: mpResponse.init_point || mpResponse.sandbox_init_point,
-      preapproval_id: mpResponse.id,
-      subscription_id: subscription.id,
+    // TODO: STRIPE INTEGRATION
+    // 3. Criar Stripe Checkout Session
+    // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // 
+    // const session = await stripe.checkout.sessions.create({
+    //   customer_email: customer.email,
+    //   line_items: [{
+    //     price_data: {
+    //       currency: 'brl',
+    //       product_data: {
+    //         name: plan.name,
+    //         description: plan.description,
+    //       },
+    //       unit_amount: Math.round(planPrice * 100), // Centavos
+    //       recurring: {
+    //         interval: 'month',
+    //         interval_count: 1,
+    //       },
+    //     },
+    //     quantity: 1,
+    //   }],
+    //   mode: 'subscription',
+    //   success_url: `${process.env.PUBLIC_URL_NGROK || 'http://localhost:5173'}/subscription/success?subscription_id=${subscription.id}`,
+    //   cancel_url: `${process.env.PUBLIC_URL_NGROK || 'http://localhost:5173'}/subscription/cancel`,
+    //   metadata: {
+    //     subscription_id: subscription.id,
+    //     business_id: businessId,
+    //     plan_id: planId,
+    //   },
+    // });
+    //
+    // // 4. Atualizar subscription com stripe_session_id
+    // await supabase
+    //   .from('subscriptions')
+    //   .update({
+    //     stripe_session_id: session.id,
+    //     status: 'initiated'
+    //   })
+    //   .eq('id', subscription.id);
+    //
+    // return res.json({
+    //   success: true,
+    //   subscription_id: subscription.id,
+    //   checkout_url: session.url
+    // });
+
+    // TEMPORÁRIO: Retornar erro informando que Stripe não está configurado
+    return res.status(501).json({
+      error: "Integração de pagamento não configurada",
+      message: "Stripe ainda não foi integrado. Configure STRIPE_SECRET_KEY e implemente o checkout.",
+      subscription_id: subscription.id
     });
 
-  } catch (err) {
-    console.error("❌ Erro ao criar assinatura:", err.message);
-    res.status(500).json({
-      error: true,
-      message: err.message,
+  } catch (error) {
+    console.error("❌ Erro ao criar assinatura:", error);
+    return res.status(500).json({
+      error: "Erro ao criar assinatura",
+      details: error.message
     });
   }
 });
 
 /* =============================
-   CRIAR PREFERÊNCIA (Checkout Pro)
+   WEBHOOK DE PAGAMENTO
+   TODO: Integrar com Stripe Webhooks
+   
+   Referências:
+   - Stripe Webhooks: https://stripe.com/docs/webhooks
+   - Verificação de assinatura: https://stripe.com/docs/webhooks/signatures
+   
+   Eventos importantes:
+   - checkout.session.completed: Quando checkout é finalizado
+   - customer.subscription.created: Assinatura criada
+   - customer.subscription.updated: Status mudou (ativa, pausada, cancelada)
+   - invoice.payment_succeeded: Pagamento recorrente bem-sucedido
+   - invoice.payment_failed: Falha no pagamento
 ============================= */
-app.post('/api/create-preference', async (req, res) => {
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    const pref = {
-      items: [
-        {
-          title: req.body.description,
-          unit_price: req.body.amount,
-          quantity: 1,
-        },
-      ],
-      payer: { email: req.body.payer_email },
-      external_reference: req.body.external_reference,
-      back_urls: {
-        success: `${process.env.PUBLIC_URL_NGROK}/payment/success`,
-        failure: `${process.env.PUBLIC_URL_NGROK}/payment/failure`,
-        pending: `${process.env.PUBLIC_URL_NGROK}/payment/pending`,
-      },
-      auto_return: 'approved',
-      notification_url: `${process.env.PUBLIC_URL_NGROK}/api/payment-webhook`,
-    };
+    console.log('📩 Webhook recebido');
+    
+    // TODO: STRIPE WEBHOOK INTEGRATION
+    // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // const sig = req.headers['stripe-signature'];
+    // const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    //
+    // let event;
+    // try {
+    //   event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    // } catch (err) {
+    //   console.error('⚠️ Webhook signature verification failed:', err.message);
+    //   return res.status(400).send(`Webhook Error: ${err.message}`);
+    // }
+    //
+    // console.log('📩 Event type:', event.type);
+    //
+    // // Responder imediatamente
+    // res.status(200).json({ received: true });
+    //
+    // // Processar evento de forma assíncrona
+    // (async () => {
+    //   try {
+    //     switch (event.type) {
+    //       case 'checkout.session.completed':
+    //         const session = event.data.object;
+    //         const subscriptionId = session.metadata.subscription_id;
+    //         
+    //         await supabase
+    //           .from('subscriptions')
+    //           .update({
+    //             stripe_subscription_id: session.subscription,
+    //             stripe_customer_id: session.customer,
+    //             status: 'active',
+    //             activated_at: new Date().toISOString(),
+    //           })
+    //           .eq('id', subscriptionId);
+    //         
+    //         console.log(`✅ Assinatura ${subscriptionId} ativada`);
+    //         break;
+    //
+    //       case 'invoice.payment_succeeded':
+    //         const invoice = event.data.object;
+    //         const stripeSubscriptionId = invoice.subscription;
+    //         
+    //         // Buscar assinatura
+    //         const { data: sub } = await supabase
+    //           .from('subscriptions')
+    //           .select('id, business_id')
+    //           .eq('stripe_subscription_id', stripeSubscriptionId)
+    //           .single();
+    //         
+    //         if (sub) {
+    //           // Registrar pagamento
+    //           await supabase
+    //             .from('payments')
+    //             .insert([{
+    //               business_id: sub.business_id,
+    //               subscription_id: sub.id,
+    //               stripe_invoice_id: invoice.id,
+    //               status: 'approved',
+    //               amount_cents: invoice.amount_paid,
+    //               paid_at: new Date().toISOString(),
+    //             }]);
+    //           
+    //           console.log(`✅ Pagamento registrado para assinatura ${sub.id}`);
+    //         }
+    //         break;
+    //
+    //       case 'customer.subscription.updated':
+    //         const subscription = event.data.object;
+    //         
+    //         await supabase
+    //           .from('subscriptions')
+    //           .update({ status: subscription.status })
+    //           .eq('stripe_subscription_id', subscription.id);
+    //         
+    //         console.log(`✅ Status da assinatura atualizado: ${subscription.status}`);
+    //         break;
+    //     }
+    //   } catch (innerError) {
+    //     console.error('❌ Erro ao processar webhook:', innerError);
+    //   }
+    // })();
 
-    const r = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
-      },
-      body: JSON.stringify(pref),
+    // TEMPORÁRIO: Retornar OK mas não processar nada
+    console.log('⚠️ Webhook recebido mas Stripe não está configurado');
+    res.status(200).json({ 
+      received: true, 
+      message: 'Webhook endpoint disponível mas Stripe não configurado',
+      timestamp: new Date().toISOString() 
     });
 
-    const data = await r.json();
-    if (!r.ok) {
-      return res.status(r.status).json({ message: data?.message || 'Erro ao criar preferência' });
-    }
-    res.json(data);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: e.message || 'Erro interno' });
-  }
-});
-
-/* =============================
-   WEBHOOK DE PAGAMENTO (Checkout Pro)
-============================= */
-app.post('/api/payment-webhook', async (req, res) => {
-  try {
-    console.log('📩 Webhook recebido do Mercado Pago:', req.body);
-
-    const { type, data } = req.body;
-
-    // Webhook do MP envia notification type "payment"
-    if (type === 'payment' && data?.id) {
-      const paymentId = data.id;
-      
-      // Consultar detalhes do pagamento na API do MP
-      const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        console.error('❌ Erro ao consultar pagamento:', response.statusText);
-        return res.status(200).json({ received: true }); // Retorna 200 para não reenviar
-      }
-
-      const payment = await response.json();
-      console.log('💳 Detalhes do pagamento:', payment);
-
-      const externalReference = payment.external_reference;
-      const status = payment.status;
-
-      if (externalReference) {
-        // Atualizar status no Supabase
-        const { error: updateError } = await supabase
-          .from('business_registrations')
-          .update({ 
-            payment_status: status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', externalReference);
-
-        if (updateError) {
-          console.error('❌ Erro ao atualizar status no Supabase:', updateError);
-        } else {
-          console.log(`✅ Status do pedido ${externalReference} atualizado para: ${status}`);
-        }
-      }
-    }
-
-    // Webhook de pagamento autorizado da assinatura (authorized_payment)
-    if (type === 'authorized_payment' && data?.id) {
-      const authorizedPaymentId = data.id;
-      
-      console.log('💰 Cobrança autorizada:', authorizedPaymentId);
-      
-      // Consultar detalhes da cobrança
-      const response = await fetch(`https://api.mercadopago.com/authorized_payments/${authorizedPaymentId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        console.error('❌ Erro ao consultar cobrança:', response.statusText);
-        return res.status(200).json({ received: true });
-      }
-
-      const authorizedPayment = await response.json();
-      console.log('💳 Detalhes da cobrança:', authorizedPayment);
-
-      const preapprovalId = authorizedPayment.preapproval_id;
-      const paymentStatus = authorizedPayment.status;
-      const amount = authorizedPayment.transaction_amount;
-
-      if (preapprovalId) {
-        // Buscar assinatura pelo preapproval_id
-        const { data: subscription } = await supabase
-          .from('subscriptions')
-          .select('id, business_id')
-          .eq('preapproval_id', preapprovalId)
-          .single();
-
-        if (subscription) {
-          // Registrar pagamento
-          await supabase
-            .from('payments')
-            .insert([{
-              business_id: subscription.business_id,
-              subscription_id: subscription.id,
-              mp_payment_id: authorizedPaymentId,
-              status: paymentStatus,
-              amount_cents: Math.round(amount * 100),
-              payment_method: 'subscription',
-              paid_at: paymentStatus === 'approved' ? new Date().toISOString() : null,
-            }]);
-
-          // Atualizar assinatura para 'active' e calcular next_charge_at
-          if (paymentStatus === 'approved') {
-            const nextCharge = new Date();
-            nextCharge.setMonth(nextCharge.getMonth() + 1);
-
-            await supabase
-              .from('subscriptions')
-              .update({
-                status: 'active',
-                next_charge_at: nextCharge.toISOString(),
-              })
-              .eq('id', subscription.id);
-
-            console.log(`✅ Pagamento ${authorizedPaymentId} registrado e assinatura ${subscription.id} ativada`);
-          }
-        }
-      }
-    }
-
-    // Webhook de mudanças no preapproval (paused, cancelled, etc)
-    if (type === 'preapproval' && data?.id) {
-      const preapprovalId = data.id;
-      
-      console.log('📋 Atualização de preapproval:', preapprovalId);
-      
-      // Consultar detalhes do preapproval
-      const response = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        console.error('❌ Erro ao consultar preapproval:', response.statusText);
-        return res.status(200).json({ received: true });
-      }
-
-      const preapproval = await response.json();
-      console.log('📄 Detalhes do preapproval:', preapproval);
-
-      const status = preapproval.status;
-
-      // Atualizar status da assinatura no banco
-      const { error: updateError } = await supabase
-        .from('subscriptions')
-        .update({ status: status })
-        .eq('preapproval_id', preapprovalId);
-
-      if (!updateError) {
-        console.log(`✅ Assinatura ${preapprovalId} atualizada para: ${status}`);
-      }
-    }
-
-    // Sempre retornar 200 para o MP não reenviar
-    res.status(200).json({ received: true });
   } catch (error) {
     console.error('❌ Erro no webhook:', error);
-    res.status(200).json({ received: true }); // Retorna 200 mesmo com erro
+    res.status(500).json({ error: 'Erro ao processar webhook' });
   }
 });
 
@@ -400,4 +413,18 @@ app.post('/api/payment-webhook', async (req, res) => {
    START SERVER
 ============================= */
 const port = process.env.PORT || 3001;
-app.listen(port, () => console.log(`🚀 Server on http://localhost:${port}`));
+
+// Tratamento de erros não capturados
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+app.listen(port, () => {
+  console.log(`🚀 Server on http://localhost:${port}`);
+  console.log("✅ Server is ready and listening for requests");
+  console.log("⚠️  AVISO: Integração de pagamento (Stripe) ainda não configurada");
+});
