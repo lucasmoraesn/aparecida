@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS payments (
   amount DECIMAL(10,2) NOT NULL,
   currency TEXT DEFAULT 'BRL',
   payment_method TEXT NOT NULL CHECK (payment_method IN ('pix', 'credit_card')),
-  payment_provider TEXT NOT NULL, -- 'mercadopago', 'stripe', etc.
+  payment_provider TEXT NOT NULL, -- 'stripe', etc.
   provider_payment_id TEXT,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'failed', 'cancelled')),
   pix_code TEXT, -- For PIX payments

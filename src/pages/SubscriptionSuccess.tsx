@@ -132,12 +132,6 @@ const SubscriptionSuccess: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex justify-between">
-                <span className="text-gray-600">ID da Assinatura:</span>
-                <span className="font-mono text-sm text-gray-600">
-                  {subscription.preapproval_id}
-                </span>
-              </div>
             </div>
           </div>
 

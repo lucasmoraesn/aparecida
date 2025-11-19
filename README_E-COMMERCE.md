@@ -124,7 +124,7 @@ Carrinho → "Finalizar Compra" → Checkout → Preencher formulário → Confi
 ## 🎯 Próximos Passos
 
 ### **Integração com Pagamento**
-- Conectar com Mercado Pago (já configurado no projeto)
+- Implementar gateway de pagamento
 - Implementar webhooks para confirmação
 - Adicionar PIX e cartão de crédito
 
