@@ -12,6 +12,7 @@ import AllEvents from './pages/AllEvents';
 import BusinessRegistration from './pages/BusinessRegistration';
 import Payment from './pages/Payment';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
+import SubscriptionCancel from './pages/SubscriptionCancel';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="/cadastrar-negocio" element={<BusinessRegistration />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+        <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
       </Routes>
       <Footer />
     </div>

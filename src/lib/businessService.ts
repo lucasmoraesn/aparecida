@@ -87,14 +87,13 @@ export class BusinessService {
       return result.business_id || result.businessId;
    }
 
-   // 🔹 Criar assinatura
-   // TODO: Integrar com Stripe Checkout
+   // 🔹 Criar assinatura com Stripe Billing
    static async createSubscription(
       planId: string, 
       businessId: string, 
       customer: { email: string; name?: string; tax_id?: string }
    ): Promise<{ checkoutUrl: string; subscriptionId: string }> {
-      console.log('📤 Criando assinatura:', { planId, businessId, customer });
+      console.log('📤 Criando assinatura Stripe:', { planId, businessId, customer });
       
       const response = await fetch(`${this.API_BASE}/api/create-subscription`, {
          method: 'POST',
@@ -108,25 +107,25 @@ export class BusinessService {
          const errorData = await response.json().catch(() => ({}));
          console.error('❌ Erro ao criar assinatura:', errorData);
          
-         // Se retornar 501 (Not Implemented), significa que Stripe ainda não foi configurado
-         if (response.status === 501) {
-            throw new Error('Sistema de pagamento ainda não configurado. Entre em contato com o suporte.');
-         }
-         
-         throw new Error(errorData.message || errorData.error || `Erro ${response.status}: ${response.statusText}`);
+         throw new Error(
+            errorData.message || 
+            errorData.error || 
+            `Erro ao criar assinatura: ${response.status} - ${response.statusText}`
+         );
       }
 
       const result = await response.json();
-      console.log('📥 Resultado da assinatura:', result);
+      console.log('✅ Assinatura criada com sucesso:', result);
       
-      // TODO: Quando Stripe estiver integrado, retornar:
-      // return {
-      //    checkoutUrl: result.checkout_url,
-      //    subscriptionId: result.subscription_id,
-      // };
+      // Validar resposta
+      if (!result.checkoutUrl) {
+         throw new Error('URL de checkout não retornada pelo servidor');
+      }
       
-      // TEMPORÁRIO: Lançar erro informativo
-      throw new Error('Sistema de pagamento em manutenção. Tente novamente mais tarde.');
+      return {
+         checkoutUrl: result.checkoutUrl,
+         subscriptionId: result.subscription_id,
+      };
    }
 
 

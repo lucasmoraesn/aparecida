@@ -2,11 +2,13 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
 
 dotenv.config();
 console.log('🔍 DEBUG index.js:');
 console.log('  PUBLIC_URL_NGROK:', process.env.PUBLIC_URL_NGROK);
 console.log('  SUPABASE_URL:', process.env.SUPABASE_URL);
+console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅ Configurada' : '❌ Não configurada');
 
 const app = express();
 
@@ -44,6 +46,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 console.log("✅ Supabase client created");
+
+// --- Stripe Billing ---
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: "2024-06-20"
+});
+console.log("✅ Stripe client created");
 
 // Health-check
 app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -158,31 +166,43 @@ app.post("/api/register-business", async (req, res) => {
 });
 
 /* =============================
-   CRIAR ASSINATURA
-   TODO: Integrar com Stripe Subscriptions
+   CRIAR ASSINATURA COM STRIPE BILLING
    
-   Referências:
-   - Stripe Checkout: https://stripe.com/docs/checkout
-   - Stripe Subscriptions: https://stripe.com/docs/billing/subscriptions/build-subscriptions
-   
-   Passos necessários:
-   1. Criar Stripe Customer com customer.email
-   2. Criar Stripe Price baseado no planPrice
-   3. Criar Stripe Checkout Session com mode='subscription'
-   4. Retornar session.url para redirect
-   5. Configurar webhook do Stripe para processar eventos
+   Fluxo:
+   1. Validar dados recebidos
+   2. Buscar plano no Supabase
+   3. Criar Stripe Customer
+   4. Criar Stripe Checkout Session (mode: subscription)
+   5. Salvar subscription no Supabase com status "pending"
+   6. Retornar checkoutUrl para o frontend
 ============================= */
 app.post('/api/create-subscription', async (req, res) => {
   try {
     const { planId, businessId, customer } = req.body;
-    console.log("📥 Criando assinatura:", { planId, businessId, customer });
+    console.log("📥 Criando assinatura Stripe:", { planId, businessId, customer });
 
-    // Validar email do cliente
-    if (!customer || !customer.email) {
-      return res.status(400).json({ error: 'Email do cliente é obrigatório' });
+    // 1. Validar dados obrigatórios
+    if (!planId || !businessId) {
+      return res.status(400).json({ 
+        error: 'planId e businessId são obrigatórios' 
+      });
     }
 
-    // 1. Buscar plano
+    if (!customer || !customer.email) {
+      return res.status(400).json({ 
+        error: 'Email do cliente é obrigatório' 
+      });
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customer.email)) {
+      return res.status(400).json({ 
+        error: 'Email inválido' 
+      });
+    }
+
+    // 2. Buscar plano no Supabase
     const { data: plan, error: planError } = await supabase
       .from('business_plans')
       .select('*')
@@ -190,29 +210,82 @@ app.post('/api/create-subscription', async (req, res) => {
       .single();
 
     if (planError || !plan) {
-      return res.status(404).json({ error: 'Plano não encontrado' });
-    }
-
-    console.log("🔍 Dados do plano carregado do Supabase:", plan);
-
-    // Validar e converter price
-    const planPrice = Number(plan.price);
-    if (isNaN(planPrice) || planPrice <= 0) {
-      console.error("❌ ERRO: plan.price é inválido:", plan.price);
-      return res.status(500).json({ 
-        error: 'Preço do plano inválido',
-        details: `O plano ${plan.name} tem price inválido: ${plan.price}`
+      console.error("❌ Plano não encontrado:", planError);
+      return res.status(404).json({ 
+        error: 'Plano não encontrado',
+        details: planError?.message 
       });
     }
 
-    console.log("✅ Preço do plano validado:", planPrice);
+    console.log("✅ Plano encontrado:", plan.name, "- R$", plan.price);
 
-    // 2. Criar assinatura "pending" no banco
+    // Validar e converter preço
+    const planPrice = Number(plan.price);
+    if (isNaN(planPrice) || planPrice <= 0) {
+      console.error("❌ Preço do plano inválido:", plan.price);
+      return res.status(500).json({ 
+        error: 'Preço do plano inválido',
+        details: `O plano ${plan.name} tem preço inválido: ${plan.price}`
+      });
+    }
+
+    // 3. Criar Stripe Customer
+    console.log("🔵 Criando Stripe Customer...");
+    const stripeCustomer = await stripe.customers.create({
+      email: customer.email,
+      name: customer.name || 'Cliente Aparecida',
+      metadata: {
+        business_id: businessId.toString(),
+        plan_id: planId.toString(),
+        source: 'aparecida_platform'
+      }
+    });
+    console.log("✅ Stripe Customer criado:", stripeCustomer.id);
+
+    // 4. Criar Stripe Checkout Session (modo subscription)
+    console.log("🔵 Criando Stripe Checkout Session...");
+    
+    const baseUrl = process.env.PUBLIC_URL_NGROK || 'http://localhost:5173';
+    
+    const session = await stripe.checkout.sessions.create({
+      customer: stripeCustomer.id,
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'brl',
+          product_data: {
+            name: plan.name,
+            description: plan.description || `Plano ${plan.name} - Aparecida`,
+          },
+          unit_amount: Math.round(planPrice * 100), // Converter para centavos
+          recurring: {
+            interval: 'month',
+            interval_count: 1,
+          },
+        },
+        quantity: 1,
+      }],
+      success_url: `${baseUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/subscription/cancel`,
+      metadata: {
+        business_id: businessId.toString(),
+        plan_id: planId.toString(),
+      },
+    });
+
+    console.log("✅ Checkout Session criada:", session.id);
+    console.log("   URL:", session.url);
+
+    // 5. Salvar assinatura no Supabase com status "pending"
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
       .insert({
         business_id: businessId,
         plan_id: planId,
+        external_subscription_id: null, // Será preenchido pelo webhook
+        stripe_customer_id: stripeCustomer.id,
+        stripe_checkout_session_id: session.id,
         status: 'pending',
         amount_cents: Math.round(planPrice * 100),
         frequency: 1,
@@ -225,187 +298,246 @@ app.post('/api/create-subscription', async (req, res) => {
       .single();
 
     if (subError) {
-      console.error("❌ Erro ao criar assinatura no banco:", subError);
-      return res.status(500).json({ error: 'Erro ao criar assinatura no banco' });
+      console.error("❌ Erro ao salvar assinatura no Supabase:", subError);
+      // Tentar limpar o customer criado no Stripe
+      try {
+        await stripe.customers.del(stripeCustomer.id);
+      } catch (cleanupError) {
+        console.error("⚠️ Erro ao limpar Stripe Customer:", cleanupError);
+      }
+      return res.status(500).json({ 
+        error: 'Erro ao salvar assinatura no banco de dados',
+        details: subError.message 
+      });
     }
 
-    console.log("✅ Assinatura criada no DB:", subscription.id);
+    console.log("✅ Assinatura salva no Supabase:", subscription.id);
 
-    // TODO: STRIPE INTEGRATION
-    // 3. Criar Stripe Checkout Session
-    // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    // 
-    // const session = await stripe.checkout.sessions.create({
-    //   customer_email: customer.email,
-    //   line_items: [{
-    //     price_data: {
-    //       currency: 'brl',
-    //       product_data: {
-    //         name: plan.name,
-    //         description: plan.description,
-    //       },
-    //       unit_amount: Math.round(planPrice * 100), // Centavos
-    //       recurring: {
-    //         interval: 'month',
-    //         interval_count: 1,
-    //       },
-    //     },
-    //     quantity: 1,
-    //   }],
-    //   mode: 'subscription',
-    //   success_url: `${process.env.PUBLIC_URL_NGROK || 'http://localhost:5173'}/subscription/success?subscription_id=${subscription.id}`,
-    //   cancel_url: `${process.env.PUBLIC_URL_NGROK || 'http://localhost:5173'}/subscription/cancel`,
-    //   metadata: {
-    //     subscription_id: subscription.id,
-    //     business_id: businessId,
-    //     plan_id: planId,
-    //   },
-    // });
-    //
-    // // 4. Atualizar subscription com stripe_session_id
-    // await supabase
-    //   .from('subscriptions')
-    //   .update({
-    //     stripe_session_id: session.id,
-    //     status: 'initiated'
-    //   })
-    //   .eq('id', subscription.id);
-    //
-    // return res.json({
-    //   success: true,
-    //   subscription_id: subscription.id,
-    //   checkout_url: session.url
-    // });
-
-    // TEMPORÁRIO: Retornar erro informando que Stripe não está configurado
-    return res.status(501).json({
-      error: "Integração de pagamento não configurada",
-      message: "Stripe ainda não foi integrado. Configure STRIPE_SECRET_KEY e implemente o checkout.",
-      subscription_id: subscription.id
+    // 6. Retornar checkoutUrl para o frontend
+    return res.json({
+      success: true,
+      checkoutUrl: session.url,
+      subscription_id: subscription.id,
+      stripe_customer_id: stripeCustomer.id,
+      stripe_session_id: session.id
     });
 
   } catch (error) {
     console.error("❌ Erro ao criar assinatura:", error);
     return res.status(500).json({
       error: "Erro ao criar assinatura",
-      details: error.message
+      message: error.message,
+      details: error.stack
     });
   }
 });
 
 /* =============================
-   WEBHOOK DE PAGAMENTO
-   TODO: Integrar com Stripe Webhooks
+   WEBHOOK STRIPE
    
-   Referências:
-   - Stripe Webhooks: https://stripe.com/docs/webhooks
-   - Verificação de assinatura: https://stripe.com/docs/webhooks/signatures
-   
-   Eventos importantes:
-   - checkout.session.completed: Quando checkout é finalizado
-   - customer.subscription.created: Assinatura criada
-   - customer.subscription.updated: Status mudou (ativa, pausada, cancelada)
+   Eventos tratados:
+   - checkout.session.completed: Checkout finalizado com sucesso
+   - customer.subscription.deleted: Assinatura cancelada
    - invoice.payment_succeeded: Pagamento recorrente bem-sucedido
-   - invoice.payment_failed: Falha no pagamento
+   - invoice.payment_failed: Falha no pagamento recorrente
 ============================= */
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  try {
-    console.log('📩 Webhook recebido');
-    
-    // TODO: STRIPE WEBHOOK INTEGRATION
-    // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    // const sig = req.headers['stripe-signature'];
-    // const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    //
-    // let event;
-    // try {
-    //   event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    // } catch (err) {
-    //   console.error('⚠️ Webhook signature verification failed:', err.message);
-    //   return res.status(400).send(`Webhook Error: ${err.message}`);
-    // }
-    //
-    // console.log('📩 Event type:', event.type);
-    //
-    // // Responder imediatamente
-    // res.status(200).json({ received: true });
-    //
-    // // Processar evento de forma assíncrona
-    // (async () => {
-    //   try {
-    //     switch (event.type) {
-    //       case 'checkout.session.completed':
-    //         const session = event.data.object;
-    //         const subscriptionId = session.metadata.subscription_id;
-    //         
-    //         await supabase
-    //           .from('subscriptions')
-    //           .update({
-    //             stripe_subscription_id: session.subscription,
-    //             stripe_customer_id: session.customer,
-    //             status: 'active',
-    //             activated_at: new Date().toISOString(),
-    //           })
-    //           .eq('id', subscriptionId);
-    //         
-    //         console.log(`✅ Assinatura ${subscriptionId} ativada`);
-    //         break;
-    //
-    //       case 'invoice.payment_succeeded':
-    //         const invoice = event.data.object;
-    //         const stripeSubscriptionId = invoice.subscription;
-    //         
-    //         // Buscar assinatura
-    //         const { data: sub } = await supabase
-    //           .from('subscriptions')
-    //           .select('id, business_id')
-    //           .eq('stripe_subscription_id', stripeSubscriptionId)
-    //           .single();
-    //         
-    //         if (sub) {
-    //           // Registrar pagamento
-    //           await supabase
-    //             .from('payments')
-    //             .insert([{
-    //               business_id: sub.business_id,
-    //               subscription_id: sub.id,
-    //               stripe_invoice_id: invoice.id,
-    //               status: 'approved',
-    //               amount_cents: invoice.amount_paid,
-    //               paid_at: new Date().toISOString(),
-    //             }]);
-    //           
-    //           console.log(`✅ Pagamento registrado para assinatura ${sub.id}`);
-    //         }
-    //         break;
-    //
-    //       case 'customer.subscription.updated':
-    //         const subscription = event.data.object;
-    //         
-    //         await supabase
-    //           .from('subscriptions')
-    //           .update({ status: subscription.status })
-    //           .eq('stripe_subscription_id', subscription.id);
-    //         
-    //         console.log(`✅ Status da assinatura atualizado: ${subscription.status}`);
-    //         break;
-    //     }
-    //   } catch (innerError) {
-    //     console.error('❌ Erro ao processar webhook:', innerError);
-    //   }
-    // })();
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    // TEMPORÁRIO: Retornar OK mas não processar nada
-    console.log('⚠️ Webhook recebido mas Stripe não está configurado');
-    res.status(200).json({ 
-      received: true, 
-      message: 'Webhook endpoint disponível mas Stripe não configurado',
-      timestamp: new Date().toISOString() 
-    });
+  let event;
+
+  try {
+    // 1. Verificar assinatura do webhook
+    if (!webhookSecret) {
+      console.error('❌ STRIPE_WEBHOOK_SECRET não configurado');
+      return res.status(500).json({ 
+        error: 'Webhook secret não configurado' 
+      });
+    }
+
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    console.log('✅ Webhook verificado:', event.type);
+
+  } catch (err) {
+    console.error('❌ Falha na verificação do webhook:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // 2. Responder imediatamente para o Stripe
+  res.status(200).json({ received: true });
+
+  // 3. Processar evento de forma assíncrona
+  try {
+    switch (event.type) {
+      
+      // A) CHECKOUT COMPLETADO
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        console.log('📦 checkout.session.completed:', session.id);
+
+        // Buscar assinatura pelo stripe_checkout_session_id
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('stripe_checkout_session_id', session.id)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada para session:', session.id);
+          break;
+        }
+
+        console.log('✅ Assinatura encontrada:', subscription.id);
+
+        // Atualizar assinatura com dados do Stripe
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({
+            external_subscription_id: session.subscription,
+            stripe_customer_id: session.customer,
+            status: 'active',
+            next_charge_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 dias
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subscription.id);
+
+        if (updateError) {
+          console.error('❌ Erro ao atualizar assinatura:', updateError);
+        } else {
+          console.log(`✅ Assinatura ${subscription.id} ATIVADA`);
+        }
+
+        break;
+      }
+
+      // B) ASSINATURA CANCELADA
+      case 'customer.subscription.deleted': {
+        const stripeSubscription = event.data.object;
+        console.log('🚫 customer.subscription.deleted:', stripeSubscription.id);
+
+        // Buscar assinatura pelo external_subscription_id (stripe subscription id)
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('external_subscription_id', stripeSubscription.id)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada:', stripeSubscription.id);
+          break;
+        }
+
+        // Atualizar status para cancelado
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subscription.id);
+
+        if (updateError) {
+          console.error('❌ Erro ao cancelar assinatura:', updateError);
+        } else {
+          console.log(`✅ Assinatura ${subscription.id} CANCELADA`);
+        }
+
+        break;
+      }
+
+      // C) PAGAMENTO RECORRENTE BEM-SUCEDIDO
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object;
+        console.log('💰 invoice.payment_succeeded:', invoice.id);
+
+        // Buscar assinatura
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('external_subscription_id', invoice.subscription)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada para invoice:', invoice.subscription);
+          break;
+        }
+
+        // Registrar pagamento na tabela payments
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .insert({
+            business_id: subscription.business_id,
+            subscription_id: subscription.id,
+            external_payment_id: invoice.id,
+            status: 'approved',
+            amount_cents: invoice.amount_paid,
+            payment_method: invoice.payment_method_types?.[0] || 'card',
+            paid_at: new Date(invoice.status_transitions.paid_at * 1000).toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (paymentError) {
+          console.error('❌ Erro ao registrar pagamento:', paymentError);
+        } else {
+          console.log(`✅ Pagamento registrado para assinatura ${subscription.id}`);
+        }
+
+        // Atualizar next_charge_at (+30 dias)
+        await supabase
+          .from('subscriptions')
+          .update({
+            next_charge_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subscription.id);
+
+        break;
+      }
+
+      // D) FALHA NO PAGAMENTO
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object;
+        console.log('❌ invoice.payment_failed:', invoice.id);
+
+        // Buscar assinatura
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('external_subscription_id', invoice.subscription)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada para invoice:', invoice.subscription);
+          break;
+        }
+
+        // Registrar tentativa de pagamento falha
+        await supabase
+          .from('payments')
+          .insert({
+            business_id: subscription.business_id,
+            subscription_id: subscription.id,
+            external_payment_id: invoice.id,
+            status: 'failed',
+            amount_cents: invoice.amount_due,
+            payment_method: invoice.payment_method_types?.[0] || 'card',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        console.log(`⚠️ Pagamento FALHOU para assinatura ${subscription.id}`);
+
+        break;
+      }
+
+      default:
+        console.log(`ℹ️ Evento não tratado: ${event.type}`);
+    }
 
   } catch (error) {
-    console.error('❌ Erro no webhook:', error);
-    res.status(500).json({ error: 'Erro ao processar webhook' });
+    console.error('❌ Erro ao processar webhook:', error);
   }
 });
 
@@ -426,5 +558,7 @@ process.on('unhandledRejection', (reason, promise) => {
 app.listen(port, () => {
   console.log(`🚀 Server on http://localhost:${port}`);
   console.log("✅ Server is ready and listening for requests");
-  console.log("⚠️  AVISO: Integração de pagamento (Stripe) ainda não configurada");
+  console.log("💳 Stripe Billing integrado e ativo");
+  console.log(`   Webhook endpoint: http://localhost:${port}/api/webhook`);
+  console.log(`   Success URL: ${process.env.PUBLIC_URL_NGROK || 'http://localhost:5173'}/subscription/success`);
 });

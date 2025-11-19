@@ -9,40 +9,65 @@ const SubscriptionSuccess: React.FC = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [subscription, setSubscription] = useState<any>(null);
 
-  const businessId = searchParams.get('business_id');
+  const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
-    if (!businessId) {
+    if (!sessionId) {
+      console.error('session_id não encontrado na URL');
       setStatus('error');
       return;
     }
 
     const checkSubscription = async () => {
       try {
-        // Buscar assinatura pelo business_id
+        console.log('🔍 Buscando assinatura com session_id:', sessionId);
+        
+        // Buscar assinatura pelo stripe_checkout_session_id
         const { data, error } = await supabase
           .from('subscriptions')
           .select(`
             *,
             business_plans(name, price, features)
           `)
-          .eq('business_id', businessId)
-          .order('created_at', { ascending: false })
-          .limit(1)
+          .eq('stripe_checkout_session_id', sessionId)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao buscar assinatura:', error);
+          throw error;
+        }
 
+        console.log('✅ Assinatura encontrada:', data);
         setSubscription(data);
         setStatus('success');
       } catch (error) {
-        console.error('Erro ao buscar assinatura:', error);
+        console.error('❌ Erro ao buscar assinatura:', error);
         setStatus('error');
       }
     };
 
     checkSubscription();
-  }, [businessId]);
+    
+    // Polling para verificar se o webhook já atualizou o status
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('subscriptions')
+          .select('status')
+          .eq('stripe_checkout_session_id', sessionId)
+          .single();
+        
+        if (data && data.status === 'active' && subscription?.status !== 'active') {
+          console.log('✅ Status atualizado para active');
+          setSubscription((prev: any) => ({ ...prev, status: 'active' }));
+        }
+      } catch (err) {
+        console.error('Erro no polling:', err);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [sessionId]);
 
   if (status === 'loading') {
     return (
