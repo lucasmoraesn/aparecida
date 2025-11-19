@@ -12,6 +12,218 @@ console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅ Configu
 
 const app = express();
 
+/* =============================
+   WEBHOOK STRIPE
+   
+   ⚠️ IMPORTANTE: Esta rota DEVE vir ANTES do express.json()
+   O Stripe precisa do body raw para validar a assinatura
+   
+   Eventos tratados:
+   - checkout.session.completed: Checkout finalizado com sucesso
+   - customer.subscription.deleted: Assinatura cancelada
+   - invoice.payment_succeeded: Pagamento recorrente bem-sucedido
+   - invoice.payment_failed: Falha no pagamento recorrente
+============================= */
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+
+  try {
+    // 1. Verificar assinatura do webhook
+    if (!webhookSecret) {
+      console.error('❌ STRIPE_WEBHOOK_SECRET não configurado');
+      return res.status(500).json({ 
+        error: 'Webhook secret não configurado' 
+      });
+    }
+
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    console.log('✅ Webhook verificado:', event.type);
+
+  } catch (err) {
+    console.error('❌ Falha na verificação do webhook:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // 2. Responder imediatamente para o Stripe
+  res.status(200).json({ received: true });
+
+  // 3. Processar evento de forma assíncrona
+  try {
+    switch (event.type) {
+      
+      // A) CHECKOUT COMPLETADO
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        console.log('📦 checkout.session.completed:', session.id);
+
+        // Buscar assinatura pelo stripe_checkout_session_id
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('stripe_checkout_session_id', session.id)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada para session:', session.id);
+          break;
+        }
+
+        console.log('✅ Assinatura encontrada:', subscription.id);
+
+        // Atualizar assinatura com dados do Stripe
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({
+            external_subscription_id: session.subscription,
+            stripe_customer_id: session.customer,
+            status: 'active',
+            next_charge_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 dias
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subscription.id);
+
+        if (updateError) {
+          console.error('❌ Erro ao atualizar assinatura:', updateError);
+        } else {
+          console.log(`✅ Assinatura ${subscription.id} ATIVADA`);
+        }
+
+        break;
+      }
+
+      // B) ASSINATURA CANCELADA
+      case 'customer.subscription.deleted': {
+        const stripeSubscription = event.data.object;
+        console.log('🚫 customer.subscription.deleted:', stripeSubscription.id);
+
+        // Buscar assinatura pelo external_subscription_id (stripe subscription id)
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('external_subscription_id', stripeSubscription.id)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada:', stripeSubscription.id);
+          break;
+        }
+
+        // Atualizar status para cancelado
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subscription.id);
+
+        if (updateError) {
+          console.error('❌ Erro ao cancelar assinatura:', updateError);
+        } else {
+          console.log(`✅ Assinatura ${subscription.id} CANCELADA`);
+        }
+
+        break;
+      }
+
+      // C) PAGAMENTO RECORRENTE BEM-SUCEDIDO
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object;
+        console.log('💰 invoice.payment_succeeded:', invoice.id);
+
+        // Buscar assinatura
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('external_subscription_id', invoice.subscription)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada para invoice:', invoice.subscription);
+          break;
+        }
+
+        // Registrar pagamento na tabela payments
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .insert({
+            business_id: subscription.business_id,
+            subscription_id: subscription.id,
+            external_payment_id: invoice.id,
+            status: 'approved',
+            amount_cents: invoice.amount_paid,
+            payment_method: invoice.payment_method_types?.[0] || 'card',
+            paid_at: new Date(invoice.status_transitions.paid_at * 1000).toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (paymentError) {
+          console.error('❌ Erro ao registrar pagamento:', paymentError);
+        } else {
+          console.log(`✅ Pagamento registrado para assinatura ${subscription.id}`);
+        }
+
+        // Atualizar next_charge_at (+30 dias)
+        await supabase
+          .from('subscriptions')
+          .update({
+            next_charge_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subscription.id);
+
+        break;
+      }
+
+      // D) FALHA NO PAGAMENTO
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object;
+        console.log('❌ invoice.payment_failed:', invoice.id);
+
+        // Buscar assinatura
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('external_subscription_id', invoice.subscription)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada para invoice:', invoice.subscription);
+          break;
+        }
+
+        // Registrar tentativa de pagamento falha
+        await supabase
+          .from('payments')
+          .insert({
+            business_id: subscription.business_id,
+            subscription_id: subscription.id,
+            external_payment_id: invoice.id,
+            status: 'failed',
+            amount_cents: invoice.amount_due,
+            payment_method: invoice.payment_method_types?.[0] || 'card',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        console.log(`⚠️ Pagamento FALHOU para assinatura ${subscription.id}`);
+
+        break;
+      }
+
+      default:
+        console.log(`ℹ️ Evento não tratado: ${event.type}`);
+    }
+
+  } catch (error) {
+    console.error('❌ Erro ao processar webhook:', error);
+  }
+});
+
 app.use(express.json());
 
 // CORS configurado para aceitar requisições do frontend
@@ -329,215 +541,6 @@ app.post('/api/create-subscription', async (req, res) => {
       message: error.message,
       details: error.stack
     });
-  }
-});
-
-/* =============================
-   WEBHOOK STRIPE
-   
-   Eventos tratados:
-   - checkout.session.completed: Checkout finalizado com sucesso
-   - customer.subscription.deleted: Assinatura cancelada
-   - invoice.payment_succeeded: Pagamento recorrente bem-sucedido
-   - invoice.payment_failed: Falha no pagamento recorrente
-============================= */
-app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  let event;
-
-  try {
-    // 1. Verificar assinatura do webhook
-    if (!webhookSecret) {
-      console.error('❌ STRIPE_WEBHOOK_SECRET não configurado');
-      return res.status(500).json({ 
-        error: 'Webhook secret não configurado' 
-      });
-    }
-
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    console.log('✅ Webhook verificado:', event.type);
-
-  } catch (err) {
-    console.error('❌ Falha na verificação do webhook:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  // 2. Responder imediatamente para o Stripe
-  res.status(200).json({ received: true });
-
-  // 3. Processar evento de forma assíncrona
-  try {
-    switch (event.type) {
-      
-      // A) CHECKOUT COMPLETADO
-      case 'checkout.session.completed': {
-        const session = event.data.object;
-        console.log('📦 checkout.session.completed:', session.id);
-
-        // Buscar assinatura pelo stripe_checkout_session_id
-        const { data: subscription, error: findError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('stripe_checkout_session_id', session.id)
-          .single();
-
-        if (findError || !subscription) {
-          console.error('❌ Assinatura não encontrada para session:', session.id);
-          break;
-        }
-
-        console.log('✅ Assinatura encontrada:', subscription.id);
-
-        // Atualizar assinatura com dados do Stripe
-        const { error: updateError } = await supabase
-          .from('subscriptions')
-          .update({
-            external_subscription_id: session.subscription,
-            stripe_customer_id: session.customer,
-            status: 'active',
-            next_charge_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 dias
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', subscription.id);
-
-        if (updateError) {
-          console.error('❌ Erro ao atualizar assinatura:', updateError);
-        } else {
-          console.log(`✅ Assinatura ${subscription.id} ATIVADA`);
-        }
-
-        break;
-      }
-
-      // B) ASSINATURA CANCELADA
-      case 'customer.subscription.deleted': {
-        const stripeSubscription = event.data.object;
-        console.log('🚫 customer.subscription.deleted:', stripeSubscription.id);
-
-        // Buscar assinatura pelo external_subscription_id (stripe subscription id)
-        const { data: subscription, error: findError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('external_subscription_id', stripeSubscription.id)
-          .single();
-
-        if (findError || !subscription) {
-          console.error('❌ Assinatura não encontrada:', stripeSubscription.id);
-          break;
-        }
-
-        // Atualizar status para cancelado
-        const { error: updateError } = await supabase
-          .from('subscriptions')
-          .update({
-            status: 'cancelled',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', subscription.id);
-
-        if (updateError) {
-          console.error('❌ Erro ao cancelar assinatura:', updateError);
-        } else {
-          console.log(`✅ Assinatura ${subscription.id} CANCELADA`);
-        }
-
-        break;
-      }
-
-      // C) PAGAMENTO RECORRENTE BEM-SUCEDIDO
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object;
-        console.log('💰 invoice.payment_succeeded:', invoice.id);
-
-        // Buscar assinatura
-        const { data: subscription, error: findError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('external_subscription_id', invoice.subscription)
-          .single();
-
-        if (findError || !subscription) {
-          console.error('❌ Assinatura não encontrada para invoice:', invoice.subscription);
-          break;
-        }
-
-        // Registrar pagamento na tabela payments
-        const { error: paymentError } = await supabase
-          .from('payments')
-          .insert({
-            business_id: subscription.business_id,
-            subscription_id: subscription.id,
-            external_payment_id: invoice.id,
-            status: 'approved',
-            amount_cents: invoice.amount_paid,
-            payment_method: invoice.payment_method_types?.[0] || 'card',
-            paid_at: new Date(invoice.status_transitions.paid_at * 1000).toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (paymentError) {
-          console.error('❌ Erro ao registrar pagamento:', paymentError);
-        } else {
-          console.log(`✅ Pagamento registrado para assinatura ${subscription.id}`);
-        }
-
-        // Atualizar next_charge_at (+30 dias)
-        await supabase
-          .from('subscriptions')
-          .update({
-            next_charge_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', subscription.id);
-
-        break;
-      }
-
-      // D) FALHA NO PAGAMENTO
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object;
-        console.log('❌ invoice.payment_failed:', invoice.id);
-
-        // Buscar assinatura
-        const { data: subscription, error: findError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('external_subscription_id', invoice.subscription)
-          .single();
-
-        if (findError || !subscription) {
-          console.error('❌ Assinatura não encontrada para invoice:', invoice.subscription);
-          break;
-        }
-
-        // Registrar tentativa de pagamento falha
-        await supabase
-          .from('payments')
-          .insert({
-            business_id: subscription.business_id,
-            subscription_id: subscription.id,
-            external_payment_id: invoice.id,
-            status: 'failed',
-            amount_cents: invoice.amount_due,
-            payment_method: invoice.payment_method_types?.[0] || 'card',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        console.log(`⚠️ Pagamento FALHOU para assinatura ${subscription.id}`);
-
-        break;
-      }
-
-      default:
-        console.log(`ℹ️ Evento não tratado: ${event.type}`);
-    }
-
-  } catch (error) {
-    console.error('❌ Erro ao processar webhook:', error);
   }
 });
 
