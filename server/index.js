@@ -41,6 +41,13 @@ const app = express();
    - invoice.payment_failed: Falha no pagamento recorrente
 ============================= */
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  console.log('\n🔔 WEBHOOK RECEBIDO!');
+  console.log('   Timestamp:', new Date().toISOString());
+  console.log('   Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('   Body type:', typeof req.body);
+  console.log('   Body is Buffer:', Buffer.isBuffer(req.body));
+  console.log('   Body length:', req.body?.length);
+  
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -55,6 +62,10 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       });
     }
 
+    console.log('🔐 Tentando validar assinatura...');
+    console.log('   Signature header:', sig);
+    console.log('   Webhook secret:', webhookSecret);
+    
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     console.log('✅ Webhook verificado:', event.type);
 
@@ -158,10 +169,12 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         console.log('💰 invoice.payment_succeeded:', invoice.id);
         console.log('   Subscription ID do Stripe:', invoice.subscription);
         console.log('   Amount paid:', invoice.amount_paid);
+        console.log('   Billing reason:', invoice.billing_reason);
 
         // Validar se invoice.subscription existe
         if (!invoice.subscription) {
-          console.log('⚠️ Invoice sem subscription_id - pode ser pagamento avulso');
+          console.log('ℹ️ Invoice sem subscription_id - pagamento avulso (setup inicial)');
+          console.log('   Isso é normal na primeira cobrança. O checkout.session.completed já processou.');
           break;
         }
 
@@ -311,6 +324,77 @@ app.get("/api/plans", async (req, res) => {
   } catch (err) {
     console.error("Erro ao buscar planos:", err);
     res.status(500).json({ message: "Erro ao buscar planos" });
+  }
+});
+
+/* =============================
+   VERIFICAR SESSÃO DO STRIPE
+   
+   Usado pela tela de sucesso do frontend para verificar
+   se o checkout foi completado e obter dados da sessão.
+============================= */
+app.get("/api/check-session", async (req, res) => {
+  try {
+    const { session_id } = req.query;
+
+    // Validar parâmetro obrigatório
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        error: "session_id é obrigatório"
+      });
+    }
+
+    console.log("🔍 Verificando sessão Stripe:", session_id);
+
+    // Buscar sessão no Stripe
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (!session) {
+      console.error("❌ Sessão não encontrada:", session_id);
+      return res.status(404).json({
+        success: false,
+        error: "Sessão não encontrada"
+      });
+    }
+
+    console.log("✅ Sessão encontrada:", {
+      id: session.id,
+      customer: session.customer,
+      subscription: session.subscription,
+      payment_status: session.payment_status,
+      status: session.status
+    });
+
+    // Retornar dados da sessão
+    return res.json({
+      success: true,
+      sessionId: session.id,
+      customerId: session.customer,
+      subscriptionId: session.subscription,
+      status: session.status,
+      paymentStatus: session.payment_status,
+      customerEmail: session.customer_details?.email,
+      amountTotal: session.amount_total
+    });
+
+  } catch (err) {
+    console.error("❌ Erro ao verificar sessão:", err.message);
+    
+    // Tratar erro específico de sessão não encontrada
+    if (err.statusCode === 404) {
+      return res.status(404).json({
+        success: false,
+        error: "Sessão não encontrada"
+      });
+    }
+
+    // Erro genérico
+    return res.status(500).json({
+      success: false,
+      error: "Erro ao verificar sessão",
+      message: err.message
+    });
   }
 });
 
