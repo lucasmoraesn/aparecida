@@ -480,7 +480,7 @@ app.post('/api/create-subscription', async (req, res) => {
     // 4. Criar Stripe Checkout Session (modo subscription)
     console.log("🔵 Criando Stripe Checkout Session...");
     
-    const baseUrl = process.env.PUBLIC_URL_NGROK || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomer.id,
@@ -501,8 +501,8 @@ app.post('/api/create-subscription', async (req, res) => {
         },
         quantity: 1,
       }],
-      success_url: `${baseUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/subscription/cancel`,
+      success_url: `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendUrl}/subscription/cancel`,
       metadata: {
         business_id: businessId.toString(),
         plan_id: planId.toString(),
