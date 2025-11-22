@@ -9,6 +9,22 @@ console.log('🔍 DEBUG index.js:');
 console.log('  PUBLIC_URL_NGROK:', process.env.PUBLIC_URL_NGROK);
 console.log('  SUPABASE_URL:', process.env.SUPABASE_URL);
 console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅ Configurada' : '❌ Não configurada');
+console.log('  STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? '✅ Configurada' : '❌ Não configurada');
+
+// --- Inicializar Supabase (precisa estar disponível no webhook) ---
+console.log("[SUPABASE_URL]", process.env.SUPABASE_URL);
+console.log("[SUPABASE_SERVICE_KEY]", process.env.SUPABASE_SERVICE_KEY?.slice(0, 20) + "...");
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+console.log("✅ Supabase client created");
+
+// --- Inicializar Stripe (precisa estar disponível no webhook) ---
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: "2024-06-20"
+});
+console.log("✅ Stripe client created");
 
 const app = express();
 
@@ -272,21 +288,6 @@ app.use((req, res, next) => {
   
   next();
 });
-
-// --- Supabase (usando service_role no backend) ---
-console.log("[SUPABASE_URL]", process.env.SUPABASE_URL);
-console.log("[SUPABASE_SERVICE_KEY]", process.env.SUPABASE_SERVICE_KEY?.slice(0, 20) + "...");
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
-console.log("✅ Supabase client created");
-
-// --- Stripe Billing ---
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: "2024-06-20"
-});
-console.log("✅ Stripe client created");
 
 // Health-check
 app.get("/health", (_req, res) => res.json({ ok: true }));
