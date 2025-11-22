@@ -58,6 +58,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       case 'checkout.session.completed': {
         const session = event.data.object;
         console.log('📦 checkout.session.completed:', session.id);
+        console.log('   Customer ID:', session.customer);
+        console.log('   Subscription ID:', session.subscription);
 
         // Buscar assinatura pelo stripe_checkout_session_id
         const { data: subscription, error: findError } = await supabase
@@ -68,10 +70,13 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
         if (findError || !subscription) {
           console.error('❌ Assinatura não encontrada para session:', session.id);
+          console.error('   Erro Supabase:', findError);
           break;
         }
 
-        console.log('✅ Assinatura encontrada:', subscription.id);
+        console.log('✅ Assinatura encontrada no banco:', subscription.id);
+        console.log('   business_id:', subscription.business_id);
+        console.log('   Atualizando com dados do Stripe...');
 
         // Atualizar assinatura com dados do Stripe
         const { error: updateError } = await supabase
@@ -88,7 +93,9 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         if (updateError) {
           console.error('❌ Erro ao atualizar assinatura:', updateError);
         } else {
-          console.log(`✅ Assinatura ${subscription.id} ATIVADA`);
+          console.log(`✅ Assinatura ${subscription.id} ATIVADA COM SUCESSO!`);
+          console.log('   external_subscription_id:', session.subscription);
+          console.log('   stripe_customer_id:', session.customer);
         }
 
         break;
@@ -133,8 +140,16 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object;
         console.log('💰 invoice.payment_succeeded:', invoice.id);
+        console.log('   Subscription ID do Stripe:', invoice.subscription);
+        console.log('   Amount paid:', invoice.amount_paid);
 
-        // Buscar assinatura
+        // Validar se invoice.subscription existe
+        if (!invoice.subscription) {
+          console.log('⚠️ Invoice sem subscription_id - pode ser pagamento avulso');
+          break;
+        }
+
+        // Buscar assinatura pelo external_subscription_id (que é o stripe subscription_id)
         const { data: subscription, error: findError } = await supabase
           .from('subscriptions')
           .select('*')
@@ -142,9 +157,14 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           .single();
 
         if (findError || !subscription) {
-          console.error('❌ Assinatura não encontrada para invoice:', invoice.subscription);
+          console.error('❌ Assinatura não encontrada no banco para subscription_id:', invoice.subscription);
+          console.error('   Erro Supabase:', findError);
+          console.log('💡 DICA: Verifique se checkout.session.completed foi processado primeiro');
           break;
         }
+
+        console.log('✅ Assinatura encontrada:', subscription.id);
+        console.log('   business_id:', subscription.business_id);
 
         // Registrar pagamento na tabela payments
         const { error: paymentError } = await supabase
@@ -164,7 +184,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         if (paymentError) {
           console.error('❌ Erro ao registrar pagamento:', paymentError);
         } else {
-          console.log(`✅ Pagamento registrado para assinatura ${subscription.id}`);
+          console.log(`✅ Pagamento registrado com sucesso!`);
+          console.log('   Valor:', (invoice.amount_paid / 100).toFixed(2), 'BRL');
         }
 
         // Atualizar next_charge_at (+30 dias)
@@ -175,6 +196,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
             updated_at: new Date().toISOString()
           })
           .eq('id', subscription.id);
+
+        console.log('✅ Próxima cobrança atualizada para +30 dias');
 
         break;
       }
