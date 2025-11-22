@@ -263,7 +263,14 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   }
 });
 
+/* =============================
+   BODY PARSERS
+   
+   ⚠️ ATENÇÃO: Vêm DEPOIS do webhook
+   O webhook já tem seu próprio express.raw()
+============================= */
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // CORS configurado para aceitar requisições do frontend
 app.use(
