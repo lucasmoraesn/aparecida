@@ -19,9 +19,11 @@ async function applyMigration() {
     console.log('📦 Aplicando migration...');
     
     const migrationSQL = readFileSync(
-      join(__dirname, '../supabase/migrations/20250113000000_fix_subscriptions_uuid.sql'),
+      join(__dirname, '../supabase/migrations/20250119000000_add_stripe_columns.sql'),
       'utf-8'
     );
+    
+    console.log('📄 Migration:', '20250119000000_add_stripe_columns.sql');
 
     const { error } = await supabase.rpc('exec_sql', { sql: migrationSQL });
     

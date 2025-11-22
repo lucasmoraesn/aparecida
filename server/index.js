@@ -586,5 +586,5 @@ app.listen(port, () => {
   console.log("✅ Server is ready and listening for requests");
   console.log("💳 Stripe Billing integrado e ativo");
   console.log(`   Webhook endpoint: http://localhost:${port}/api/webhook`);
-  console.log(`   Success URL: ${process.env.PUBLIC_URL_NGROK || 'http://localhost:5173'}/subscription/success`);
+  console.log(`   Success URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/subscription/success`);
 });
