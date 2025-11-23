@@ -15,12 +15,6 @@ interface FormData {
   plan: string;
   acceptTerms: boolean;
   payerEmail: string;
-  cardNumber: string;
-  cardExpMonth: string;
-  cardExpYear: string;
-  cardSecurityCode: string;
-  cardHolderName: string;
-  cardHolderTaxId: string;
 }
 
 interface RegistrationData {
@@ -36,12 +30,6 @@ interface RegistrationData {
   admin_email: string;
   contact_email: string;
   payer_email: string;
-  card_number: string;
-  card_exp_month: string;
-  card_exp_year: string;
-  card_security_code: string;
-  card_holder_name: string;
-  card_holder_tax_id: string;
 }
 
 const BusinessRegistration: React.FC = () => {
@@ -58,12 +46,6 @@ const BusinessRegistration: React.FC = () => {
     plan: '',
     acceptTerms: false,
     payerEmail: '',
-    cardNumber: '',
-    cardExpMonth: '',
-    cardExpYear: '',
-    cardSecurityCode: '',
-    cardHolderName: '',
-    cardHolderTaxId: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -289,12 +271,6 @@ const BusinessRegistration: React.FC = () => {
         admin_email: 'admin@aparecida.com',
         contact_email: 'contato@aparecida.com',
         payer_email: formData.payerEmail,
-        card_number: formData.cardNumber,
-        card_exp_month: formData.cardExpMonth,
-        card_exp_year: formData.cardExpYear,
-        card_security_code: formData.cardSecurityCode,
-        card_holder_name: formData.cardHolderName,
-        card_holder_tax_id: formData.cardHolderTaxId,
       };
 
       console.log('📤 Dados sendo enviados:', registrationData);
@@ -559,104 +535,6 @@ const BusinessRegistration: React.FC = () => {
               {errors.payerEmail && (
                 <p className="text-red-500 text-sm mt-1">{errors.payerEmail}</p>
               )}
-            </div>
-
-            {/* Dados do Cartão */}
-            <div className="border-t pt-6 mt-6">
-              <h3 className="text-lg font-semibold mb-4">💳 Dados do Cartão de Crédito</h3>
-              
-              {/* Número do Cartão */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Número do Cartão *
-                </label>
-                <input
-                  type="text"
-                  maxLength={19}
-                  value={formData.cardNumber}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
-                    handleInputChange('cardNumber', value);
-                  }}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0000 0000 0000 0000"
-                />
-              </div>
-
-              {/* Validade e CVV */}
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mês *
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={2}
-                    value={formData.cardExpMonth}
-                    onChange={(e) => handleInputChange('cardExpMonth', e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="MM"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ano *
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={4}
-                    value={formData.cardExpYear}
-                    onChange={(e) => handleInputChange('cardExpYear', e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="AAAA"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    CVV *
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={4}
-                    value={formData.cardSecurityCode}
-                    onChange={(e) => handleInputChange('cardSecurityCode', e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="000"
-                  />
-                </div>
-              </div>
-
-              {/* Nome no Cartão */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome no Cartão *
-                </label>
-                <input
-                  type="text"
-                  value={formData.cardHolderName}
-                  onChange={(e) => handleInputChange('cardHolderName', e.target.value.toUpperCase())}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="NOME COMPLETO"
-                />
-              </div>
-
-              {/* CPF/CNPJ do Titular */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  CPF/CNPJ do Titular *
-                </label>
-                <input
-                  type="text"
-                  maxLength={18}
-                  value={formData.cardHolderTaxId}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    handleInputChange('cardHolderTaxId', value);
-                  }}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="000.000.000-00"
-                />
-              </div>
             </div>
 
             {/* Aceite dos termos */}
