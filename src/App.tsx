@@ -10,7 +10,7 @@ import TouristAttractions from './pages/TouristAttractions';
 import Events from './pages/Events';
 import AllEvents from './pages/AllEvents';
 import BusinessRegistration from './pages/BusinessRegistration';
-import Payment from './pages/Payment';
+// import Payment from './pages/Payment'; // ❌ OBSOLETO - Stripe Billing usa checkout.stripe.com
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancel from './pages/SubscriptionCancel';
 
@@ -27,7 +27,8 @@ function App() {
         <Route path="/eventos" element={<Events />} />
         <Route path="/todos-eventos" element={<AllEvents />} />
         <Route path="/cadastrar-negocio" element={<BusinessRegistration />} />
-        <Route path="/payment" element={<Payment />} />
+        {/* <Route path="/payment" element={<Payment />} /> */}
+        {/* ❌ ROTA OBSOLETA - Stripe Billing redireciona para checkout.stripe.com */}
         <Route path="/subscription/success" element={<SubscriptionSuccess />} />
         <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
       </Routes>
