@@ -317,7 +317,8 @@ app.get("/api/plans", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("business_plans")
-      .select("id, name, price, description, features")
+      .select("id, name, price, description, features, is_active")
+      .eq("is_active", true) // Apenas planos ativos
       .order("price", { ascending: true });
     if (error) throw error;
     res.json(data);
