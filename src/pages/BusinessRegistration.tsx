@@ -297,25 +297,39 @@ const BusinessRegistration: React.FC = () => {
         card_holder_tax_id: formData.cardHolderTaxId,
       };
 
-      // Processar pagamento direto com PagBank
-      const response = await BusinessService.registerBusiness(registrationData);
-      
-      console.log('✅ Resposta do backend:', response);
-      
-      // Pagamento foi processado - mostrar resultado
-      if (response.success && response.status === 'PAID') {
-        alert(`✅ ${response.message}\n\nID do Pedido: ${response.order_id}\nStatus: ${response.status}`);
-        navigate('/');
-      } else if (response.success) {
-        alert(`⏳ ${response.message}\n\nSeu pagamento está sendo processado.`);
-        navigate('/');
-      } else {
-        throw new Error(response.message || 'Pagamento não aprovado');
-      }
-    } catch (error) {
+      console.log('📤 Dados sendo enviados:', registrationData);
+
+      // 1. Criar cadastro do negócio
+      console.log('🔄 Criando cadastro do negócio...');
+      const businessId = await BusinessService.createRegistration(registrationData);
+      console.log('✅ Cadastro criado com ID:', businessId);
+
+      // 2. Criar assinatura
+      console.log('🔄 Criando assinatura para business:', businessId);
+      const { checkoutUrl, subscriptionId } = await BusinessService.createSubscription(
+        selectedPlan.id,
+        businessId,
+        {
+          email: formData.payerEmail,
+          name: formData.establishmentName,
+        }
+      );
+
+      console.log('✅ Assinatura criada:', { subscriptionId });
+      console.log('🔗 Redirecionando para checkout de pagamento:', checkoutUrl);
+
+      // 3. Enviar email admin (opcional, não bloqueante)
+      BusinessService.sendAdminEmail(registrationData).catch(console.error);
+
+      // 4. Redirecionar para o checkout de pagamento (Stripe)
+      window.location.href = checkoutUrl;
+    } catch (error: any) {
       console.error('❌ Erro ao enviar formulário:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      alert(`❌ Erro ao processar pagamento:\n\n${errorMessage}\n\nTente novamente.`);
+      console.error('❌ Mensagem do erro:', error?.message);
+      console.error('❌ Stack do erro:', error?.stack);
+      
+      const errorMessage = error?.message || 'Erro desconhecido ao enviar formulário';
+      alert(`Erro: ${errorMessage}\n\nVerifique o console (F12) para mais detalhes.`);
     } finally {
       setIsSubmitting(false);
     }

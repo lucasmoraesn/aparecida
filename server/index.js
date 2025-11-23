@@ -2,38 +2,312 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
-import { PagBankService } from "./payments/pagbankService.js";
+import Stripe from "stripe";
 
 dotenv.config();
+console.log('🔍 DEBUG index.js:');
+console.log('  PUBLIC_URL_NGROK:', process.env.PUBLIC_URL_NGROK);
+console.log('  SUPABASE_URL:', process.env.SUPABASE_URL);
+console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅ Configurada' : '❌ Não configurada');
+console.log('  STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? '✅ Configurada' : '❌ Não configurada');
 
-// --- Validar configuração PagBank ---
-if (!process.env.PAGBANK_TOKEN) {
-  console.error("❌ PAGBANK_TOKEN não configurado no .env!");
-  console.error("   Configure o token em server/.env");
-  console.error("   Obtenha em: https://dev.pagseguro.uol.com.br/credentials");
-} else {
-  const env = process.env.PAGBANK_BASE_URL?.includes('sandbox') ? 'SANDBOX' : 'PRODUÇÃO';
-  console.log(`✅ PagBank configurado (${env})`);
-  console.log(`   Token: ${process.env.PAGBANK_TOKEN.substring(0, 20)}...`);
-}
-
-const app = express();
-app.use(express.json());
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "http://localhost:5174", /\.ngrok-free\.app$/],
-  })
-);
-
-// --- Supabase (usando service_role no backend) ---
-console.log("🔍 SUPABASE_URL:", process.env.SUPABASE_URL);
-console.log("🔍 SUPABASE_SERVICE_KEY length:", process.env.SUPABASE_SERVICE_KEY?.length);
-console.log("🔍 SUPABASE_SERVICE_KEY prefix:", process.env.SUPABASE_SERVICE_KEY?.substring(0, 50) + "...");
-
+// --- Inicializar Supabase (precisa estar disponível no webhook) ---
+console.log("[SUPABASE_URL]", process.env.SUPABASE_URL);
+console.log("[SUPABASE_SERVICE_KEY]", process.env.SUPABASE_SERVICE_KEY?.slice(0, 20) + "...");
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
+console.log("✅ Supabase client created");
+
+// --- Inicializar Stripe (precisa estar disponível no webhook) ---
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: "2024-06-20"
+});
+console.log("✅ Stripe client created");
+
+const app = express();
+
+/* =============================
+   WEBHOOK STRIPE
+   
+   ⚠️ IMPORTANTE: Esta rota DEVE vir ANTES do express.json()
+   O Stripe precisa do body raw para validar a assinatura
+   
+   Eventos tratados:
+   - checkout.session.completed: Checkout finalizado com sucesso
+   - customer.subscription.deleted: Assinatura cancelada
+   - invoice.payment_succeeded: Pagamento recorrente bem-sucedido
+   - invoice.payment_failed: Falha no pagamento recorrente
+============================= */
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  console.log('\n🔔 WEBHOOK RECEBIDO!');
+  console.log('   Timestamp:', new Date().toISOString());
+  console.log('   Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('   Body type:', typeof req.body);
+  console.log('   Body is Buffer:', Buffer.isBuffer(req.body));
+  console.log('   Body length:', req.body?.length);
+  
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+
+  try {
+    // 1. Verificar assinatura do webhook
+    if (!webhookSecret) {
+      console.error('❌ STRIPE_WEBHOOK_SECRET não configurado');
+      return res.status(500).json({ 
+        error: 'Webhook secret não configurado' 
+      });
+    }
+
+    console.log('🔐 Tentando validar assinatura...');
+    console.log('   Signature header:', sig);
+    console.log('   Webhook secret:', webhookSecret);
+    
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    console.log('✅ Webhook verificado:', event.type);
+
+  } catch (err) {
+    console.error('❌ Falha na verificação do webhook:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // 2. Responder imediatamente para o Stripe
+  res.status(200).json({ received: true });
+
+  // 3. Processar evento de forma assíncrona
+  try {
+    switch (event.type) {
+      
+      // A) CHECKOUT COMPLETADO
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        console.log('📦 checkout.session.completed:', session.id);
+        console.log('   Customer ID:', session.customer);
+        console.log('   Subscription ID:', session.subscription);
+
+        // Buscar assinatura pelo stripe_checkout_session_id
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('stripe_checkout_session_id', session.id)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada para session:', session.id);
+          console.error('   Erro Supabase:', findError);
+          break;
+        }
+
+        console.log('✅ Assinatura encontrada no banco:', subscription.id);
+        console.log('   business_id:', subscription.business_id);
+        console.log('   Atualizando com dados do Stripe...');
+
+        // Atualizar assinatura com dados do Stripe
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({
+            external_subscription_id: session.subscription,
+            stripe_customer_id: session.customer,
+            status: 'active',
+            next_charge_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 dias
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subscription.id);
+
+        if (updateError) {
+          console.error('❌ Erro ao atualizar assinatura:', updateError);
+        } else {
+          console.log(`✅ Assinatura ${subscription.id} ATIVADA COM SUCESSO!`);
+          console.log('   external_subscription_id:', session.subscription);
+          console.log('   stripe_customer_id:', session.customer);
+        }
+
+        break;
+      }
+
+      // B) ASSINATURA CANCELADA
+      case 'customer.subscription.deleted': {
+        const stripeSubscription = event.data.object;
+        console.log('🚫 customer.subscription.deleted:', stripeSubscription.id);
+
+        // Buscar assinatura pelo external_subscription_id (stripe subscription id)
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('external_subscription_id', stripeSubscription.id)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada:', stripeSubscription.id);
+          break;
+        }
+
+        // Atualizar status para cancelado
+        const { error: updateError } = await supabase
+          .from('subscriptions')
+          .update({
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subscription.id);
+
+        if (updateError) {
+          console.error('❌ Erro ao cancelar assinatura:', updateError);
+        } else {
+          console.log(`✅ Assinatura ${subscription.id} CANCELADA`);
+        }
+
+        break;
+      }
+
+      // C) PAGAMENTO RECORRENTE BEM-SUCEDIDO
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object;
+        console.log('💰 invoice.payment_succeeded:', invoice.id);
+        console.log('   Subscription ID do Stripe:', invoice.subscription);
+        console.log('   Amount paid:', invoice.amount_paid);
+        console.log('   Billing reason:', invoice.billing_reason);
+
+        // Validar se invoice.subscription existe
+        if (!invoice.subscription) {
+          console.log('ℹ️ Invoice sem subscription_id - pagamento avulso (setup inicial)');
+          console.log('   Isso é normal na primeira cobrança. O checkout.session.completed já processou.');
+          break;
+        }
+
+        // Buscar assinatura pelo external_subscription_id (que é o stripe subscription_id)
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('external_subscription_id', invoice.subscription)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada no banco para subscription_id:', invoice.subscription);
+          console.error('   Erro Supabase:', findError);
+          console.log('💡 DICA: Verifique se checkout.session.completed foi processado primeiro');
+          break;
+        }
+
+        console.log('✅ Assinatura encontrada:', subscription.id);
+        console.log('   business_id:', subscription.business_id);
+
+        // Registrar pagamento na tabela payments
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .insert({
+            business_id: subscription.business_id,
+            subscription_id: subscription.id,
+            external_payment_id: invoice.id,
+            status: 'approved',
+            amount_cents: invoice.amount_paid,
+            payment_method: invoice.payment_method_types?.[0] || 'card',
+            paid_at: new Date(invoice.status_transitions.paid_at * 1000).toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (paymentError) {
+          console.error('❌ Erro ao registrar pagamento:', paymentError);
+        } else {
+          console.log(`✅ Pagamento registrado com sucesso!`);
+          console.log('   Valor:', (invoice.amount_paid / 100).toFixed(2), 'BRL');
+        }
+
+        // Atualizar next_charge_at (+30 dias)
+        await supabase
+          .from('subscriptions')
+          .update({
+            next_charge_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subscription.id);
+
+        console.log('✅ Próxima cobrança atualizada para +30 dias');
+
+        break;
+      }
+
+      // D) FALHA NO PAGAMENTO
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object;
+        console.log('❌ invoice.payment_failed:', invoice.id);
+
+        // Buscar assinatura
+        const { data: subscription, error: findError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('external_subscription_id', invoice.subscription)
+          .single();
+
+        if (findError || !subscription) {
+          console.error('❌ Assinatura não encontrada para invoice:', invoice.subscription);
+          break;
+        }
+
+        // Registrar tentativa de pagamento falha
+        await supabase
+          .from('payments')
+          .insert({
+            business_id: subscription.business_id,
+            subscription_id: subscription.id,
+            external_payment_id: invoice.id,
+            status: 'failed',
+            amount_cents: invoice.amount_due,
+            payment_method: invoice.payment_method_types?.[0] || 'card',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        console.log(`⚠️ Pagamento FALHOU para assinatura ${subscription.id}`);
+
+        break;
+      }
+
+      default:
+        console.log(`ℹ️ Evento não tratado: ${event.type}`);
+    }
+
+  } catch (error) {
+    console.error('❌ Erro ao processar webhook:', error);
+  }
+});
+
+/* =============================
+   BODY PARSERS
+   
+   ⚠️ ATENÇÃO: Vêm DEPOIS do webhook
+   O webhook já tem seu próprio express.raw()
+============================= */
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// CORS configurado para aceitar requisições do frontend
+app.use(
+  cors({
+    origin: true,
+    credentials: true
+  })
+);
+
+// Middleware para debug de requisições
+app.use((req, res, next) => {
+  res.setHeader('ngrok-skip-browser-warning', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Log de todas as requisições para debug
+  console.log(`📥 ${req.method} ${req.path}`, {
+    origin: req.headers.origin,
+    userAgent: req.headers['user-agent']?.substring(0, 50)
+  });
+  
+  next();
+});
 
 // Health-check
 app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -54,15 +328,83 @@ app.get("/api/plans", async (req, res) => {
 });
 
 /* =============================
-   CADASTRAR NEGÓCIO + PROCESSAR PAGAMENTO COM PAGBANK
+   VERIFICAR SESSÃO DO STRIPE
+   
+   Usado pela tela de sucesso do frontend para verificar
+   se o checkout foi completado e obter dados da sessão.
+============================= */
+app.get("/api/check-session", async (req, res) => {
+  try {
+    const { session_id } = req.query;
+
+    // Validar parâmetro obrigatório
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        error: "session_id é obrigatório"
+      });
+    }
+
+    console.log("🔍 Verificando sessão Stripe:", session_id);
+
+    // Buscar sessão no Stripe
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (!session) {
+      console.error("❌ Sessão não encontrada:", session_id);
+      return res.status(404).json({
+        success: false,
+        error: "Sessão não encontrada"
+      });
+    }
+
+    console.log("✅ Sessão encontrada:", {
+      id: session.id,
+      customer: session.customer,
+      subscription: session.subscription,
+      payment_status: session.payment_status,
+      status: session.status
+    });
+
+    // Retornar dados da sessão
+    return res.json({
+      success: true,
+      sessionId: session.id,
+      customerId: session.customer,
+      subscriptionId: session.subscription,
+      status: session.status,
+      paymentStatus: session.payment_status,
+      customerEmail: session.customer_details?.email,
+      amountTotal: session.amount_total
+    });
+
+  } catch (err) {
+    console.error("❌ Erro ao verificar sessão:", err.message);
+    
+    // Tratar erro específico de sessão não encontrada
+    if (err.statusCode === 404) {
+      return res.status(404).json({
+        success: false,
+        error: "Sessão não encontrada"
+      });
+    }
+
+    // Erro genérico
+    return res.status(500).json({
+      success: false,
+      error: "Erro ao verificar sessão",
+      message: err.message
+    });
+  }
+});
+
+/* =============================
+   CADASTRAR NEGÓCIO + CRIAR ASSINATURA
 ============================= */
 app.post("/api/register-business", async (req, res) => {
   try {
     const registration = req.body;
-    console.log("📥 Dados recebidos do frontend");
-    console.log("📋 Plan ID:", registration.plan_id);
-    console.log("📧 Email:", registration.payer_email);
-    console.log("💳 Card:", registration.card_number?.substring(0, 4) + "****");
+    console.log("📥 Dados recebidos do front:", JSON.stringify(registration, null, 2));
 
     const {
       establishment_name,
@@ -83,111 +425,240 @@ app.post("/api/register-business", async (req, res) => {
       card_holder_tax_id,
     } = registration;
 
-    // 1. Validar dados obrigatórios
-    if (!plan_id || !payer_email || !card_number) {
+    // Validação de campos obrigatórios
+    if (!establishment_name || !category || !address || !location || !photos || !whatsapp || !description || !plan_id) {
+      console.error("❌ Campos obrigatórios faltando:", {
+        establishment_name: !!establishment_name,
+        category: !!category,
+        address: !!address,
+        location: !!location,
+        photos: !!photos,
+        whatsapp: !!whatsapp,
+        description: !!description,
+        plan_id: !!plan_id
+      });
       return res.status(400).json({
         error: true,
-        message: "Dados incompletos: plano, email e cartão são obrigatórios",
+        message: "Campos obrigatórios faltando"
       });
     }
 
-    // 2. Salvar cadastro no Supabase
-    console.log("� Salvando estabelecimento no Supabase...");
+    console.log("✅ Validação de campos passou");
+
+    // 1. Salvar cadastro de negócio no Supabase
+    const insertData = {
+      establishment_name,
+      category,
+      address,
+      location,
+      photos,
+      whatsapp,
+      phone,
+      description,
+      plan_id: parseInt(plan_id), // Garantir que é número
+      created_at: new Date().toISOString(),
+    };
     
-    const { data: businessData, error: businessError } = await supabase
+    console.log("📦 Dados a serem inseridos:", JSON.stringify(insertData, null, 2));
+    
+    const { data, error } = await supabase
       .from("business_registrations")
-      .insert([
-        {
-          establishment_name,
-          category,
-          address,
-          location,
-          photos,
-          whatsapp,
-          phone,
-          description,
-          plan_id,
-          created_at: new Date().toISOString(),
-        },
-      ])
+      .insert([insertData])
       .select("id")
       .single();
 
-    if (businessError) {
-      console.error("❌ Erro ao salvar no Supabase:", businessError);
-      throw new Error("Erro ao salvar estabelecimento");
+    if (error) {
+      console.error("❌ Erro detalhado do Supabase:", JSON.stringify(error, null, 2));
+      throw new Error(`Erro no Supabase: ${error.message} - ${error.details || ''} - ${error.hint || ''}`);
     }
+    console.log("✅ Cadastro inserido no Supabase:", data);
 
-    console.log("✅ Estabelecimento salvo:", businessData.id);
-
-    // 3. Buscar informações do plano
-    const { data: planData, error: planError } = await supabase
-      .from("business_plans")
-      .select("price, name")
-      .eq("id", plan_id)
-      .single();
-
-    if (planError) {
-      throw new Error("Plano não encontrado");
-    }
-
-    console.log(`💰 Plano: ${planData.name} - R$ ${planData.price}`);
-
-    // 4. Processar pagamento no PagBank
-    console.log("💳 Processando pagamento no PagBank...");
-    
-    const notificationUrl = process.env.PUBLIC_URL_NGROK
-      ? `${process.env.PUBLIC_URL_NGROK}/pagbank/webhook`
-      : undefined;
-
-    const orderData = await PagBankService.createOrder({
-      amount: planData.price,
-      description: `${planData.name} - ${establishment_name}`,
-      referenceId: `business_${businessData.id}`,
-      customerName: card_holder_name || establishment_name,
-      customerEmail: payer_email,
-      customerTaxId: card_holder_tax_id,
-      cardNumber: card_number,
-      cardExpMonth: card_exp_month,
-      cardExpYear: card_exp_year,
-      cardSecurityCode: card_security_code,
-      installments: 1,
-      notificationUrl,
-    });
-
-    // 5. Retornar sucesso
-    const chargeStatus = orderData.charges?.[0]?.status;
-    
+    // 2. Retorna apenas o businessId para o front
     res.json({
       success: true,
-      business_id: businessData.id,
-      order_id: orderData.id,
-      status: chargeStatus,
-      message: chargeStatus === "PAID" 
-        ? "Pagamento aprovado! Estabelecimento cadastrado com sucesso."
-        : "Pagamento em processamento. Você receberá um email com a confirmação.",
+      business_id: data.id,
+      businessId: data.id, // Compatibilidade
     });
 
   } catch (err) {
-    console.error("❌ Erro no fluxo completo:", err.message);
+    console.error("❌ Erro no fluxo completo:");
+    console.error("   Message:", err.message);
+    console.error("   Stack:", err.stack);
+    console.error("   Details:", err.response?.data || err.details || "");
     
     res.status(500).json({
       error: true,
-      message: err.message || "Erro ao processar pagamento",
+      message: err.message || "Erro ao processar cadastro",
+      details: err.details || err.response?.data || err.hint || null,
+      code: err.code || null
     });
   }
 });
 
 /* =============================
-   WEBHOOK PAGBANK
+   CRIAR ASSINATURA COM STRIPE BILLING
+   
+   Fluxo:
+   1. Validar dados recebidos
+   2. Buscar plano no Supabase
+   3. Criar Stripe Customer
+   4. Criar Stripe Checkout Session (mode: subscription)
+   5. Salvar subscription no Supabase com status "pending"
+   6. Retornar checkoutUrl para o frontend
 ============================= */
-app.post("/pagbank/webhook", async (req, res) => {
+app.post('/api/create-subscription', async (req, res) => {
   try {
-    await PagBankService.handleWebhook(req.body, req.headers);
-    res.status(200).send("ok");
-  } catch (err) {
-    console.error("❌ Erro no webhook:", err);
-    res.status(500).send("error");
+    const { planId, businessId, customer } = req.body;
+    console.log("📥 Criando assinatura Stripe:", { planId, businessId, customer });
+
+    // 1. Validar dados obrigatórios
+    if (!planId || !businessId) {
+      return res.status(400).json({ 
+        error: 'planId e businessId são obrigatórios' 
+      });
+    }
+
+    if (!customer || !customer.email) {
+      return res.status(400).json({ 
+        error: 'Email do cliente é obrigatório' 
+      });
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customer.email)) {
+      return res.status(400).json({ 
+        error: 'Email inválido' 
+      });
+    }
+
+    // 2. Buscar plano no Supabase
+    const { data: plan, error: planError } = await supabase
+      .from('business_plans')
+      .select('*')
+      .eq('id', planId)
+      .single();
+
+    if (planError || !plan) {
+      console.error("❌ Plano não encontrado:", planError);
+      return res.status(404).json({ 
+        error: 'Plano não encontrado',
+        details: planError?.message 
+      });
+    }
+
+    console.log("✅ Plano encontrado:", plan.name, "- R$", plan.price);
+
+    // Validar e converter preço
+    const planPrice = Number(plan.price);
+    if (isNaN(planPrice) || planPrice <= 0) {
+      console.error("❌ Preço do plano inválido:", plan.price);
+      return res.status(500).json({ 
+        error: 'Preço do plano inválido',
+        details: `O plano ${plan.name} tem preço inválido: ${plan.price}`
+      });
+    }
+
+    // 3. Criar Stripe Customer
+    console.log("🔵 Criando Stripe Customer...");
+    const stripeCustomer = await stripe.customers.create({
+      email: customer.email,
+      name: customer.name || 'Cliente Aparecida',
+      metadata: {
+        business_id: businessId.toString(),
+        plan_id: planId.toString(),
+        source: 'aparecida_platform'
+      }
+    });
+    console.log("✅ Stripe Customer criado:", stripeCustomer.id);
+
+    // 4. Criar Stripe Checkout Session (modo subscription)
+    console.log("🔵 Criando Stripe Checkout Session...");
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    const session = await stripe.checkout.sessions.create({
+      customer: stripeCustomer.id,
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'brl',
+          product_data: {
+            name: plan.name,
+            description: plan.description || `Plano ${plan.name} - Aparecida`,
+          },
+          unit_amount: Math.round(planPrice * 100), // Converter para centavos
+          recurring: {
+            interval: 'month',
+            interval_count: 1,
+          },
+        },
+        quantity: 1,
+      }],
+      success_url: `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendUrl}/subscription/cancel`,
+      metadata: {
+        business_id: businessId.toString(),
+        plan_id: planId.toString(),
+      },
+    });
+
+    console.log("✅ Checkout Session criada:", session.id);
+    console.log("   URL:", session.url);
+
+    // 5. Salvar assinatura no Supabase com status "pending"
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .insert({
+        business_id: businessId,
+        plan_id: planId,
+        external_subscription_id: null, // Será preenchido pelo webhook
+        stripe_customer_id: stripeCustomer.id,
+        stripe_checkout_session_id: session.id,
+        status: 'pending',
+        amount_cents: Math.round(planPrice * 100),
+        frequency: 1,
+        frequency_type: 'months',
+        customer_email: customer.email,
+        customer_name: customer.name || null,
+        customer_tax_id: customer.tax_id || null,
+      })
+      .select()
+      .single();
+
+    if (subError) {
+      console.error("❌ Erro ao salvar assinatura no Supabase:", subError);
+      // Tentar limpar o customer criado no Stripe
+      try {
+        await stripe.customers.del(stripeCustomer.id);
+      } catch (cleanupError) {
+        console.error("⚠️ Erro ao limpar Stripe Customer:", cleanupError);
+      }
+      return res.status(500).json({ 
+        error: 'Erro ao salvar assinatura no banco de dados',
+        details: subError.message 
+      });
+    }
+
+    console.log("✅ Assinatura salva no Supabase:", subscription.id);
+
+    // 6. Retornar checkoutUrl para o frontend
+    return res.json({
+      success: true,
+      checkoutUrl: session.url,
+      subscription_id: subscription.id,
+      stripe_customer_id: stripeCustomer.id,
+      stripe_session_id: session.id
+    });
+
+  } catch (error) {
+    console.error("❌ Erro ao criar assinatura:", error);
+    return res.status(500).json({
+      error: "Erro ao criar assinatura",
+      message: error.message,
+      details: error.stack
+    });
   }
 });
 
@@ -195,4 +666,20 @@ app.post("/pagbank/webhook", async (req, res) => {
    START SERVER
 ============================= */
 const port = process.env.PORT || 3001;
-app.listen(port, () => console.log(`🚀 Server on http://localhost:${port}`));
+
+// Tratamento de erros não capturados
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+app.listen(port, () => {
+  console.log(`🚀 Server on http://localhost:${port}`);
+  console.log("✅ Server is ready and listening for requests");
+  console.log("💳 Stripe Billing integrado e ativo");
+  console.log(`   Webhook endpoint: http://localhost:${port}/api/webhook`);
+  console.log(`   Success URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/subscription/success`);
+});

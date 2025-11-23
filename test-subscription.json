@@ -1,0 +1,9 @@
+{
+  "planId": "8f0ec576-9c7d-46d2-b60e-e084ae3769e6",
+  "businessId": "f73eef47-7a9d-4c6a-9e8f-d53bd7b353fa",
+  "customer": {
+    "email": "teste@aparecida.com",
+    "name": "João Silva Teste",
+    "tax_id": "12345678901"
+  }
+}

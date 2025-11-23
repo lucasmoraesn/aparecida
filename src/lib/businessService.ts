@@ -41,58 +41,91 @@ export interface Payment {
 }
 
 export class BusinessService {
-   private static API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+   private static API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_PUBLIC_URL_NGROK || "http://localhost:3001";
 
-   // 🔹 Buscar planos (pode ir direto ao Supabase, só leitura)
+   // 🔹 Buscar planos via backend (evita problemas de RLS)
    static async getPlans(): Promise<BusinessPlan[]> {
-      const { data, error } = await supabase
-         .from('business_plans')
-         .select('id, name, price, description, features')
-         .order('price', { ascending: true });
+      const response = await fetch(`${this.API_BASE}/api/plans`, {
+         method: 'GET',
+         headers: { 'Content-Type': 'application/json' },
+      });
 
-      if (error) {
-         throw new Error(`Erro ao buscar planos: ${error.message}`);
+      if (!response.ok) {
+         throw new Error(`Erro ao buscar planos: ${response.statusText}`);
       }
 
-      return data.map(plan => ({
+      const data = await response.json();
+      
+      return data.map((plan: any) => ({
          ...plan,
          features: plan.features || [],
          is_active: true
       }));
    }
 
-   // 🔹 Criar cadastro de negócio + pagamento PagBank (chama backend!)
-   static async registerBusiness(registration: BusinessRegistration): Promise<{ success: boolean; business_id: string; order_id: string; status: string; message: string }> {
+   // 🔹 Criar cadastro de negócio (apenas salva no DB)
+   static async createRegistration(registration: BusinessRegistration): Promise<string> {
+      console.log('🔗 URL da API:', this.API_BASE);
+      console.log('📤 Enviando cadastro:', registration);
+      
       const response = await fetch(`${this.API_BASE}/api/register-business`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify(registration),
       });
 
+      console.log('📥 Status da resposta:', response.status, response.statusText);
+
       if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));
-         throw new Error(errorData.message || 'Erro ao criar cadastro');
+         console.error('❌ Erro do servidor:', errorData);
+         throw new Error(errorData.message || `Erro ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
-      return result;
+      console.log('📥 Resultado do servidor:', result);
+      return result.business_id || result.businessId;
    }
 
-   // 🔹 Criar cadastro de negócio apenas (sem assinatura - DEPRECATED)
-   static async createRegistration(registration: BusinessRegistration): Promise<string> {
-      const response = await fetch(`${this.API_BASE}/api/register-business`, {
+   // 🔹 Criar assinatura com Stripe Billing
+   static async createSubscription(
+      planId: string, 
+      businessId: string, 
+      customer: { email: string; name?: string; tax_id?: string }
+   ): Promise<{ checkoutUrl: string; subscriptionId: string }> {
+      console.log('📤 Criando assinatura Stripe:', { planId, businessId, customer });
+      
+      const response = await fetch(`${this.API_BASE}/api/create-subscription`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify(registration),
+         body: JSON.stringify({ planId, businessId, customer }),
       });
+
+      console.log('📥 Status da resposta (subscription):', response.status, response.statusText);
 
       if (!response.ok) {
          const errorData = await response.json().catch(() => ({}));
-         throw new Error(errorData.message || 'Erro ao criar cadastro');
+         console.error('❌ Erro ao criar assinatura:', errorData);
+         
+         throw new Error(
+            errorData.message || 
+            errorData.error || 
+            `Erro ao criar assinatura: ${response.status} - ${response.statusText}`
+         );
       }
 
       const result = await response.json();
-      return result.business.id;
+      console.log('✅ Assinatura criada com sucesso:', result);
+      
+      // Validar resposta
+      if (!result.checkoutUrl) {
+         throw new Error('URL de checkout não retornada pelo servidor');
+      }
+      
+      return {
+         checkoutUrl: result.checkoutUrl,
+         subscriptionId: result.subscription_id,
+      };
    }
 
 
