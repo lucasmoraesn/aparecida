@@ -683,4 +683,7 @@ app.listen(port, () => {
   console.log("💳 Stripe Billing integrado e ativo");
   console.log(`   Webhook endpoint: http://localhost:${port}/api/webhook`);
   console.log(`   Success URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/subscription/success`);
+}).on('error', (err) => {
+  console.error('❌ Erro ao iniciar servidor:', err);
+  process.exit(1);
 });
