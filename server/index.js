@@ -663,6 +663,114 @@ app.post('/api/create-subscription', async (req, res) => {
   }
 });
 
+app.post('/api/test-plan-2', async (req, res) => {
+  try {
+    const { customer_email } = req.body;
+
+    if (!customer_email) {
+      return res.status(400).json({ 
+        error: 'customer_email é obrigatório' 
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customer_email)) {
+      return res.status(400).json({ 
+        error: 'Email inválido' 
+      });
+    }
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      customer_email: customer_email,
+      line_items: [{
+        price_data: {
+          currency: 'brl',
+          product_data: {
+            name: 'Teste real R$ 2,00',
+          },
+          unit_amount: 200,
+          recurring: {
+            interval: 'month',
+            interval_count: 1,
+          },
+        },
+        quantity: 1,
+      }],
+      success_url: `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendUrl}/subscription/cancel`,
+    });
+
+    return res.json({
+      url: session.url
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao criar checkout test-plan-2:', error);
+    return res.status(500).json({
+      error: 'Erro ao criar checkout',
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/test-plan-4', async (req, res) => {
+  try {
+    const { customer_email } = req.body;
+
+    if (!customer_email) {
+      return res.status(400).json({ 
+        error: 'customer_email é obrigatório' 
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customer_email)) {
+      return res.status(400).json({ 
+        error: 'Email inválido' 
+      });
+    }
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      customer_email: customer_email,
+      line_items: [{
+        price_data: {
+          currency: 'brl',
+          product_data: {
+            name: 'Teste real R$ 4,00',
+          },
+          unit_amount: 400,
+          recurring: {
+            interval: 'month',
+            interval_count: 1,
+          },
+        },
+        quantity: 1,
+      }],
+      success_url: `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendUrl}/subscription/cancel`,
+    });
+
+    return res.json({
+      url: session.url
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao criar checkout test-plan-4:', error);
+    return res.status(500).json({
+      error: 'Erro ao criar checkout',
+      message: error.message
+    });
+  }
+});
+
 /* =============================
    START SERVER
 ============================= */

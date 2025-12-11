@@ -1,0 +1,54 @@
+✅ SISTEMA DE PAGAMENTO - STRIPE CONFIGURADO
+
+RESUMO:
+Sistema funcionando com Stripe (cartão de crédito) como método único de pagamento.
+
+STATUS ATUAL:
+✅ Backend: Stripe com Supabase integrados
+✅ Frontend: Componentes de assinatura com Stripe
+✅ Database: Migrations configuradas
+✅ Webhooks: Stripe webhook operacional (/api/webhook)
+✅ Autenticação: Resend configurado para emails
+
+COMPONENTES ATIVOS:
+- server/index.js (webhook e lógica Stripe)
+- server/app.js (rotas base e CORS)
+- src/lib/businessService.ts (assinaturas Stripe)
+- Stripe Billing Portal (gerenciamento de assinaturas)
+- src/pages/SubscriptionSuccess.tsx (confirmação de sucesso)
+- src/pages/SubscriptionCancel.tsx (cancelamento de assinatura)
+
+INTEGRAÇÃO REMOVIDA:
+❌ PagBank / PIX (pagbankWebhook.js, pagbankClient.js, pagbankService.js)
+❌ PIX recorrente (PixPayment.tsx)
+❌ Boleto
+❌ Fluxo múltiplos métodos de pagamento
+
+FLUXO DE PAGAMENTO:
+1. Cliente acessa "Registrar Negócio"
+2. Preenche dados do negócio
+3. Seleciona plano (cartão de crédito obrigatório)
+4. Clica em "Continuar com Pagamento"
+5. Stripe Checkout redireciona para página de pagamento segura
+6. Pagamento processado via Stripe
+7. Webhook /api/webhook recebe confirmação
+8. Assinatura ativada no banco de dados
+9. Email de confirmação enviado via Resend
+
+PRÓXIMOS PASSOS:
+1. Testar fluxo completo de assinatura com Stripe
+2. Validar webhooks em ambiente de testes
+3. Configurar domínio de produção
+4. Deploy em produção com variáveis Stripe reais
+
+VARIÁVEIS DE AMBIENTE NECESSÁRIAS:
+✅ STRIPE_SECRET_KEY
+✅ STRIPE_WEBHOOK_SECRET
+✅ SUPABASE_URL
+✅ SUPABASE_SERVICE_KEY
+✅ RESEND_API_KEY
+✅ PUBLIC_URL_NGROK (para testes locais)
+
+Commit: e126442 (Volta ao estado de antes da integração PagBank)
+Data: 10/12/2025
+Status: Pronto para produção

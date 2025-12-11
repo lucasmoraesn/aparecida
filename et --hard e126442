@@ -1,0 +1,46 @@
+[33m82bffaa[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m chore: prepara domínio para delegar DNS externo
+[33m1c3a550[m feat: adiciona emails automáticos para cliente e admin + correções de plano_id e planPrice
+[33me126442[m feat: ajustes finais no backend + pagamento STRIPE, FUNCIONANDO 24/11/2025
+[33m2b1e732[m feat: Desativar planos de teste - mostrar apenas planos de producao
+[33m7b7a8eb[m fix: Remover formulario de cartao - usar Stripe Checkout
+[33m3f1da6d[m fix: Remover rota /payment obsoleta
+[33m3462ec8[m Merge branch 'main' of https://github.com/lucasmoraesn/aparecida # Please enter a commit message to explain why this merge is necessary, # especially if it merges an updated upstream into a topic branch. # # Lines starting with '#' will be ignored, and an empty message aborts # the commit.
+[33mf70cfb8[m Merge: Implementação Stripe Billing - Remove Mercado Pago
+[33md126039[m[33m ([m[1;31morigin/revert/voltar-mercadopago[m[33m, [m[1;32mrevert/voltar-mercadopago[m[33m)[m feat: Implementação completa Stripe Billing - Sistema 100% funcional
+[33mf0aaaac[m feat: Adicionar endpoint GET /api/check-session
+[33m840ac30[m fix: Adicionar express.urlencoded após webhook
+[33m19bd10f[m fix: CRÍTICO - Mover declaração Stripe/Supabase antes do webhook
+[33m6813fb7[m fix: Corrigir log de Success URL para usar FRONTEND_URL
+[33m12060d6[m fix: URLs do Stripe Checkout apontando para frontend correto
+[33m5d81fa1[m fix: Melhorias no webhook Stripe com logs detalhados para debug
+[33m92a41aa[m chore: Limpeza completa dos arquivos .env - Removido Mercado Pago, configurado Stripe
+[33m6cbaa13[m fix: Correção crítica - Webhook Stripe antes do express.json()
+[33m5641661[m feat: Integração completa com Stripe Billing
+[33m23c13f0[m Limpeza completa: removidos todos os vestígios do Mercado Pago (docs, scripts, variáveis de ambiente, dependências)
+[33m6d656ba[m Removida integração com Mercado Pago e preparado projeto para Stripe
+[33md466ccf[m feat: Implementar sistema completo de assinaturas recorrentes com Mercado Pago
+[33ma1be6c9[m feat: Implementar assinatura recorrente (Preapproval) do Mercado Pago
+[33mb657f1f[m fix: Corrigir nome da variável de ambiente MP_ACCESS_TOKEN para MERCADO_PAGO_ACCESS_TOKEN
+[33m03dd229[m fix: Corrigir nomenclatura e formatos de credenciais do Mercado Pago
+[33m373bcea[m Merge pull request #1 from lucasmoraesn/revert/voltar-mercadopago
+[33m3f2a9bf[m docs: Adicionar descrição do PR de rollback
+[33m985da3d[m feat: Rollback para Mercado Pago (Checkout Pro)
+[33m201a5ca[m chore: checkpoint antes do rollback para Mercado Pago
+[33m42e24b5[m docs(webhook): adicionar documentação completa de webhook e produção
+[33ma46f904[m chore(config): atualizar variáveis de ambiente para produção
+[33m01d559b[m test(pagbank): adicionar scripts de teste sandbox e webhook
+[33m3bcdc72[m test(webhook): adicionar suite completa de testes unitários
+[33m635c65b[m feat(api): adicionar rota POST /api/pagbank/webhook
+[33m478a8c3[m feat(webhook): implementar serviço de webhook PagBank com HMAC-SHA256
+[33ma1ae3b2[m feat(db): adicionar tabelas payment_webhooks e pagbank_orders
+[33mdc28b0c[m chore: remove Mercado Pago files and docs
+[33m6e41879[m feat: add VITE_API_URL to frontend config
+[33me864712[m feat: add CORS credentials and env guards
+[33mb47728f[m feat: apply safe logging to PagBankService
+[33m7c9d15d[m feat: add secure logging utils with PAN/CVV masking
+[33m91ac30b[m[33m ([m[1;33mtag: [m[1;33mv1.0.0-producao[m[33m, [m[1;31morigin/versao-estavel-mercadopago[m[33m, [m[1;32mversao-estavel-mercadopago[m[33m)[m projeto funcionando com a integração do mercado pago, commit 16/10/2025 15:35
+[33md9d8d33[m Ajusta layout: troca foto de fundo, remove estrelas, altera cores dos botões e dropdown
+[33m46150fc[m Atualiza .gitignore para proteger .env e arquivos locais
+[33md70b276[m[33m ([m[1;32mbackup-quebrado[m[33m)[m Ajustes: integração Mercado Pago Sandbox funcionando
+[33mfc0886f[m feat: integração Mercado Pago com payer_email e fluxo de pagamento até tela Payment
+[33m989fe37[m[33m ([m[1;32mmaster[m[33m)[m feat: integração inicial com Mercado Pago e planos funcinando via INVOKE

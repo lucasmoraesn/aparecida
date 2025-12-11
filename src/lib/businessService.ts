@@ -30,12 +30,10 @@ export interface Payment {
    registration_id: number;
    amount: number;
    currency: string;
-   payment_method: 'pix' | 'credit_card';
+   payment_method: 'credit_card';
    payment_provider: string;
    provider_payment_id?: string;
    status: 'pending' | 'approved' | 'failed' | 'cancelled';
-   pix_code?: string;
-   pix_expires_at?: string;
    created_at?: string;
    updated_at?: string;
 }

@@ -1,0 +1,97 @@
+🚀 QUICK START - APARECIDA
+
+✅ Sistema pronto para produção
+✅ Stripe integrado como método único de pagamento
+✅ Supabase conectado
+✅ Webhooks operacionais
+
+═══════════════════════════════════════════
+
+CONFIGURAÇÃO INICIAL:
+
+1️⃣ Instale dependências:
+   npm install
+   cd server && npm install
+   cd ..
+
+2️⃣ Configure .env:
+   cp server/env.example server/.env
+   
+   Variáveis obrigatórias:
+   - STRIPE_SECRET_KEY (obtenha em https://dashboard.stripe.com)
+   - STRIPE_WEBHOOK_SECRET (crie um webhook em https://dashboard.stripe.com)
+   - SUPABASE_URL (obtenha em https://app.supabase.com)
+   - SUPABASE_SERVICE_KEY (obtenha em https://app.supabase.com)
+   - RESEND_API_KEY (obtenha em https://resend.com)
+   - PUBLIC_URL_NGROK (para testes locais: https://seu-id.ngrok-free.app)
+
+3️⃣ Rode o servidor (em terminais diferentes):
+   
+   Terminal 1 - Frontend:
+   npm run dev
+   
+   Terminal 2 - Backend:
+   cd server && npm start
+
+4️⃣ Acesse a aplicação:
+   Frontend: http://localhost:5173
+   Backend: http://localhost:3001
+
+═══════════════════════════════════════════
+
+TESTE FLUXO DE PAGAMENTO:
+
+1. Clique em "Registrar Negócio"
+2. Preencha dados do estabelecimento
+3. Selecione um plano (cartão de crédito)
+4. Clique em "Continuar com Pagamento"
+5. Será redirecionado para Stripe Checkout
+6. Use cartão de teste: 4242 4242 4242 4242
+7. Data qualquer (ex: 12/25), CVV qualquer (ex: 123)
+8. Complete a transação
+9. Você será redirecionado para página de sucesso
+
+═══════════════════════════════════════════
+
+CARTÕES DE TESTE STRIPE:
+
+✅ Sucesso: 4242 4242 4242 4242
+❌ Recusado: 4000 0000 0000 0002
+🔔 Requer autenticação: 4000 0025 0000 3155
+
+═══════════════════════════════════════════
+
+VARIÁVEIS DE AMBIENTE:
+
+OBRIGATÓRIAS:
+✅ STRIPE_SECRET_KEY
+✅ STRIPE_WEBHOOK_SECRET
+✅ SUPABASE_URL
+✅ SUPABASE_SERVICE_KEY
+✅ RESEND_API_KEY
+
+OPCIONAIS:
+⚠️ PUBLIC_URL_NGROK (para testes com webhooks locais)
+⚠️ PRODUCTION_DOMAIN (para produção)
+
+═══════════════════════════════════════════
+
+PRÓXIMOS PASSOS:
+
+1. Testar fluxo de assinatura completo
+2. Validar webhooks localmente (com ngrok)
+3. Configurar domínio de produção
+4. Deploy em produção
+
+═══════════════════════════════════════════
+
+SUPORTE:
+
+📚 Docs Stripe: https://stripe.com/docs
+📚 Docs Supabase: https://supabase.com/docs
+📚 Docs Resend: https://resend.com/docs
+📝 README: Veja README.md para mais detalhes
+
+═══════════════════════════════════════════
+
+Pronto para usar! 🎉
