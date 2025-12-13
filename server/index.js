@@ -3,8 +3,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
-import path from "path";
-import { fileURLToPath } from "url";
 
 dotenv.config();
 console.log('🔍 DEBUG index.js:');
@@ -27,9 +25,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: "2024-06-20"
 });
 console.log("✅ Stripe client created");
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -312,28 +307,6 @@ app.use((req, res, next) => {
   });
   
   next();
-});
-
-/* =============================
-   SERVIR FRONTEND (ARQUIVOS ESTÁTICOS)
-   
-   Em produção, Express serve os arquivos do React
-   Fallback para index.html para SPA routing
-============================= */
-const distPath = path.join(__dirname, '../dist');
-app.use(express.static(distPath, {
-  maxAge: '1h',
-  etag: false
-}));
-
-// SPA Fallback: Qualquer rota que não seja /api, retorna index.html
-app.get(/^\/(?!api\/).*$/, (req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'), (err) => {
-    if (err) {
-      console.error('Erro ao servir index.html:', err);
-      res.status(500).json({ error: 'Not found' });
-    }
-  });
 });
 
 // Health-check
