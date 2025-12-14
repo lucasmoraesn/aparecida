@@ -284,7 +284,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS Configuration for Production
+// CORS Configuration for Production - MUST be before routes
 const allowedOrigins = [
   "https://aparecidadonortesp.com.br",
   "https://www.aparecidadonortesp.com.br",
@@ -305,11 +305,9 @@ app.use(cors({
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature'],
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
-
-// CRITICAL: Handle preflight requests
-app.options("*", cors());
 
 // Middleware para debug de requisições
 app.use((req, res, next) => {
