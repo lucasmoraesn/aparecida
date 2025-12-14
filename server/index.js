@@ -778,6 +778,27 @@ app.post('/api/test-plan-4', async (req, res) => {
 /* =============================
    START SERVER
 ============================= */
+
+// Serve frontend static files from dist
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distPath = path.join(__dirname, '../dist');
+
+// Serve static files
+app.use(express.static(distPath));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  // Don't redirect API routes
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  // Serve index.html for SPA routing
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
 const port = process.env.PORT || 3001;
 
 // Tratamento de erros não capturados
