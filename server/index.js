@@ -6,7 +6,6 @@ import Stripe from "stripe";
 
 dotenv.config();
 console.log('🔍 DEBUG index.js:');
-console.log('  PUBLIC_URL_NGROK:', process.env.PUBLIC_URL_NGROK);
 console.log('  SUPABASE_URL:', process.env.SUPABASE_URL);
 console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅ Configurada' : '❌ Não configurada');
 console.log('  STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? '✅ Configurada' : '❌ Não configurada');
@@ -293,23 +292,23 @@ const allowedOrigins = [
   'http://localhost:5173'
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('CORS not allowed for this origin: ' + origin));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed for this origin: ' + origin));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 
 // CRÍTICO: Responder a requisições preflight OPTIONS
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 
 // Middleware para debug de requisições
 app.use((req, res, next) => {
