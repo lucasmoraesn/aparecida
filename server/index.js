@@ -286,19 +286,31 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // CORS configurado para aceitar requisições do frontend
+const allowedOrigins = [
+  'https://www.aparecidadonortesp.com.br',
+  'https://aparecidadonortesp.com.br',
+  'http://localhost:3000',
+  'http://localhost:5173'
+];
+
 app.use(
   cors({
-    origin: true,
-    credentials: true
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS not allowed for this origin: ' + origin));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
 
 // Middleware para debug de requisições
 app.use((req, res, next) => {
   res.setHeader('ngrok-skip-browser-warning', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   // Log de todas as requisições para debug
   console.log(`📥 ${req.method} ${req.path}`, {
