@@ -284,30 +284,21 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS Configuration for Production - MUST be before routes
-const allowedOrigins = [
-  "https://aparecidadonortesp.com.br",
-  "https://www.aparecidadonortesp.com.br",
-  "http://localhost:3000",
-  "http://localhost:5173"
-];
-
+// CORS Configuration - Express 4 compatible
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests without origin (Postman, Stripe, Webhooks)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature'],
+  origin: [
+    "https://aparecidadonortesp.com.br",
+    "https://www.aparecidadonortesp.com.br",
+    "http://localhost:3000",
+    "http://localhost:5173"
+  ],
   credentials: true,
-  optionsSuccessStatus: 200
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature']
 }));
+
+// Explicit preflight handling for /api/* routes
+app.options("/api/*", cors());
 
 // Middleware para debug de requisições
 app.use((req, res, next) => {
