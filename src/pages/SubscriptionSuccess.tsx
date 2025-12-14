@@ -22,7 +22,7 @@ const SubscriptionSuccess: React.FC = () => {
         console.log('🔍 Verificando sessão no backend:', sessionId);
 
         const response = await fetch(
-          `http://localhost:3001/api/check-session?session_id=${sessionId}`
+          `/api/check-session?session_id=${sessionId}`
         );
 
         const data = await response.json();
