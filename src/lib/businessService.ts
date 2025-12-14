@@ -39,7 +39,8 @@ export interface Payment {
 }
 
 export class BusinessService {
-   private static API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_PUBLIC_URL_NGROK || "http://localhost:3001";
+   // Use relative paths - API is on same origin
+   private static API_BASE = "";
 
    // 🔹 Buscar planos via backend (evita problemas de RLS)
    static async getPlans(): Promise<BusinessPlan[]> {

@@ -284,21 +284,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS Configuration - Express 4 compatible
-app.use(cors({
-  origin: [
-    "https://aparecidadonortesp.com.br",
-    "https://www.aparecidadonortesp.com.br",
-    "http://localhost:3000",
-    "http://localhost:5173"
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature']
-}));
-
-// Explicit preflight handling for /api/* routes
-app.options("/api/*", cors());
+// No CORS needed - frontend and API on same origin
 
 // Middleware para debug de requisições
 app.use((req, res, next) => {
