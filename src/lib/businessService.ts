@@ -39,8 +39,8 @@ export interface Payment {
 }
 
 export class BusinessService {
-   // Use relative paths - API is on same origin
-   private static API_BASE = "";
+   // Use absolute URL pointing to same domain
+   private static API_BASE = "https://www.aparecidadonortesp.com.br";
 
    // 🔹 Buscar planos via backend (evita problemas de RLS)
    static async getPlans(): Promise<BusinessPlan[]> {

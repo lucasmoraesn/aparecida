@@ -22,7 +22,7 @@ const SubscriptionSuccess: React.FC = () => {
         console.log('🔍 Verificando sessão no backend:', sessionId);
 
         const response = await fetch(
-          `/api/check-session?session_id=${sessionId}`
+          `https://www.aparecidadonortesp.com.br/api/check-session?session_id=${sessionId}`
         );
 
         const data = await response.json();
