@@ -292,9 +292,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature']
 }));
 
-// Responder a requisições preflight OPTIONS
-app.options('*', cors());
-
 // Middleware para debug de requisições
 app.use((req, res, next) => {
   res.setHeader('ngrok-skip-browser-warning', 'true');
