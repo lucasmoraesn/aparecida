@@ -284,30 +284,16 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS Configuration - PRODUCTION
-const allowedOrigins = [
-  "https://www.aparecidadonortesp.com.br",
-  "https://aparecidadonortesp.com.br"
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests without origin (Postman, server-to-server, Stripe webhooks)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
-// CRITICAL: Handle preflight OPTIONS requests
-app.options("*", cors());
+// Simple CORS - just allow everything
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Middleware para debug de requisições
 app.use((req, res, next) => {
