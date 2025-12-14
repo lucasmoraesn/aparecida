@@ -769,8 +769,12 @@ app.post('/api/test-plan-4', async (req, res) => {
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// dist is one level up from server/
 const distPath = path.join(__dirname, '../dist');
+
+console.log(`📂 Serving static files from: ${distPath}`);
 
 // Serve static files
 app.use(express.static(distPath));
