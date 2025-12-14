@@ -768,16 +768,38 @@ app.post('/api/test-plan-4', async (req, res) => {
 // Serve frontend static files from dist
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// dist is one level up from server/
-const distPath = path.join(__dirname, '../dist');
+
+// Try multiple possible locations for dist
+const possiblePaths = [
+  path.join(__dirname, '../dist'),
+  path.join(__dirname, '../../../dist'),
+  path.join(process.cwd(), 'dist'),
+  '/opt/render/project/dist',
+  '/app/dist'
+];
+
+let distPath = null;
+for (const p of possiblePaths) {
+  if (fs.existsSync(path.join(p, 'index.html'))) {
+    distPath = p;
+    break;
+  }
+}
+
+if (!distPath) {
+  console.warn('⚠️  dist/index.html not found in any expected location');
+  distPath = possiblePaths[0]; // Use default anyway
+}
 
 console.log(`📂 Serving static files from: ${distPath}`);
 
 // Serve static files
 app.use(express.static(distPath));
+
 
 // SPA fallback - serve index.html for all non-API routes
 app.get('*', (req, res) => {
