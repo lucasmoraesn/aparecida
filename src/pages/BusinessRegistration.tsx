@@ -198,7 +198,13 @@ const BusinessRegistration: React.FC = () => {
 
   const formatWhatsApp = (value: string) => {
     const numbers = value.replace(/\D/g, '');
+    
+    // Permitir apagar completamente
+    if (numbers.length === 0) return '';
+    
+    // Adicionar +55 automaticamente apenas quando começar a digitar
     if (numbers.length <= 2) return `+55 ${numbers}`;
+    if (numbers.length <= 4) return `+55 (${numbers.slice(2)}`;
     if (numbers.length <= 6) return `+55 (${numbers.slice(2, 4)}) ${numbers.slice(4)}`;
     if (numbers.length <= 10)
       return `+55 (${numbers.slice(2, 4)}) ${numbers.slice(4, 8)}-${numbers.slice(8)}`;
