@@ -3,11 +3,17 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer } from "./services/emailService.js";
 
-dotenv.config();
+// Carregar .env.local se existir, senão .env
+dotenv.config({ path: '.env.local' });
+if (!process.env.STRIPE_SECRET_KEY) {
+  dotenv.config(); // Fallback para .env
+}
 console.log('🔍 DEBUG index.js:');
 console.log('  SUPABASE_URL:', process.env.SUPABASE_URL);
 console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅ Configurada' : '❌ Não configurada');
+console.log('  STRIPE_KEY_TYPE:', process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? '🧪 TEST MODE' : '🔴 LIVE MODE');
 console.log('  STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? '✅ Configurada' : '❌ Não configurada');
 
 // --- Inicializar Supabase (precisa estar disponível no webhook) ---
@@ -122,6 +128,71 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           console.log(`✅ Assinatura ${subscription.id} ATIVADA COM SUCESSO!`);
           console.log('   external_subscription_id:', session.subscription);
           console.log('   stripe_customer_id:', session.customer);
+          
+          // 📧 ENVIAR E-MAIL DE NOTIFICAÇÃO PARA O ADMIN
+          try {
+            console.log('📧 Preparando envio de e-mail de notificação...');
+            
+            // Buscar dados do estabelecimento
+            const { data: business, error: businessError } = await supabase
+              .from('businesses')
+              .select('name, email')
+              .eq('id', subscription.business_id)
+              .single();
+
+            if (businessError || !business) {
+              console.error('⚠️ Não foi possível buscar dados do estabelecimento:', businessError);
+            } else {
+              // Buscar dados do plano
+              const { data: plan, error: planError } = await supabase
+                .from('plans')
+                .select('name, price_cents')
+                .eq('id', subscription.plan_id)
+                .single();
+
+              if (planError || !plan) {
+                console.error('⚠️ Não foi possível buscar dados do plano:', planError);
+              } else {
+                // Enviar e-mail de notificação para o ADMIN
+                const emailResult = await sendNewSubscriptionNotification({
+                  businessName: business.name,
+                  businessEmail: business.email,
+                  planName: plan.name,
+                  planPrice: plan.price_cents,
+                  subscriptionId: subscription.id,
+                  customerEmail: session.customer_details?.email
+                });
+
+                if (emailResult.success) {
+                  console.log('✅ E-mail de notificação enviado ao admin com sucesso!');
+                  console.log('   Email ID:', emailResult.emailId);
+                } else {
+                  console.error('❌ Falha ao enviar e-mail ao admin:', emailResult.error);
+                }
+
+                // 📧 ENVIAR E-MAIL DE CONFIRMAÇÃO PARA O CLIENTE
+                console.log('📧 Enviando e-mail de confirmação para o cliente...');
+                const customerEmailResult = await sendSubscriptionConfirmationToCustomer({
+                  customerEmail: business.email,
+                  businessName: business.name,
+                  planName: plan.name,
+                  planPrice: plan.price_cents,
+                  nextChargeDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                });
+
+                if (customerEmailResult.success) {
+                  console.log('✅ E-mail de confirmação enviado ao cliente com sucesso!');
+                  console.log('   Email ID:', customerEmailResult.emailId);
+                  console.log('   Para:', customerEmailResult.recipient);
+                } else {
+                  console.error('❌ Falha ao enviar e-mail ao cliente:', customerEmailResult.error);
+                }
+              }
+            }
+          } catch (emailError) {
+            console.error('❌ Erro ao processar envio de e-mail:', emailError);
+            // Não quebrar o webhook por falha no e-mail
+          }
         }
 
         break;
@@ -320,10 +391,39 @@ app.get("/api/plans", async (req, res) => {
       .eq("is_active", true) // Apenas planos ativos
       .order("price", { ascending: true });
     if (error) throw error;
-    res.json(data);
+    res.json(data || []);
   } catch (err) {
     console.error("Erro ao buscar planos:", err);
-    res.status(500).json({ message: "Erro ao buscar planos" });
+    
+    // Retornar planos padrão em caso de erro
+    const defaultPlans = [
+      {
+        id: "1",
+        name: "Básico",
+        price: 49.90,
+        description: "Perfil básico do estabelecimento",
+        features: ["Perfil básico do estabelecimento", "Até 5 fotos", "Informações de contato", "Suporte por e-mail"],
+        is_active: true
+      },
+      {
+        id: "2",
+        name: "Intermediário",
+        price: 99.90,
+        description: "Perfil completo do estabelecimento",
+        features: ["Perfil completo do estabelecimento", "Até 10 fotos", "Destaque na busca", "Suporte prioritário", "Relatórios básicos"],
+        is_active: true
+      },
+      {
+        id: "3",
+        name: "Premium",
+        price: 199.90,
+        description: "Perfil premium com destaque",
+        features: ["Perfil premium com destaque", "Fotos ilimitadas", "Destaque máximo na busca", "Suporte 24/7", "Relatórios avançados", "Promoções exclusivas"],
+        is_active: true
+      }
+    ];
+    
+    res.json(defaultPlans);
   }
 });
 
@@ -787,6 +887,7 @@ const possiblePaths = [
   path.join(__dirname, '../dist'),
   path.join(__dirname, '../../../dist'),
   path.join(process.cwd(), 'dist'),
+  '/var/www/frontend/dist',
   '/opt/render/project/dist',
   '/app/dist'
 ];
@@ -831,12 +932,12 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Server on http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Server on http://0.0.0.0:${port}`);
   console.log("✅ Server is ready and listening for requests");
   console.log("💳 Stripe Billing integrado e ativo");
-  console.log(`   Webhook endpoint: http://localhost:${port}/api/webhook`);
-  console.log(`   Success URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/subscription/success`);
+  console.log(`   Webhook endpoint: https://www.aparecidadonortesp.com.br/api/webhook`);
+  console.log(`   Success URL: ${process.env.FRONTEND_URL || 'https://www.aparecidadonortesp.com.br'}/subscription/success`);
 }).on('error', (err) => {
   console.error('❌ Erro ao iniciar servidor:', err);
   process.exit(1);

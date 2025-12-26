@@ -9,7 +9,11 @@
     "start:prod": "NODE_ENV=production node index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:email": "node test-email.js",
+    "test:email:notification": "node test-email.js notification",
+    "test:email:customer": "node test-email.js customer",
+    "test:email:all": "node test-email.js all"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +25,8 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^4.22.1",
+    "jspdf": "^3.0.4",
+    "resend": "^6.6.0",
     "stripe": "^20.0.0"
   },
   "devDependencies": {

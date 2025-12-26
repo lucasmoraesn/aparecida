@@ -39,10 +39,8 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4">Para Comerciantes</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Cadastrar Negócio</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Planos Premium</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Suporte</a></li>
-              <li><a href="#" className="text-gray-300 hover:text-white transition-colors">Estatísticas</a></li>
+              <li><a href="/cadastrar-negocio" className="text-gray-300 hover:text-white transition-colors">Cadastrar Negócio</a></li>
+              <li><a href="/cadastrar-negocio" className="text-gray-300 hover:text-white transition-colors">Planos Premium</a></li>
             </ul>
           </div>
 
@@ -55,11 +53,11 @@ const Footer = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-yellow-400" />
-                <span className="text-gray-300 text-sm">(12) 3104-1000</span>
+                <span className="text-gray-300 text-sm">(12) 99212-6779</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-yellow-400" />
-                <span className="text-gray-300 text-sm">contato@exploreaparecida.com.br</span>
+                <span className="text-gray-300 text-sm">aparecidatoursp@hotmail.com</span>
               </div>
             </div>
             

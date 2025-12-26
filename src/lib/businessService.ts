@@ -39,8 +39,8 @@ export interface Payment {
 }
 
 export class BusinessService {
-   // Use absolute URL pointing to same domain
-   private static API_BASE = "https://www.aparecidadonortesp.com.br";
+   // Use environment variable or relative URL
+   private static API_BASE = import.meta.env.VITE_API_URL || "";
 
    // 🔹 Buscar planos via backend (evita problemas de RLS)
    static async getPlans(): Promise<BusinessPlan[]> {

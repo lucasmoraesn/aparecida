@@ -163,7 +163,7 @@ const Header = () => {
 
             <div className={`hidden lg:flex items-center text-sm transition-colors duration-300 ${getPhoneStyle()}`}>
               <Phone className="w-4 h-4 mr-1" />
-              (12) 3104-1000
+              (12) 99212-6779
             </div>
 
             {/* Mobile Menu Button */}
@@ -206,7 +206,7 @@ const Header = () => {
               ))}
               <div className="flex items-center text-sm text-gray-600 pt-2 border-t border-gray-200">
                 <Phone className="w-4 h-4 mr-1" />
-                (12) 3104-1000
+                (12) 99212-6779
               </div>
             </nav>
           </div>
