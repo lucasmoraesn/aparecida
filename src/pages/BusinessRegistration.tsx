@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Camera, CheckCircle } from 'lucide-react';
 import { BusinessService, BusinessPlan } from '../lib/businessService';
@@ -40,7 +40,7 @@ const BusinessRegistration: React.FC = () => {
     address: '',
     location: '',
     photos: [],
-    whatsapp: '',
+    whatsapp: '+55 ( ) ',
     phone: '',
     description: '',
     plan: '',
@@ -52,6 +52,7 @@ const BusinessRegistration: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [plans, setPlans] = useState<BusinessPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const whatsappInputRef = useRef<HTMLInputElement>(null);
 
   const categories = [
     'Hotel',
@@ -143,6 +144,72 @@ const BusinessRegistration: React.FC = () => {
 
     loadPlans();
   }, []);
+
+  // Posicionar cursor entre os parênteses apenas no mount inicial
+  useEffect(() => {
+    if (whatsappInputRef.current) {
+      whatsappInputRef.current.focus();
+      whatsappInputRef.current.setSelectionRange(5, 5); // Posição após "+55 ("
+    }
+  }, []);
+
+  // Validar entrada do WhatsApp (formato fixo: +55 (DD) número-livre)
+  const handleWhatsAppChange = (value: string) => {
+    const input = whatsappInputRef.current;
+    if (!input) return;
+    
+    const cursorPosition = input.selectionStart || 0;
+    
+    // Garantir formato mínimo
+    if (!value.startsWith('+55 (')) {
+      value = '+55 ( ) ';
+    }
+    
+    // Extrair partes: +55 (DD) resto
+    const match = value.match(/\+55 \(([^)]*)\)(.*)/);
+    
+    if (match) {
+      const insideParentheses = match[1];
+      const afterParentheses = match[2];
+      
+      // Apenas números dentro dos parênteses, máximo 2
+      const onlyNumbers = insideParentheses.replace(/\D/g, '');
+      const limitedNumbers = onlyNumbers.slice(0, 2);
+      
+      // Formatar número após parênteses com hífen: 99212-6443
+      const phoneNumbers = afterParentheses.replace(/\D/g, '');
+      let formattedPhone = '';
+      
+      if (phoneNumbers.length > 5) {
+        formattedPhone = ` ${phoneNumbers.slice(0, 5)}-${phoneNumbers.slice(5, 9)}`;
+      } else if (phoneNumbers.length > 0) {
+        formattedPhone = ` ${phoneNumbers}`;
+      }
+      
+      // Reconstruir
+      value = `+55 (${limitedNumbers})${formattedPhone}`;
+    } else {
+      value = '+55 ( ) ';
+    }
+    
+    handleInputChange('whatsapp', value);
+    
+    // Reposicionar cursor
+    setTimeout(() => {
+      if (input) {
+        const dddLength = value.match(/\(([^)]*)\)/)?.[1].length || 0;
+        
+        // Se DDD está vazio, cursor vai para dentro dos parênteses
+        if (dddLength === 0) {
+          input.setSelectionRange(5, 5);
+        }
+        // Se cursor estava dentro dos parênteses durante digitação, mantém lá
+        else if (cursorPosition >= 5 && cursorPosition <= 7) {
+          input.setSelectionRange(5 + dddLength, 5 + dddLength);
+        }
+      }
+    }, 0);
+  };
 
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -485,12 +552,13 @@ const BusinessRegistration: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp *</label>
               <input
+                ref={whatsappInputRef}
                 type="tel"
                 value={formData.whatsapp}
-                onChange={(e) => handleInputChange('whatsapp', formatWhatsApp(e.target.value))}
+                onChange={(e) => handleWhatsAppChange(e.target.value)}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.whatsapp ? 'border-red-500' : 'border-gray-300'
                   }`}
-                placeholder="+55 (11) 99999-9999"
+                placeholder="Ex: +55 12 91234-5678"
               />
               {errors.whatsapp && <p className="text-red-500 text-sm mt-1">{errors.whatsapp}</p>}
             </div>
