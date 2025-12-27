@@ -134,9 +134,9 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
             console.log('📧 Preparando envio de e-mail de notificação...');
             
             // Buscar dados do estabelecimento
-            const { data: business, error: businessError } = await supabase
-              .from('businesses')
-              .select('name, email')
+              const { data: business, error: businessError } = await supabase
+              .from('business_registrations')
+              .select('establishment_name, contact_email, whatsapp')
               .eq('id', subscription.business_id)
               .single();
 
@@ -145,8 +145,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
             } else {
               // Buscar dados do plano
               const { data: plan, error: planError } = await supabase
-                .from('plans')
-                .select('name, price_cents')
+                .from('business_plans')
+                .select('name, price, price_cents')
                 .eq('id', subscription.plan_id)
                 .single();
 
@@ -154,11 +154,15 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
                 console.error('⚠️ Não foi possível buscar dados do plano:', planError);
               } else {
                 // Enviar e-mail de notificação para o ADMIN
+                const planPriceCents = (typeof plan.price_cents === 'number' && Number.isFinite(plan.price_cents))
+                  ? plan.price_cents
+                  : Math.round(Number(plan.price) * 100);
+
                 const emailResult = await sendNewSubscriptionNotification({
-                  businessName: business.name,
-                  businessEmail: business.email,
+                  businessName: business.establishment_name,
+                  businessEmail: business.contact_email || session.customer_details?.email,
                   planName: plan.name,
-                  planPrice: plan.price_cents,
+                  planPrice: planPriceCents,
                   subscriptionId: subscription.id,
                   customerEmail: session.customer_details?.email
                 });
@@ -173,10 +177,10 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
                 // 📧 ENVIAR E-MAIL DE CONFIRMAÇÃO PARA O CLIENTE
                 console.log('📧 Enviando e-mail de confirmação para o cliente...');
                 const customerEmailResult = await sendSubscriptionConfirmationToCustomer({
-                  customerEmail: business.email,
-                  businessName: business.name,
+                  customerEmail: business.contact_email || session.customer_details?.email,
+                  businessName: business.establishment_name,
                   planName: plan.name,
-                  planPrice: plan.price_cents,
+                  planPrice: planPriceCents,
                   nextChargeDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
                 });
 
@@ -517,6 +521,8 @@ app.post("/api/register-business", async (req, res) => {
       description,
       plan_id,
       payer_email,
+      admin_email,
+      contact_email,
       card_number,
       card_exp_month,
       card_exp_year,
@@ -546,6 +552,10 @@ app.post("/api/register-business", async (req, res) => {
     console.log("✅ Validação de campos passou");
 
     // 1. Salvar cadastro de negócio no Supabase
+    const normalizedPlanId = (typeof plan_id === 'string' && /^\d+$/.test(plan_id))
+      ? parseInt(plan_id, 10)
+      : plan_id;
+
     const insertData = {
       establishment_name,
       category,
@@ -555,7 +565,10 @@ app.post("/api/register-business", async (req, res) => {
       whatsapp,
       phone,
       description,
-      plan_id: parseInt(plan_id), // Garantir que é número
+      plan_id: normalizedPlanId,
+      admin_email,
+      contact_email,
+      payer_email,
       created_at: new Date().toISOString(),
     };
     
@@ -647,10 +660,13 @@ app.post('/api/create-subscription', async (req, res) => {
       });
     }
 
-    console.log("✅ Plano encontrado:", plan.name, "- R$", plan.price);
+    console.log("✅ Plano encontrado:", plan.name, "- R$", plan.price ?? plan.price_cents);
 
     // Validar e converter preço
-    const planPrice = Number(plan.price);
+    // Suporta tanto `price` (em reais) quanto `price_cents`
+    const planPrice = (typeof plan.price === 'number' || typeof plan.price === 'string')
+      ? Number(plan.price)
+      : (typeof plan.price_cents === 'number' ? plan.price_cents / 100 : NaN);
     if (isNaN(planPrice) || planPrice <= 0) {
       console.error("❌ Preço do plano inválido:", plan.price);
       return res.status(500).json({ 

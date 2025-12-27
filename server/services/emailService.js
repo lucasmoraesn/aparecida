@@ -206,7 +206,7 @@ Explore Aparecida - Sistema de Assinaturas
 ${process.env.PRODUCTION_DOMAIN || 'https://aparecidadonortesp.com.br'}
     `.trim();
 
-    const result = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: process.env.FROM_EMAIL || 'Explore Aparecida <onboarding@resend.dev>',
       to: process.env.ADMIN_EMAIL,
       subject: `🎉 Nova Assinatura: ${businessName} - ${planName}`,
@@ -214,13 +214,21 @@ ${process.env.PRODUCTION_DOMAIN || 'https://aparecidadonortesp.com.br'}
       text
     });
 
+    if (error) {
+      console.error('❌ Erro do Resend:', error);
+      return {
+        success: false,
+        error: error
+      };
+    }
+
     console.log('✅ E-mail enviado com sucesso!');
-    console.log('   Email ID:', result.data?.id);
+    console.log('   Email ID:', data?.id);
     console.log('   Para:', process.env.ADMIN_EMAIL);
     
     return {
       success: true,
-      emailId: result.data?.id,
+      emailId: data?.id,
       recipient: process.env.ADMIN_EMAIL
     };
 
@@ -244,7 +252,7 @@ ${process.env.PRODUCTION_DOMAIN || 'https://aparecidadonortesp.com.br'}
 export async function sendTestEmail(recipientEmail) {
   try {
     const resend = getResendClient();
-    const result = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: process.env.FROM_EMAIL || 'Explore Aparecida <onboarding@resend.dev>',
       to: recipientEmail,
       subject: '🧪 Teste de E-mail - Explore Aparecida',
@@ -286,8 +294,17 @@ Explore Aparecida - Sistema de E-mails
       `
     });
 
+    if (error) {
+      console.error('❌ Erro do Resend:', error);
+      return {
+        success: false,
+        error: error
+      };
+    }
+
     return {
       success: true,
+      emailId: data?.id,
       emailId: result.data?.id,
       message: 'E-mail de teste enviado com sucesso!'
     };
@@ -561,7 +578,7 @@ Equipe Explore Aparecida
 ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
     `.trim();
 
-    const result = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: process.env.FROM_EMAIL || 'Explore Aparecida <onboarding@resend.dev>',
       to: customerEmail,
       subject: `🎉 Assinatura Confirmada - ${planName}`,
@@ -569,18 +586,188 @@ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
       text
     });
 
+    if (error) {
+      console.error('❌ Erro do Resend:', error);
+      return {
+        success: false,
+        error: error
+      };
+    }
+
     console.log('✅ E-mail de confirmação enviado ao cliente!');
-    console.log('   Email ID:', result.data?.id);
+    console.log('   Email ID:', data?.id);
     console.log('   Para:', customerEmail);
     
     return {
       success: true,
-      emailId: result.data?.id,
+      emailId: data?.id,
       recipient: customerEmail
     };
 
   } catch (error) {
     console.error('❌ Erro ao enviar e-mail ao cliente:', error);
+    
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Envia e-mail de boas-vindas para novo inscrito na newsletter
+ * 
+ * @param {Object} params - Parâmetros do e-mail
+ * @param {string} params.email - E-mail do inscrito
+ * @returns {Promise<Object>} Resultado do envio
+ */
+export async function sendNewsletterWelcomeEmail({ email }) {
+  try {
+    const resend = getResendClient();
+    
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bem-vindo à Newsletter - Explore Aparecida</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f3f4f6; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                                🎉 Bem-vindo à Newsletter!
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: #e0e7ff; font-size: 16px;">
+                                Explore Aparecida do Norte
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                                Olá! 👋
+                            </p>
+                            
+                            <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                                Obrigado por se inscrever na newsletter do <strong>Explore Aparecida</strong>!
+                            </p>
+
+                            <p style="margin: 0 0 20px 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                                A partir de agora você receberá:
+                            </p>
+
+                            <ul style="margin: 0 0 20px 0; padding-left: 20px; color: #374151; font-size: 15px; line-height: 1.8;">
+                                <li>📍 <strong>Novos estabelecimentos parceiros</strong> - Restaurantes, hotéis e lojas</li>
+                                <li>🎊 <strong>Eventos especiais</strong> - Romarias, festas e celebrações</li>
+                                <li>💡 <strong>Dicas de turismo</strong> - Roteiros e pontos turísticos</li>
+                                <li>🎁 <strong>Promoções exclusivas</strong> - Ofertas especiais dos nossos parceiros</li>
+                            </ul>
+
+                            <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                                <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
+                                    💡 <strong>Dica:</strong> Adicione nosso e-mail à sua lista de contatos para não perder nenhuma novidade!
+                                </p>
+                            </div>
+
+                            <p style="margin: 20px 0 0 0; color: #374151; font-size: 16px; line-height: 1.6;">
+                                Estamos felizes em ter você conosco! 🙏
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- CTA -->
+                    <tr>
+                        <td style="padding: 0 30px 40px 30px; text-align: center;">
+                            <a href="https://www.aparecidadonortesp.com.br" 
+                               style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 6px; font-size: 16px; font-weight: bold;">
+                                Visitar o Site
+                            </a>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
+                                <strong>Explore Aparecida</strong><br>
+                                Portal de Turismo de Aparecida do Norte - SP
+                            </p>
+                            
+                            <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px;">
+                                Não quer mais receber nossos e-mails?<br>
+                                <a href="https://www.aparecidadonortesp.com.br" style="color: #6b7280; text-decoration: underline;">
+                                    Cancelar inscrição
+                                </a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `;
+
+    const textContent = `
+🎉 BEM-VINDO À NEWSLETTER - EXPLORE APARECIDA
+
+Olá!
+
+Obrigado por se inscrever na newsletter do Explore Aparecida!
+
+A partir de agora você receberá:
+
+• Novos estabelecimentos parceiros - Restaurantes, hotéis e lojas
+• Eventos especiais - Romarias, festas e celebrações
+• Dicas de turismo - Roteiros e pontos turísticos
+• Promoções exclusivas - Ofertas especiais dos nossos parceiros
+
+Estamos felizes em ter você conosco!
+
+Visite nosso site: https://www.aparecidadonortesp.com.br
+
+---
+Explore Aparecida
+Portal de Turismo de Aparecida do Norte - SP
+
+Para cancelar sua inscrição, acesse: https://www.aparecidadonortesp.com.br
+    `.trim();
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.FROM_EMAIL || 'Explore Aparecida <contato@aparecidadonortesp.com.br>',
+      to: email,
+      subject: '🎉 Bem-vindo à Newsletter do Explore Aparecida!',
+      html: htmlContent,
+      text: textContent
+    });
+
+    if (error) {
+      console.error('❌ Erro do Resend ao enviar e-mail de newsletter:', error);
+      return { success: false, error };
+    }
+
+    console.log(`✅ E-mail de boas-vindas enviado para: ${email}`);
+    
+    return {
+      success: true,
+      emailId: data?.id,
+      recipient: email
+    };
+
+  } catch (error) {
+    console.error('❌ Erro ao enviar e-mail de newsletter:', error);
     
     return {
       success: false,

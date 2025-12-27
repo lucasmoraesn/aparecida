@@ -145,14 +145,6 @@ const BusinessRegistration: React.FC = () => {
     loadPlans();
   }, []);
 
-  // Posicionar cursor entre os parênteses apenas no mount inicial
-  useEffect(() => {
-    if (whatsappInputRef.current) {
-      whatsappInputRef.current.focus();
-      whatsappInputRef.current.setSelectionRange(5, 5); // Posição após "+55 ("
-    }
-  }, []);
-
   // Validar entrada do WhatsApp (formato fixo: +55 (DD) número-livre)
   const handleWhatsAppChange = (value: string) => {
     const input = whatsappInputRef.current;
