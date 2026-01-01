@@ -13,6 +13,9 @@ import BusinessRegistration from './pages/BusinessRegistration';
 // import Payment from './pages/Payment'; // ❌ OBSOLETO - Stripe Billing usa checkout.stripe.com
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancel from './pages/SubscriptionCancel';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';
+import CookiePolicy from './pages/CookiePolicy';
 
 function App() {
   const handleWhatsAppClick = () => {
@@ -37,6 +40,9 @@ function App() {
         {/* ❌ ROTA OBSOLETA - Stripe Billing redireciona para checkout.stripe.com */}
         <Route path="/subscription/success" element={<SubscriptionSuccess />} />
         <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
+        <Route path="/politica-privacidade" element={<PrivacyPolicy />} />
+        <Route path="/termos-uso" element={<TermsOfUse />} />
+        <Route path="/cookies" element={<CookiePolicy />} />
       </Routes>
       <Footer />
       

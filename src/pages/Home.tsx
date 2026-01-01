@@ -272,14 +272,6 @@ const Home = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
-            <div>
-              <Link
-                to="/saiba-mais"
-                className="text-blue-100 hover:text-white underline text-lg transition-colors duration-300"
-              >
-                Saiba Mais
-              </Link>
-            </div>
           </motion.div>
         </div>
       </section>

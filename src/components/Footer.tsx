@@ -60,20 +60,6 @@ const Footer = () => {
                 <span className="text-gray-300 text-sm">aparecidatoursp@hotmail.com</span>
               </div>
             </div>
-            
-            <div className="mt-6">
-              <h5 className="text-sm font-semibold mb-2">Newsletter</h5>
-              <div className="flex gap-2">
-                <input 
-                  type="email" 
-                  placeholder="Seu email"
-                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                  OK
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -82,13 +68,13 @@ const Footer = () => {
             © 2025 Explore Aparecida. Todos os direitos reservados.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">
+            <a href="/politica-privacidade" className="text-gray-400 hover:text-white text-sm transition-colors">
               Política de Privacidade
             </a>
-            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">
+            <a href="/termos-uso" className="text-gray-400 hover:text-white text-sm transition-colors">
               Termos de Uso
             </a>
-            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">
+            <a href="/cookies" className="text-gray-400 hover:text-white text-sm transition-colors">
               Cookies
             </a>
           </div>
