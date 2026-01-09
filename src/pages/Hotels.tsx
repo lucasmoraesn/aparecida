@@ -93,8 +93,6 @@ const hotels = [
   }
 ];
 
-import BookingSearch from '../components/BookingSearch';
-
 const Hotels = () => {
   // Função para obter ícones 3D para as amenidades
   const getAmenityIcon = (amenity: string) => {
@@ -131,8 +129,17 @@ const Hotels = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="pt-32 pb-8">
-        <BookingSearch />
+      <div className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">
+              Hotéis e Pousadas
+            </h1>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Encontre a melhor hospedagem para sua estadia em Aparecida do Norte
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
