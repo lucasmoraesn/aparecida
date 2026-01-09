@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Star, MapPin, Phone, Wifi, Car, Coffee } from 'lucide-react';
+import BookingSearch from '../components/BookingSearch';
 
 const hotels = [
   {
@@ -139,6 +140,8 @@ const Hotels = () => {
               Encontre a melhor hospedagem para sua estadia em Aparecida do Norte
             </p>
           </div>
+          
+          <BookingSearch />
         </div>
       </div>
 
