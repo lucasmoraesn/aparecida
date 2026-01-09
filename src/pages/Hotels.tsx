@@ -93,20 +93,46 @@ const hotels = [
   }
 ];
 
+import BookingSearch from '../components/BookingSearch';
+
 const Hotels = () => {
+  // Função para obter ícones 3D para as amenidades
+  const getAmenityIcon = (amenity: string) => {
+    const amenityLower = amenity.toLowerCase();
+    
+    if (amenityLower.includes('wi-fi') || amenityLower.includes('wifi')) {
+      return { type: 'image', src: '/images/wifi-icon.png' };
+    } else if (amenityLower.includes('café') || amenityLower.includes('cafe')) {
+      return { type: 'emoji', content: '☕' };
+    } else if (amenityLower.includes('capela') || amenityLower.includes('igreja')) {
+      return { type: 'emoji', content: '⛪' };
+    } else if (amenityLower.includes('estacionamento')) {
+      return { type: 'emoji', content: '🚗' };
+    } else if (amenityLower.includes('ar condicionado')) {
+      return { type: 'emoji', content: '❄️' };
+    } else if (amenityLower.includes('piscina')) {
+      return { type: 'emoji', content: '🏊' };
+    } else if (amenityLower.includes('restaurante')) {
+      return { type: 'emoji', content: '🍽️' };
+    } else if (amenityLower.includes('spa')) {
+      return { type: 'emoji', content: '💆' };
+    } else if (amenityLower.includes('jardim')) {
+      return { type: 'emoji', content: '🌳' };
+    } else if (amenityLower.includes('sala de reunião') || amenityLower.includes('business')) {
+      return { type: 'emoji', content: '💼' };
+    } else if (amenityLower.includes('área de lazer')) {
+      return { type: 'emoji', content: '🎯' };
+    } else if (amenityLower.includes('quartos familiares')) {
+      return { type: 'emoji', content: '👨‍👩‍👧‍👦' };
+    } else {
+      return { type: 'emoji', content: '✨' };
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">
-              Hotéis e Pousadas
-            </h1>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Encontre a melhor hospedagem para sua estadia em Aparecida do Norte
-            </p>
-          </div>
-        </div>
+      <div className="pt-32 pb-8">
+        <BookingSearch />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -143,14 +169,29 @@ const Hotels = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {hotel.amenities.map((amenity, index) => (
-                    <span
-                      key={index}
-                      className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs"
-                    >
-                      {amenity}
-                    </span>
-                  ))}
+                  {hotel.amenities.map((amenity, index) => {
+                    const icon = getAmenityIcon(amenity);
+                    return (
+                      <span
+                        key={index}
+                        className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border border-gray-200 hover:shadow-md transition-shadow"
+                      >
+                        {icon.type === 'image' ? (
+                          <img 
+                            src={icon.src} 
+                            alt="icon" 
+                            className="w-5 h-5 object-contain"
+                            style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
+                          />
+                        ) : (
+                          <span className="text-xl" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>
+                            {icon.content}
+                          </span>
+                        )}
+                        {amenity}
+                      </span>
+                    );
+                  })}
                 </div>
 
                 <div className="flex items-center justify-between">

@@ -89,6 +89,11 @@ const BusinessRegistration: React.FC = () => {
     return `Máximo ${limit} fotos`;
   };
 
+  // Scroll para o topo quando o componente é montado
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   useEffect(() => {
     const loadPlans = async () => {
       try {

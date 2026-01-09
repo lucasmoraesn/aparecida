@@ -15,28 +15,28 @@ const Home = () => {
   const categories = [
     {
       to: '/hoteis',
-      image: 'https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+      image: '/images/hotel.png',
       title: 'Hotéis e Pousadas',
       description: 'Encontre a melhor hospedagem para sua estadia',
       color: 'from-blue-500 to-blue-600'
     },
     {
       to: '/restaurantes',
-      image: 'https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+      image: '/images/restaurante.png',
       title: 'Restaurantes',
       description: 'Saborosa culinária local e regional',
       color: 'from-yellow-500 to-orange-500'
     },
     {
       to: '/lojas-religiosas',
-      image: 'https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+      image: '/images/lojareligiosa.png',
       title: 'Lojas Religiosas',
       description: 'Artigos religiosos e souvenirs',
       color: 'from-purple-500 to-purple-600'
     },
     {
       to: '/pontos-turisticos',
-      image: 'https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+      image: '/images/pontoturistico.png',
       title: 'Pontos Turísticos',
       description: 'Conheça as principais atrações da cidade',
       color: 'from-green-500 to-green-600'
