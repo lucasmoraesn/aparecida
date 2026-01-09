@@ -89,15 +89,15 @@ const BookingSearch = () => {
             
             {/* Destino */}
             <div className="flex-1 relative group min-w-[200px] w-full lg:w-auto">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                <Bed className="h-5 w-5 text-gray-500" />
-              </div>
               <input
                 type="text"
                 value={destination}
                 readOnly
                 className="block w-full h-14 pl-10 pr-3 border border-blue-300 rounded-md leading-5 bg-gray-50 text-gray-700 font-semibold focus:outline-none cursor-default shadow-sm"
               />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                <Bed className="h-5 w-5 text-gray-500" />
+              </div>
             </div>
 
             {/* Datas */}
