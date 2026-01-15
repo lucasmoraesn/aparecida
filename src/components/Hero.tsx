@@ -97,27 +97,27 @@ const Hero = () => {
 
       // Verificar se o termo de busca corresponde a alguma categoria
       if (searchLower.includes('hotel') || searchLower.includes('hoteis') || searchLower.includes('pousada') || searchLower.includes('hospedagem') || searchLower.includes('acomodação')) {
-        navigate('/hoteis');
+        navigate('/hoteis-em-aparecida-sp');
         return;
       }
 
       if (searchLower.includes('restaurante') || searchLower.includes('comida') || searchLower.includes('jantar') || searchLower.includes('almoço') || searchLower.includes('lanche') || searchLower.includes('pizzaria')) {
-        navigate('/restaurantes');
+        navigate('/restaurantes-em-aparecida');
         return;
       }
 
       if (searchLower.includes('loja') || searchLower.includes('religioso') || searchLower.includes('artigo') || searchLower.includes('souvenir') || searchLower.includes('vela') || searchLower.includes('terço')) {
-        navigate('/lojas-religiosas');
+        navigate('/lojas-em-aparecida');
         return;
       }
 
       if (searchLower.includes('ponto') || searchLower.includes('turístico') || searchLower.includes('atração') || searchLower.includes('basílica') || searchLower.includes('museu') || searchLower.includes('mirante')) {
-        navigate('/pontos-turisticos');
+        navigate('/pontos-turisticos-em-aparecida');
         return;
       }
 
       if (searchLower.includes('evento') || searchLower.includes('missa') || searchLower.includes('procissão') || searchLower.includes('festa') || searchLower.includes('celebração') || searchLower.includes('caravana')) {
-        navigate('/eventos');
+        navigate('/eventos-em-aparecida');
         return;
       }
 
@@ -132,19 +132,19 @@ const Hero = () => {
         const matchingCategory = categories.find(cat => cat.options.includes(matchingOption));
         if (matchingCategory) {
           if (matchingCategory.name === 'Hotéis e Pousadas') {
-            navigate('/hoteis');
+            navigate('/hoteis-em-aparecida-sp');
             return;
           } else if (matchingCategory.name === 'Restaurantes') {
-            navigate('/restaurantes');
+            navigate('/restaurantes-em-aparecida');
             return;
           } else if (matchingCategory.name === 'Lojas Religiosas') {
-            navigate('/lojas-religiosas');
+            navigate('/lojas-em-aparecida');
             return;
           } else if (matchingCategory.name === 'Pontos Turísticos') {
-            navigate('/pontos-turisticos');
+            navigate('/pontos-turisticos-em-aparecida');
             return;
           } else if (matchingCategory.name === 'Eventos') {
-            navigate('/eventos');
+            navigate('/eventos-em-aparecida');
             return;
           }
         }
@@ -160,15 +160,15 @@ const Hero = () => {
       // Se não há categoria selecionada ou é "Todas as categorias", navegar para página que mostra todas as categorias
       navigate('/produtos', { state: { showAllCategories: true } });
     } else if (selectedCategory === 'Hotéis e Pousadas') {
-      navigate('/hoteis');
+      navigate('/hoteis-em-aparecida-sp');
     } else if (selectedCategory === 'Restaurantes') {
-      navigate('/restaurantes');
+      navigate('/restaurantes-em-aparecida');
     } else if (selectedCategory === 'Lojas Religiosas') {
-      navigate('/lojas-religiosas');
+      navigate('/lojas-em-aparecida');
     } else if (selectedCategory === 'Pontos Turísticos') {
-      navigate('/pontos-turisticos');
+      navigate('/pontos-turisticos-em-aparecida');
     } else if (selectedCategory === 'Eventos') {
-      navigate('/eventos');
+      navigate('/eventos-em-aparecida');
     } else {
       // Fallback para home
       navigate('/');
@@ -213,11 +213,11 @@ const Hero = () => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex items-center justify-center h-full">
+      <div className="relative z-10 flex items-center justify-center h-full pt-20 pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Main Title */}
           <motion.h1
-            className="text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-tight"
+            className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-3 sm:mb-4 leading-tight"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2 }}
@@ -226,7 +226,7 @@ const Hero = () => {
               Descubra Aparecida
             </span>
             <motion.span
-              className="block text-white mt-2 text-4xl md:text-6xl lg:text-7xl"
+              className="block text-white mt-2 text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.5 }}
@@ -237,7 +237,7 @@ const Hero = () => {
 
           {/* Subtitle */}
           <motion.p
-            className="text-lg md:text-xl mb-8 max-w-3xl mx-auto text-white font-bold leading-relaxed"
+            className="text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto text-white font-bold leading-relaxed px-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.8 }}
@@ -248,38 +248,38 @@ const Hero = () => {
 
           {/* Search Box */}
           <motion.div
-            className="bg-white/10 backdrop-blur-md rounded-3xl p-6 max-w-5xl mx-auto mb-8 border border-white/20 relative z-20"
+            className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-5xl mx-auto mb-6 sm:mb-8 border border-white/20 relative z-20"
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 1, delay: 1.1 }}
           >
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
+            <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
+              <div className="flex-1 md:flex-initial md:w-[340px]">
                 <input
                   type="text"
                   placeholder="O que você está procurando?"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full px-4 py-2.5 rounded-xl border-0 bg-white/90 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all duration-75 text-base"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border-0 bg-white/90 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all duration-75 text-sm sm:text-base"
                 />
               </div>
-              <div className="flex-1 relative dropdown-container">
+              <div className="flex-1 md:flex-initial md:w-[340px] relative dropdown-container">
                 <div 
-                  className="w-full px-4 py-2.5 rounded-xl border-0 bg-white/90 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all duration-75 text-base cursor-pointer flex justify-between items-center"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border-0 bg-white/90 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all duration-75 text-sm sm:text-base cursor-pointer flex justify-between items-center"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
-                  <span>{selectedCategory || 'Categoria'}</span>
-                  <ChevronDown className="w-5 h-5" />
+                  <span className="truncate">{selectedCategory || 'Categoria'}</span>
+                  <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ml-2" />
                 </div>
                 
                 {isDropdownOpen && (
-                  <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-lg z-50 overflow-hidden">
+                  <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-lg sm:rounded-xl shadow-lg z-50 overflow-hidden">
                     <div className="max-h-60 overflow-y-auto py-1">
                       {categories.map((category) => (
                         <div 
                           key={category.id} 
-                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                          className="px-3 sm:px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm sm:text-base"
                           onClick={() => {
                             setSelectedCategory(category.name);
                             setIsDropdownOpen(false);
@@ -294,53 +294,53 @@ const Hero = () => {
               </div>
               <motion.button
                 onClick={handleSearch}
-                className="bg-white/90 text-blue-800 hover:bg-white hover:text-blue-900 px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-75 text-base shadow-md hover:shadow-lg ml-2"
+                className="bg-white/90 text-blue-800 hover:bg-white hover:text-blue-900 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-75 text-sm sm:text-base shadow-md hover:shadow-lg whitespace-nowrap"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ duration: 0.075 }}
               >
-                <Search className="w-5 h-5" />
-                Buscar
+                <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">Buscar</span>
               </motion.button>
             </div>
           </motion.div>
 
           {/* Feature Pills */}
           <motion.div
-            className="flex flex-col sm:flex-row gap-6 justify-center items-center relative z-10"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 justify-center items-center relative z-10 px-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 1.4 }}
           >
             <motion.div
-              className="flex items-center gap-3 rounded-full px-8 py-4 transition-all duration-75 cursor-pointer"
+              className="flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 transition-all duration-75 cursor-pointer"
               whileHover={{ scale: 1.05, y: -5 }}
               transition={{ duration: 0.075 }}
             >
-              <MapPin className="w-5 h-5 text-white" />
-              <span className="font-medium text-white text-lg">Centro Histórico</span>
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <span className="font-medium text-white text-sm sm:text-base md:text-lg">Centro Histórico</span>
             </motion.div>
             <motion.div
-              className="flex items-center gap-3 rounded-full px-8 py-4 transition-all duration-75 cursor-pointer"
+              className="flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 transition-all duration-75 cursor-pointer"
               whileHover={{ scale: 1.05, y: -5 }}
               transition={{ duration: 0.075 }}
             >
-              <Calendar className="w-5 h-5 text-white" />
-              <span className="font-medium text-white text-lg">Eventos Principais</span>
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <span className="font-medium text-white text-sm sm:text-base md:text-lg">Eventos Principais</span>
             </motion.div>
             <motion.div
-              className="flex items-center gap-3 rounded-full px-8 py-4 transition-all duration-75 cursor-pointer"
+              className="flex items-center gap-2 sm:gap-3 rounded-full px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 transition-all duration-75 cursor-pointer"
               whileHover={{ scale: 1.05, y: -5 }}
               transition={{ duration: 0.075 }}
             >
-              <Users className="w-5 h-5 text-white" />
-              <span className="font-medium text-white text-lg">Grupos e Caravanas</span>
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <span className="font-medium text-white text-sm sm:text-base md:text-lg">Grupos e Caravanas</span>
             </motion.div>
           </motion.div>
 
           {/* Scroll Indicator */}
           <motion.div
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 hidden sm:block"
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >

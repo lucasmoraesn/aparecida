@@ -100,29 +100,29 @@ const Hotels = () => {
     const amenityLower = amenity.toLowerCase();
     
     if (amenityLower.includes('wi-fi') || amenityLower.includes('wifi')) {
-      return { type: 'image', src: '/images/wifi-icon.png' };
+      return { type: 'image', src: '/images/icon8-wifi.png' };
     } else if (amenityLower.includes('café') || amenityLower.includes('cafe')) {
-      return { type: 'emoji', content: '☕' };
+      return { type: 'image', src: '/images/icons8-café-da-manhã-80.png' };
     } else if (amenityLower.includes('capela') || amenityLower.includes('igreja')) {
       return { type: 'emoji', content: '⛪' };
     } else if (amenityLower.includes('estacionamento')) {
-      return { type: 'emoji', content: '🚗' };
+      return { type: 'image', src: '/images/icons8-estacionamento-64.png' };
     } else if (amenityLower.includes('ar condicionado')) {
-      return { type: 'emoji', content: '❄️' };
+      return { type: 'image', src: '/images/icons8-ar-condicionado-64.png' };
     } else if (amenityLower.includes('piscina')) {
       return { type: 'emoji', content: '🏊' };
     } else if (amenityLower.includes('restaurante')) {
-      return { type: 'emoji', content: '🍽️' };
+      return { type: 'image', src: '/images/icons8-talheres-64.png' };
     } else if (amenityLower.includes('spa')) {
       return { type: 'emoji', content: '💆' };
     } else if (amenityLower.includes('jardim')) {
       return { type: 'emoji', content: '🌳' };
     } else if (amenityLower.includes('sala de reunião') || amenityLower.includes('business')) {
-      return { type: 'emoji', content: '💼' };
+      return { type: 'image', src: '/images/icons8-sala-de-reuniões-50.png' };
     } else if (amenityLower.includes('área de lazer')) {
       return { type: 'emoji', content: '🎯' };
     } else if (amenityLower.includes('quartos familiares')) {
-      return { type: 'emoji', content: '👨‍👩‍👧‍👦' };
+      return { type: 'image', src: '/images/icons8-família-50.png' };
     } else {
       return { type: 'emoji', content: '✨' };
     }
@@ -134,10 +134,11 @@ const Hotels = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-800 mb-4">
-              Hotéis e Pousadas
+              Hotéis e pousadas em Aparecida do Norte (SP)
             </h1>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Encontre a melhor hospedagem para sua estadia em Aparecida do Norte
+              Encontre hospedagem em Aparecida do Norte perto da Basílica, com opções de hotéis,
+              pousadas e acomodações para romeiros, famílias e grupos.
             </p>
           </div>
           

@@ -23,11 +23,11 @@ const Header = () => {
   }, [isHomePage]);
 
   const navItems = [
-    { to: '/hoteis', label: 'Hotéis' },
-    { to: '/restaurantes', label: 'Restaurantes' },
-    { to: '/lojas-religiosas', label: 'Lojas' },
-    { to: '/pontos-turisticos', label: 'Pontos Turísticos' },
-    { to: '/eventos', label: 'Eventos' },
+    { to: '/hoteis-em-aparecida-sp', label: 'Hotéis' },
+    { to: '/restaurantes-em-aparecida', label: 'Restaurantes' },
+    { to: '/lojas-em-aparecida', label: 'Lojas' },
+    { to: '/pontos-turisticos-em-aparecida', label: 'Pontos Turísticos' },
+    { to: '/eventos-em-aparecida', label: 'Eventos' },
   ];
 
   // Determinar o estilo do header baseado na página
@@ -113,30 +113,30 @@ const Header = () => {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${getHeaderStyle()}`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex justify-between items-center py-3 sm:py-4">
           {/* Logo */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <img
               src="/logo-sem-fundo.png"
               alt="Logo Explore Aparecida"
-              className="h-12 w-auto"
+              className="h-10 sm:h-12 w-auto"
             />
             <div className="flex flex-col">
               <Link
                 to="/"
-                className={`text-2xl font-bold transition-all duration-300 hover:scale-105 ${getTextStyle()}`}
+                className={`text-lg sm:text-xl md:text-2xl font-bold transition-all duration-300 hover:scale-105 ${getTextStyle()}`}
               >
                 Explore Aparecida
               </Link>
-              <span className={`text-sm hidden sm:block transition-colors duration-300 ${getSubtitleStyle()}`}>
+              <span className={`text-xs sm:text-sm hidden md:block transition-colors duration-300 ${getSubtitleStyle()}`}>
                 Tudo o que você precisa saber antes de visitar a Casa da Mãe
               </span>
             </div>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden lg:flex space-x-6 xl:space-x-8">
             {navItems.map((item) => (
               <Link
                 key={item.to}
@@ -150,7 +150,7 @@ const Header = () => {
           </nav>
 
           {/* Contact & Mobile Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {!isHomePage && (
               <Link
                 to="/"
@@ -168,13 +168,14 @@ const Header = () => {
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
+              className="lg:hidden p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Menu"
             >
               {isMobileMenuOpen ? (
-                <X className={`w-6 h-6 ${getMobileMenuButtonStyle()}`} />
+                <X className={`w-5 h-5 sm:w-6 sm:h-6 ${getMobileMenuButtonStyle()}`} />
               ) : (
-                <Menu className={`w-6 h-6 ${getMobileMenuButtonStyle()}`} />
+                <Menu className={`w-5 h-5 sm:w-6 sm:h-6 ${getMobileMenuButtonStyle()}`} />
               )}
             </button>
           </div>
@@ -182,12 +183,12 @@ const Header = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white/95 backdrop-blur-md rounded-lg mt-2 p-4 shadow-xl">
-            <nav className="flex flex-col space-y-4">
+          <div className="lg:hidden bg-white/95 backdrop-blur-md rounded-lg mt-2 mb-2 p-4 shadow-xl animate-fade-in">
+            <nav className="flex flex-col space-y-3">
               {!isHomePage && (
                 <Link
                   to="/"
-                  className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-300"
+                  className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-300 py-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -198,14 +199,14 @@ const Header = () => {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-300"
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-300 py-2 border-l-2 border-transparent hover:border-blue-600 pl-3"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.label}
                 </Link>
               ))}
-              <div className="flex items-center text-sm text-gray-600 pt-2 border-t border-gray-200">
-                <Phone className="w-4 h-4 mr-1" />
+              <div className="flex items-center text-sm text-gray-600 pt-3 border-t border-gray-200">
+                <Phone className="w-4 h-4 mr-2" />
                 (12) 99212-6779
               </div>
             </nav>

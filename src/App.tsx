@@ -29,11 +29,11 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/hoteis" element={<Hotels />} />
-        <Route path="/restaurantes" element={<Restaurants />} />
-        <Route path="/lojas-religiosas" element={<ReligiousShops />} />
-        <Route path="/pontos-turisticos" element={<TouristAttractions />} />
-        <Route path="/eventos" element={<Events />} />
+        <Route path="/hoteis-em-aparecida-sp" element={<Hotels />} />
+        <Route path="/restaurantes-em-aparecida" element={<Restaurants />} />
+        <Route path="/lojas-em-aparecida" element={<ReligiousShops />} />
+        <Route path="/pontos-turisticos-em-aparecida" element={<TouristAttractions />} />
+        <Route path="/eventos-em-aparecida" element={<Events />} />
         <Route path="/todos-eventos" element={<AllEvents />} />
         <Route path="/cadastrar-negocio" element={<BusinessRegistration />} />
         {/* <Route path="/payment" element={<Payment />} /> */}
@@ -49,14 +49,14 @@ function App() {
       {/* Botão flutuante do WhatsApp */}
       <button
         onClick={handleWhatsAppClick}
-        className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 z-50 animate-bounce-slow"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-green-500 hover:bg-green-600 text-white rounded-full p-3 sm:p-4 shadow-lg transition-all duration-300 hover:scale-110 z-50 animate-bounce-slow"
         aria-label="Contato via WhatsApp"
         style={{
           animation: 'float 3s ease-in-out infinite'
         }}
       >
         <svg
-          className="w-7 h-7"
+          className="w-6 h-6 sm:w-7 sm:h-7"
           fill="currentColor"
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"

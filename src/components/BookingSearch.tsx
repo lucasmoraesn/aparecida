@@ -42,25 +42,11 @@ const BookingSearch = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Base URL do Booking (página da cidade de Aparecida)
-    const baseUrl = 'https://www.booking.com/city/br/aparecida.pt-br.html';
-    
-    // Construir query params
-    const params = new URLSearchParams();
-    if (dates.checkin) params.append('checkin', dates.checkin);
-    if (dates.checkout) params.append('checkout', dates.checkout);
-    params.append('group_adults', guests.adults.toString());
-    params.append('group_children', guests.children.toString());
-    params.append('no_rooms', guests.rooms.toString());
-    
-    const targetUrl = `${baseUrl}?${params.toString()}`;
-    const encodedUrl = encodeURIComponent(targetUrl);
-    
-    // Link Awin
-    const awinLink = `https://www.awin1.com/cread.php?awinmid=18120&awinaffid=2711492&clickref=aparecida_hoteis&ued=${encodedUrl}`;
+    // Link de afiliado Tiddly
+    const tiddlyLink = 'https://tidd.ly/4puN43K';
     
     // Abrir em nova aba
-    window.open(awinLink, '_blank');
+    window.open(tiddlyLink, '_blank');
   };
 
   const updateGuests = (type: 'adults' | 'children' | 'rooms', operation: 'inc' | 'dec') => {

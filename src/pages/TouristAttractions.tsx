@@ -107,11 +107,12 @@ const TouristAttractions = () => {
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">
-              Pontos Turísticos
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">
+              Pontos turísticos em Aparecida do Norte (SP)
             </h1>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Conheça os principais pontos turísticos e históricos de Aparecida do Norte
+              Descubra o que fazer em Aparecida: santuários, mirantes, passarelas da fé e locais
+              históricos que fazem da cidade o principal destino de turismo religioso do Brasil.
             </p>
           </div>
         </div>

@@ -108,10 +108,11 @@ const ReligiousShops = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                <div className="text-center mb-12">
                   <h1 className="text-4xl font-bold text-gray-800 mb-4">
-                     Lojas Religiosas
+                     Lojas religiosas em Aparecida do Norte (SP)
                   </h1>
                   <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                     Encontre os melhores artigos religiosos e lembranças da sua peregrinação
+                     Encontre artigos religiosos, lembranças da Basílica e souvenirs típicos de Aparecida
+                     para levar a fé e a memória da sua peregrinação para casa.
                   </p>
                </div>
             </div>

@@ -65,7 +65,7 @@ const Home = () => {
       <Hero />
 
       {/* Categories Section */}
-      <section className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
+      <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
         {/* Background Elements */}
         <div className="absolute inset-0">
           <div className="absolute top-20 left-10 w-32 h-32 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
@@ -74,20 +74,20 @@ const Home = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
-            className="text-center mb-20"
+            className="text-center mb-10 sm:mb-14 md:mb-16 lg:mb-20"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-4 sm:mb-6">
               Explore <span className="bg-gradient-to-r from-blue-600 to-yellow-500 bg-clip-text text-transparent">Aparecida</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
               Descubra os melhores estabelecimentos selecionados especialmente para sua visita
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
             {categories.map((category, index) => (
               <motion.div
                 key={category.to}
@@ -101,7 +101,7 @@ const Home = () => {
                   className="group block h-full"
                 >
                   <motion.div
-                    className="bg-white rounded-3xl shadow-lg p-8 text-center hover-lift border border-gray-100 relative overflow-hidden h-full flex flex-col"
+                    className="bg-white rounded-2xl sm:rounded-3xl shadow-lg p-4 sm:p-6 md:p-8 text-center hover-lift border border-gray-100 relative overflow-hidden h-full flex flex-col"
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.075 }}
                   >
@@ -110,7 +110,7 @@ const Home = () => {
 
                     {/* Image */}
                     <motion.div
-                      className="relative w-full h-48 rounded-2xl overflow-hidden mb-6 group-hover:scale-105 transition-transform duration-75 shadow-lg"
+                      className="relative w-full h-32 sm:h-40 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden mb-4 sm:mb-6 group-hover:scale-105 transition-transform duration-75 shadow-lg"
                       transition={{ duration: 0.075 }}
                     >
                       <img
@@ -124,10 +124,10 @@ const Home = () => {
 
                     {/* Content */}
                     <div className="flex-1 flex flex-col justify-center">
-                      <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-blue-600 transition-colors duration-75">
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 mb-2 sm:mb-3 group-hover:text-blue-600 transition-colors duration-75">
                         {category.title}
                       </h3>
-                      <p className="text-gray-600 leading-relaxed">
+                      <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
                         {category.description}
                       </p>
                     </div>
@@ -140,38 +140,38 @@ const Home = () => {
       </section>
 
       {/* Events Section */}
-      <section className="py-24 bg-white relative">
+      <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            className="text-center mb-20"
+            className="text-center mb-10 sm:mb-14 md:mb-16 lg:mb-20"
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-4 sm:mb-6">
               Eventos e <span className="bg-gradient-to-r from-blue-600 to-yellow-500 bg-clip-text text-transparent">Celebrações</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
               Participe dos principais eventos religiosos e culturais da cidade
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-10 sm:mb-12 md:mb-16">
             {events.map((event, index) => (
               <motion.div
                 key={index}
-                className="bg-gradient-to-br from-gray-50 to-white rounded-3xl shadow-lg p-8 border border-gray-100 hover-lift"
+                className="bg-gradient-to-br from-gray-50 to-white rounded-2xl sm:rounded-3xl shadow-lg p-6 sm:p-8 border border-gray-100 hover-lift"
                 initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.2 }}
                 viewport={{ once: true }}
                 whileHover={{ scale: 1.02 }}
               >
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">{event.title}</h3>
-                <p className="text-gray-600 mb-4">{event.date}</p>
-                <p className="text-gray-500 mb-4">{event.location}</p>
-                <span className={`${event.color} px-4 py-2 rounded-full text-sm font-semibold`}>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">{event.title}</h3>
+                <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">{event.date}</p>
+                <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">{event.location}</p>
+                <span className={`${event.color} px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold`}>
                   {event.type}
                 </span>
               </motion.div>
@@ -187,10 +187,10 @@ const Home = () => {
           >
             <Link
               to="/todos-eventos"
-              className="bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-900 hover:to-blue-950 text-white px-10 py-4 rounded-xl font-semibold text-lg transition-all duration-75 inline-flex items-center gap-2 shadow-lg hover:shadow-xl"
+              className="bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-900 hover:to-blue-950 text-white px-6 sm:px-8 md:px-10 py-3 sm:py-4 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base md:text-lg transition-all duration-75 inline-flex items-center gap-2 shadow-lg hover:shadow-xl"
             >
               Ver Todos os Eventos
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
@@ -199,32 +199,32 @@ const Home = () => {
       </section>
 
       {/* Business Registration Section */}
-      <section className="py-24 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white relative overflow-hidden">
+      <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white relative overflow-hidden">
         {/* Background Elements */}
         <div className="absolute inset-0">
-          <div className="absolute top-10 left-10 w-64 h-64 bg-yellow-400 rounded-full opacity-10 blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-80 h-80 bg-blue-400 rounded-full opacity-10 blur-3xl"></div>
+          <div className="absolute top-10 left-10 w-48 sm:w-64 h-48 sm:h-64 bg-yellow-400 rounded-full opacity-10 blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-56 sm:w-80 h-56 sm:h-80 bg-blue-400 rounded-full opacity-10 blur-3xl"></div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-12 md:mb-16"
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
               Seu Negócio em <span className="text-yellow-400">Aparecida</span>
             </h2>
-            <p className="text-xl text-blue-100 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-blue-100 max-w-4xl mx-auto leading-relaxed px-4">
               Conecte-se com milhares de peregrinos todos os meses. Cadastre seu estabelecimento
               e faça parte da maior rede de turismo religioso do país.
             </p>
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mb-10 sm:mb-12 md:mb-16"
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -235,24 +235,24 @@ const Home = () => {
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="text-5xl font-bold text-yellow-400 mb-3">500K+</div>
-              <p className="text-blue-100 text-lg">Visitantes por mês</p>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-yellow-400 mb-2 sm:mb-3">500K+</div>
+              <p className="text-blue-100 text-sm sm:text-base md:text-lg">Visitantes por mês</p>
             </motion.div>
             <motion.div
               className="text-center"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="text-5xl font-bold text-yellow-400 mb-3">2000+</div>
-              <p className="text-blue-100 text-lg">Negócios cadastrados</p>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-yellow-400 mb-2 sm:mb-3">2000+</div>
+              <p className="text-blue-100 text-sm sm:text-base md:text-lg">Negócios cadastrados</p>
             </motion.div>
             <motion.div
               className="text-center"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="text-5xl font-bold text-yellow-400 mb-3">95%</div>
-              <p className="text-blue-100 text-lg">Satisfação dos clientes</p>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-yellow-400 mb-2 sm:mb-3">95%</div>
+              <p className="text-blue-100 text-sm sm:text-base md:text-lg">Satisfação dos clientes</p>
             </motion.div>
           </motion.div>
 
@@ -265,10 +265,10 @@ const Home = () => {
           >
             <Link
               to="/cadastrar-negocio"
-              className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-12 py-5 rounded-xl font-semibold text-xl transition-all duration-300 inline-flex items-center gap-3 shadow-2xl hover:shadow-3xl hover:scale-105"
+              className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-8 sm:px-10 md:px-12 py-3 sm:py-4 md:py-5 rounded-lg sm:rounded-xl font-semibold text-base sm:text-lg md:text-xl transition-all duration-300 inline-flex items-center gap-2 sm:gap-3 shadow-2xl hover:shadow-3xl hover:scale-105"
             >
               Cadastrar Negócio
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
