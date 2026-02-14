@@ -29,11 +29,11 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/hoteis-em-aparecida-sp" element={<Hotels />} />
-        <Route path="/restaurantes-em-aparecida" element={<Restaurants />} />
-        <Route path="/lojas-em-aparecida" element={<ReligiousShops />} />
-        <Route path="/pontos-turisticos-em-aparecida" element={<TouristAttractions />} />
-        <Route path="/eventos-em-aparecida" element={<Events />} />
+        <Route path="/hoteis" element={<Hotels />} />
+        <Route path="/restaurantes" element={<Restaurants />} />
+        <Route path="/lojas-religiosas" element={<ReligiousShops />} />
+        <Route path="/pontos-turisticos" element={<TouristAttractions />} />
+        <Route path="/eventos" element={<Events />} />
         <Route path="/todos-eventos" element={<AllEvents />} />
         <Route path="/cadastrar-negocio" element={<BusinessRegistration />} />
         {/* <Route path="/payment" element={<Payment />} /> */}

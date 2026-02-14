@@ -97,27 +97,27 @@ const Hero = () => {
 
       // Verificar se o termo de busca corresponde a alguma categoria
       if (searchLower.includes('hotel') || searchLower.includes('hoteis') || searchLower.includes('pousada') || searchLower.includes('hospedagem') || searchLower.includes('acomodação')) {
-        navigate('/hoteis-em-aparecida-sp');
+        navigate('/hoteis');
         return;
       }
 
       if (searchLower.includes('restaurante') || searchLower.includes('comida') || searchLower.includes('jantar') || searchLower.includes('almoço') || searchLower.includes('lanche') || searchLower.includes('pizzaria')) {
-        navigate('/restaurantes-em-aparecida');
+        navigate('/restaurantes');
         return;
       }
 
       if (searchLower.includes('loja') || searchLower.includes('religioso') || searchLower.includes('artigo') || searchLower.includes('souvenir') || searchLower.includes('vela') || searchLower.includes('terço')) {
-        navigate('/lojas-em-aparecida');
+        navigate('/lojas-religiosas');
         return;
       }
 
       if (searchLower.includes('ponto') || searchLower.includes('turístico') || searchLower.includes('atração') || searchLower.includes('basílica') || searchLower.includes('museu') || searchLower.includes('mirante')) {
-        navigate('/pontos-turisticos-em-aparecida');
+        navigate('/pontos-turisticos');
         return;
       }
 
       if (searchLower.includes('evento') || searchLower.includes('missa') || searchLower.includes('procissão') || searchLower.includes('festa') || searchLower.includes('celebração') || searchLower.includes('caravana')) {
-        navigate('/eventos-em-aparecida');
+        navigate('/eventos');
         return;
       }
 
@@ -132,19 +132,19 @@ const Hero = () => {
         const matchingCategory = categories.find(cat => cat.options.includes(matchingOption));
         if (matchingCategory) {
           if (matchingCategory.name === 'Hotéis e Pousadas') {
-            navigate('/hoteis-em-aparecida-sp');
+            navigate('/hoteis');
             return;
           } else if (matchingCategory.name === 'Restaurantes') {
-            navigate('/restaurantes-em-aparecida');
+            navigate('/restaurantes');
             return;
           } else if (matchingCategory.name === 'Lojas Religiosas') {
-            navigate('/lojas-em-aparecida');
+            navigate('/lojas-religiosas');
             return;
           } else if (matchingCategory.name === 'Pontos Turísticos') {
-            navigate('/pontos-turisticos-em-aparecida');
+            navigate('/pontos-turisticos');
             return;
           } else if (matchingCategory.name === 'Eventos') {
-            navigate('/eventos-em-aparecida');
+            navigate('/eventos');
             return;
           }
         }
@@ -160,15 +160,15 @@ const Hero = () => {
       // Se não há categoria selecionada ou é "Todas as categorias", navegar para página que mostra todas as categorias
       navigate('/produtos', { state: { showAllCategories: true } });
     } else if (selectedCategory === 'Hotéis e Pousadas') {
-      navigate('/hoteis-em-aparecida-sp');
+      navigate('/hoteis');
     } else if (selectedCategory === 'Restaurantes') {
-      navigate('/restaurantes-em-aparecida');
+      navigate('/restaurantes');
     } else if (selectedCategory === 'Lojas Religiosas') {
-      navigate('/lojas-em-aparecida');
+      navigate('/lojas-religiosas');
     } else if (selectedCategory === 'Pontos Turísticos') {
-      navigate('/pontos-turisticos-em-aparecida');
+      navigate('/pontos-turisticos');
     } else if (selectedCategory === 'Eventos') {
-      navigate('/eventos-em-aparecida');
+      navigate('/eventos');
     } else {
       // Fallback para home
       navigate('/');

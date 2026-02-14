@@ -134,11 +134,10 @@ const Hotels = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-800 mb-4">
-              Hotéis e pousadas em Aparecida do Norte (SP)
+              Hotéis e Pousadas
             </h1>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Encontre hospedagem em Aparecida do Norte perto da Basílica, com opções de hotéis,
-              pousadas e acomodações para romeiros, famílias e grupos.
+              Encontre a melhor hospedagem para sua estadia em Aparecida do Norte
             </p>
           </div>
           
