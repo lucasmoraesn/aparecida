@@ -1,0 +1,37 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "start:prod": "NODE_ENV=production node index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:email": "node test-email.js",
+    "test:email:notification": "node test-email.js notification",
+    "test:email:customer": "node test-email.js customer",
+    "test:email:all": "node test-email.js all"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Backend do projeto Aparecida (Node + Express + Supabase)",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.56.0",
+    "axios": "^1.13.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^4.22.1",
+    "jspdf": "^3.0.4",
+    "pg": "^8.16.3",
+    "resend": "^6.6.0",
+    "stripe": "^20.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "vitest": "^1.6.1"
+  }
+}
