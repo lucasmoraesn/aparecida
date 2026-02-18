@@ -1,192 +1,86 @@
-# 🧪 GUIA DE TESTES - MODO SANDBOX
+# Como Testar — Explore Aparecida Backend
 
-## 📋 Configuração Atual
+## Pré-requisitos
 
-### ✅ Produção (.env)
-- **Stripe:** Modo LIVE (pagamentos reais)
-- **Webhook:** `https://aparecidadonortesp.com.br/api/webhook`
-- **Secret:** `whsec_xbF9Xm7u6rkJ1VMhH3DCYlaIsM4hMhWF`
-
-### 🧪 Teste (.env.test)
-- **Stripe:** Modo TEST (sandbox)
-- **Webhook:** `https://aparecidadonortesp.com.br/api/webhook`
-- **Secret:** `whsec_RGLP7GQcub0kCsHHLmodg02G3gc8XSma`
+- Node.js 18+
+- Variáveis de ambiente configuradas no `.env` (veja `env.example`)
+- Instância EC2 com IAM Role configurada para SES
 
 ---
 
-## 🚀 Como Testar Novas Funcionalidades
+## 1. Testar Envio de E-mail (Amazon SES)
 
-### **1. Alternar para Modo de Teste**
+> ⚠️ Este teste só funciona na **instância EC2** (onde a IAM Role está disponível).
 
-```powershell
-# Parar o servidor de produção
-pm2 stop aparecida-backend
-
-# Usar credenciais de teste
-cd C:\projetos\aparecida\server
-Copy-Item .env.test .env -Force
-
-# Reiniciar servidor
-pm2 restart aparecida-backend
-```
-
----
-
-### **2. Testar no Stripe Dashboard**
-
-1. Acesse: https://dashboard.stripe.com/test/webhooks
-2. Clique no webhook configurado
-3. Vá em "Enviar evento de teste"
-4. Escolha um evento (ex: `checkout.session.completed`)
-5. Clique em "Enviar evento de teste"
-
----
-
-### **3. Testar com Cartões de Teste**
-
-Use estes cartões de teste do Stripe:
-
-| Cenário | Número do Cartão | CVC | Data |
-|---------|------------------|-----|------|
-| ✅ Sucesso | `4242 4242 4242 4242` | Qualquer 3 dígitos | Qualquer data futura |
-| ❌ Recusado | `4000 0000 0000 0002` | Qualquer 3 dígitos | Qualquer data futura |
-| 🔒 Requer 3D Secure | `4000 0025 0000 3155` | Qualquer 3 dígitos | Qualquer data futura |
-
-**Mais cartões:** https://stripe.com/docs/testing#cards
-
----
-
-### **4. Verificar Logs**
-
-```powershell
-# Ver logs do servidor
-pm2 logs aparecida-backend
-
-# Ver apenas erros
-pm2 logs aparecida-backend --err
-
-# Ver logs em tempo real
-pm2 logs aparecida-backend --lines 100
-```
-
----
-
-### **5. Testar Eventos de Webhook**
-
-#### **A) Assinatura Completada**
 ```bash
-# No Stripe Dashboard > Webhooks > Enviar evento de teste
-# Selecionar: checkout.session.completed
+# Na EC2, dentro do diretório server:
+node test-email.js seu@email.com
 ```
 
-#### **B) Assinatura Cancelada**
+**Resultado esperado:**
+```
+✅ E-mail de teste enviado com sucesso!
+   MessageId: 0102019...
+```
+
+**Se falhar, verifique:**
+1. IAM Role da EC2 tem permissão `ses:SendEmail`
+2. Domínio verificado no SES (us-east-2)
+3. Se estiver em sandbox, o destinatário precisa ser verificado
+4. `EMAIL_FROM` usa endereço verificado no SES
+
+---
+
+## 2. Testar Webhook do Stripe
+
+### Com Stripe CLI (local):
+
 ```bash
-# Selecionar: customer.subscription.deleted
+# Instalar Stripe CLI
+# https://stripe.com/docs/stripe-cli
+
+# Escutar e encaminhar eventos para o servidor local
+stripe listen --forward-to http://localhost:3001/api/webhook
+
+# Em outro terminal, disparar evento de teste
+stripe trigger checkout.session.completed
+stripe trigger customer.subscription.deleted
+stripe trigger invoice.payment_succeeded
 ```
 
-#### **C) Pagamento Bem-Sucedido**
+### Em produção:
+
+Configure o webhook no [Dashboard Stripe](https://dashboard.stripe.com/webhooks):
+- **URL:** `https://aparecidadonortesp.com.br/api/webhook`
+- **Eventos:** `checkout.session.completed`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
+
+---
+
+## 3. Testar API de Planos
+
 ```bash
-# Selecionar: invoice.payment_succeeded
+curl http://localhost:3001/api/plans
 ```
 
-#### **D) Pagamento Falhado**
+---
+
+## 4. Testar Health Check
+
 ```bash
-# Selecionar: invoice.payment_failed
+curl http://localhost:3001/health
+# Resposta: {"ok":true}
 ```
 
 ---
 
-### **6. Voltar para Produção**
+## Variáveis de Ambiente Necessárias
 
-```powershell
-# Parar servidor
-pm2 stop aparecida-backend
-
-# Restaurar credenciais de produção
-cd C:\projetos\aparecida\server
-
-# ⚠️ CUIDADO: Certifique-se de que .env tem as credenciais LIVE
-# Verificar arquivo .env antes de continuar!
-notepad .env
-
-# Reiniciar servidor
-pm2 restart aparecida-backend
-
-# Verificar se está em modo LIVE
-pm2 logs aparecida-backend --lines 20
-```
-
----
-
-## 🔍 Verificações Importantes
-
-### **Antes de Testar:**
-```powershell
-# Verificar qual ambiente está ativo
-Select-String -Path "C:\projetos\aparecida\server\.env" -Pattern "STRIPE_SECRET_KEY"
-```
-
-- Se começar com `sk_test_` → Modo TESTE ✅
-- Se começar com `sk_live_` → Modo PRODUÇÃO ⚠️
-
-### **Após Testar:**
-```powershell
-# SEMPRE verificar se voltou para produção
-Select-String -Path "C:\projetos\aparecida\server\.env" -Pattern "STRIPE_SECRET_KEY"
-```
-
----
-
-## ⚠️ IMPORTANTE - CHECKLIST
-
-Antes de voltar para produção:
-
-- [ ] Testar funcionalidade no modo TESTE
-- [ ] Verificar logs sem erros
-- [ ] Restaurar arquivo .env com credenciais LIVE
-- [ ] Verificar que STRIPE_SECRET_KEY começa com `sk_live_`
-- [ ] Reiniciar servidor com `pm2 restart`
-- [ ] Verificar logs do servidor em produção
-- [ ] Fazer um teste real com valor baixo (R$ 1,00)
-
----
-
-## 📚 Recursos
-
-- **Stripe Dashboard (Teste):** https://dashboard.stripe.com/test
-- **Stripe Dashboard (Produção):** https://dashboard.stripe.com
-- **Documentação Stripe:** https://stripe.com/docs
-- **Cartões de Teste:** https://stripe.com/docs/testing#cards
-
----
-
-## 🆘 Troubleshooting
-
-### Webhook retorna erro 401/403
-```powershell
-# Verificar se STRIPE_WEBHOOK_SECRET está correto
-Select-String -Path "C:\projetos\aparecida\server\.env" -Pattern "STRIPE_WEBHOOK_SECRET"
-```
-
-### Servidor não responde
-```powershell
-# Verificar status do PM2
-pm2 status
-
-# Reiniciar servidor
-pm2 restart aparecida-backend
-
-# Ver logs
-pm2 logs aparecida-backend
-```
-
-### Email de teste não chega
-- Verificar RESEND_API_KEY no .env
-- Acessar: https://resend.com/emails
-- Verificar logs do Resend
-
----
-
-**Data:** 28/12/2025  
-**Webhook de Teste Configurado:** ✅  
-**Secret de Teste:** `whsec_RGLP7GQcub0kCsHHLmodg02G3gc8XSma`
+| Variável | Descrição |
+|---|---|
+| `AWS_REGION` | Região do SES (`us-east-2`) |
+| `EMAIL_FROM` | Remetente verificado no SES |
+| `ADMIN_EMAIL` | E-mail do administrador |
+| `STRIPE_SECRET_KEY` | Chave secreta do Stripe |
+| `STRIPE_WEBHOOK_SECRET` | Segredo do webhook Stripe |
+| `SUPABASE_URL` | URL do projeto Supabase |
+| `SUPABASE_SERVICE_KEY` | Service role key do Supabase |

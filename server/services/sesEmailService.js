@@ -2,7 +2,6 @@
  * 📧 SES EMAIL SERVICE — Amazon SES (AWS SDK v3)
  *
  * Serviço centralizado para envio de e-mails usando Amazon SES.
- * Substitui completamente o Resend.
  *
  * Autenticação: IAM Role da instância EC2 (sem credenciais no .env).
  * O SDK AWS detecta automaticamente as credenciais via Instance Metadata Service (IMDS).
