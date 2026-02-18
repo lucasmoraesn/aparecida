@@ -14,4 +14,5 @@ export {
   sendTestEmail,
   sendNewSubscriptionNotification,
   sendSubscriptionConfirmationToCustomer,
+  sendNewsletterWelcomeEmail,
 } from './sesEmailService.js';

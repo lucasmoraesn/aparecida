@@ -92,6 +92,7 @@ export async function sendEmail({ to, subject, html, text }) {
 import { buildPaymentConfirmationEmail } from '../emails/paymentConfirmation.js';
 import { buildSubscriptionCanceledEmail } from '../emails/subscriptionCanceled.js';
 import { buildTestEmail } from '../emails/testEmail.js';
+import { buildNewsletterWelcomeEmail } from '../emails/newsletterWelcome.js';
 
 /**
  * Envia e-mail de confirmação de pagamento ao cliente.
@@ -234,4 +235,15 @@ export async function sendSubscriptionConfirmationToCustomer({
         invoiceId: 'assinatura-nova',
         nextCharge: nextChargeDate,
     });
+}
+
+/**
+ * Envia e-mail de boas-vindas para novo inscrito na newsletter.
+ *
+ * @param {Object} params
+ * @param {string} params.email - E-mail do inscrito
+ */
+export async function sendNewsletterWelcomeEmail({ email }) {
+    const { subject, html, text } = buildNewsletterWelcomeEmail({ email });
+    return sendEmail({ to: email, subject, html, text });
 }
