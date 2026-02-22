@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, User, Minus, Plus, Bed, ChevronDown } from 'lucide-react';
 
+const bookingAffiliateURL = 'https://tidd.ly/4puN43K';
+
 const BookingSearch = () => {
   const [destination] = useState('Aparecida');
   const [dates, setDates] = useState({
@@ -42,11 +44,8 @@ const BookingSearch = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Link de afiliado Tiddly
-    const tiddlyLink = 'https://tidd.ly/4puN43K';
-    
     // Abrir em nova aba
-    window.open(tiddlyLink, '_blank');
+    window.open(bookingAffiliateURL, '_blank');
   };
 
   const updateGuests = (type: 'adults' | 'children' | 'rooms', operation: 'inc' | 'dec') => {
@@ -63,13 +62,13 @@ const BookingSearch = () => {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto mb-12 relative z-10 px-4">
+    <div className="w-full max-w-6xl mx-auto mb-10 sm:mb-12 relative z-10 px-3 sm:px-4">
       <div className="bg-blue-400 p-1 rounded-lg shadow-xl">
         <div className="bg-white p-6 rounded text-gray-800">
-            <div className="mb-6 text-center max-w-3xl mx-auto">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Pesquise aqui os hotéis em Aparecida</h2>
-                <p className="text-gray-600 text-base">Insira suas datas e veja os preços e ofertas de hotéis em Aparecida. Você será redirecionado para a página do Booking.</p>
-            </div>
+          <div className="mb-6 text-center max-w-3xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Buscar hospedagem em Aparecida (SP)</h2>
+            <p className="text-gray-600 text-base">Destino fixo: Aparecida. Informe suas datas e o número de hóspedes para verificar disponibilidade na Booking.</p>
+          </div>
 
           <form onSubmit={handleSearch} className="flex flex-col lg:flex-row flex-wrap gap-3 items-stretch relative">
             
@@ -213,8 +212,11 @@ const BookingSearch = () => {
               type="submit"
               className="h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 rounded-md transition-all duration-200 flex items-center justify-center gap-2 text-lg shadow-md hover:shadow-lg lg:w-auto w-full min-w-[150px]"
             >
-              Buscar
+              Ver disponibilidade na Booking
             </button>
+            <p className="text-gray-500 text-sm mt-2">
+              Você será redirecionado para a Booking.com para concluir sua reserva.
+            </p>
           </form>
         </div>
       </div>

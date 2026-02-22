@@ -23,7 +23,7 @@ const Header = () => {
   }, [isHomePage]);
 
   const navItems = [
-    { to: '/hoteis', label: 'Hotéis' },
+    { to: '/hoteis-em-aparecida-sp', label: 'Hotéis' },
     { to: '/restaurantes', label: 'Restaurantes' },
     { to: '/lojas-religiosas', label: 'Lojas' },
     { to: '/pontos-turisticos', label: 'Pontos Turísticos' },

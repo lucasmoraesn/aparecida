@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import Hero from '../components/Hero';
-import CategorySection from '../components/CategorySection';
-import EventsSection from '../components/EventsSection';
+import { Bed, Utensils, ShoppingBag, MapPin } from 'lucide-react';
 
 const Home = () => {
+  const bookingAffiliateURL = 'https://tidd.ly/4puN43K';
+
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1
@@ -64,15 +65,8 @@ const Home = () => {
     <>
       <Hero />
 
-      {/* Categories Section */}
       <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
-          <div className="absolute bottom-20 right-10 w-40 h-40 bg-yellow-200 rounded-full opacity-20 blur-3xl"></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-10 sm:mb-14 md:mb-16 lg:mb-20"
             initial={{ opacity: 0, y: 50 }}
@@ -105,10 +99,7 @@ const Home = () => {
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.075 }}
                   >
-                    {/* Background Gradient */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-5 transition-opacity duration-75`}></div>
-
-                    {/* Image */}
                     <motion.div
                       className="relative w-full h-32 sm:h-40 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden mb-4 sm:mb-6 group-hover:scale-105 transition-transform duration-75 shadow-lg"
                       transition={{ duration: 0.075 }}
@@ -121,8 +112,6 @@ const Home = () => {
                       />
                       <div className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-20 group-hover:opacity-30 transition-opacity duration-75`}></div>
                     </motion.div>
-
-                    {/* Content */}
                     <div className="flex-1 flex flex-col justify-center">
                       <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 mb-2 sm:mb-3 group-hover:text-blue-600 transition-colors duration-75">
                         {category.title}
@@ -139,7 +128,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Events Section */}
       <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -198,17 +186,15 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Business Registration Section */}
       <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white relative overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-10 left-10 w-48 sm:w-64 h-48 sm:h-64 bg-yellow-400 rounded-full opacity-10 blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-56 sm:w-80 h-56 sm:h-80 bg-blue-400 rounded-full opacity-10 blur-3xl"></div>
-        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="absolute inset-0">
+            <div className="absolute top-10 left-10 w-48 sm:w-64 h-48 sm:h-64 bg-yellow-400 rounded-full opacity-10 blur-3xl"></div>
+            <div className="absolute bottom-10 right-10 w-56 sm:w-80 h-56 sm:h-80 bg-blue-400 rounded-full opacity-10 blur-3xl"></div>
+          </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
-            className="text-center mb-10 sm:mb-12 md:mb-16"
+            className="text-center mb-10 sm:mb-12 md:mb-16 relative z-10"
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -224,40 +210,28 @@ const Home = () => {
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mb-10 sm:mb-12 md:mb-16"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mb-10 sm:mb-12 md:mb-16 relative z-10"
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             viewport={{ once: true }}
           >
-            <motion.div
-              className="text-center"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.3 }}
-            >
+            <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
               <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-yellow-400 mb-2 sm:mb-3">500K+</div>
               <p className="text-blue-100 text-sm sm:text-base md:text-lg">Visitantes por mês</p>
             </motion.div>
-            <motion.div
-              className="text-center"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.3 }}
-            >
+            <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
               <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-yellow-400 mb-2 sm:mb-3">2000+</div>
               <p className="text-blue-100 text-sm sm:text-base md:text-lg">Negócios cadastrados</p>
             </motion.div>
-            <motion.div
-              className="text-center"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.3 }}
-            >
+            <motion.div className="text-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
               <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-yellow-400 mb-2 sm:mb-3">95%</div>
               <p className="text-blue-100 text-sm sm:text-base md:text-lg">Satisfação dos clientes</p>
             </motion.div>
           </motion.div>
 
           <motion.div
-            className="text-center space-y-6"
+            className="text-center space-y-6 relative z-10"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}

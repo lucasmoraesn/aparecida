@@ -1,219 +1,171 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Phone, Wifi, Car, Coffee } from 'lucide-react';
+import { MapPin, Phone, Star } from 'lucide-react';
 import BookingSearch from '../components/BookingSearch';
 
-const hotels = [
-  {
-    id: 1,
-    name: "Hotel Aparecida Palace",
-    description: "Hotel 4 estrelas localizado próximo à Basílica Nacional, com vista panorâmica e conforto premium.",
-    address: "Rua das Flores, 123 - Centro",
-    phone: "(12) 3104-1001",
-    rating: 4.5,
-    price: "R$ 280",
-    amenities: ["Wi-Fi", "Estacionamento", "Café da manhã", "Ar condicionado"],
-    image: "https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 2,
-    name: "Pousada Nossa Senhora",
-    description: "Pousada familiar com ambiente acolhedor e proximidade aos principais pontos turísticos.",
-    address: "Av. Aparecida, 456 - Centro",
-    phone: "(12) 3104-1002",
-    rating: 4.2,
-    price: "R$ 180",
-    amenities: ["Wi-Fi", "Café da manhã", "Quartos familiares"],
-    image: "https://images.pexels.com/photos/261106/pexels-photo-261106.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 3,
-    name: "Hotel Santuário",
-    description: "Hotel moderno com excelente localização e serviços de qualidade para peregrinos.",
-    address: "Rua do Santuário, 789 - Centro",
-    phone: "(12) 3104-1003",
-    rating: 4.7,
-    price: "R$ 320",
-    amenities: ["Wi-Fi", "Estacionamento", "Restaurante", "Spa"],
-    image: "https://images.pexels.com/photos/261105/pexels-photo-261105.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 4,
-    name: "Pousada do Romeiro",
-    description: "Pousada tradicional com ambiente religioso e preços acessíveis para grupos.",
-    address: "Rua dos Romeiros, 321 - Centro",
-    phone: "(12) 3104-1004",
-    rating: 4.0,
-    price: "R$ 150",
-    amenities: ["Wi-Fi", "Café da manhã", "Capela"],
-    image: "https://images.pexels.com/photos/261104/pexels-photo-261104.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 5,
-    name: "Hotel Basílica",
-    description: "Hotel de luxo com vista direta para a Basílica Nacional e serviços premium.",
-    address: "Av. Basílica, 654 - Centro",
-    phone: "(12) 3104-1005",
-    rating: 4.8,
-    price: "R$ 450",
-    amenities: ["Wi-Fi", "Estacionamento", "Piscina", "Restaurante gourmet"],
-    image: "https://images.pexels.com/photos/261103/pexels-photo-261103.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 6,
-    name: "Pousada da Fé",
-    description: "Pousada simples e acolhedora, ideal para peregrinos em busca de tranquilidade.",
-    address: "Rua da Fé, 987 - Centro",
-    phone: "(12) 3104-1006",
-    rating: 3.8,
-    price: "R$ 120",
-    amenities: ["Wi-Fi", "Café da manhã", "Jardim"],
-    image: "https://images.pexels.com/photos/261107/pexels-photo-261107.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 7,
-    name: "Hotel Mariana",
-    description: "Hotel executivo com salas de reunião e conforto para viagens de negócios.",
-    address: "Av. Mariana, 147 - Centro",
-    phone: "(12) 3104-1007",
-    rating: 4.3,
-    price: "R$ 350",
-    amenities: ["Wi-Fi", "Estacionamento", "Sala de reunião", "Business center"],
-    image: "https://images.pexels.com/photos/261108/pexels-photo-261108.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 8,
-    name: "Pousada São José",
-    description: "Pousada familiar com quartos espaçosos e ambiente tranquilo para descanso.",
-    address: "Rua São José, 258 - Centro",
-    phone: "(12) 3104-1008",
-    rating: 4.1,
-    price: "R$ 200",
-    amenities: ["Wi-Fi", "Estacionamento", "Café da manhã", "Área de lazer"],
-    image: "https://images.pexels.com/photos/261109/pexels-photo-261109.jpeg?auto=compress&cs=tinysrgb&w=800"
-  }
-];
+const bookingAffiliateURL = 'https://tidd.ly/4puN43K';
 
 const Hotels = () => {
-  // Função para obter ícones 3D para as amenidades
-  const getAmenityIcon = (amenity: string) => {
-    const amenityLower = amenity.toLowerCase();
-    
-    if (amenityLower.includes('wi-fi') || amenityLower.includes('wifi')) {
-      return { type: 'image', src: '/images/icon8-wifi.png' };
-    } else if (amenityLower.includes('café') || amenityLower.includes('cafe')) {
-      return { type: 'image', src: '/images/icons8-café-da-manhã-80.png' };
-    } else if (amenityLower.includes('capela') || amenityLower.includes('igreja')) {
-      return { type: 'emoji', content: '⛪' };
-    } else if (amenityLower.includes('estacionamento')) {
-      return { type: 'image', src: '/images/icons8-estacionamento-64.png' };
-    } else if (amenityLower.includes('ar condicionado')) {
-      return { type: 'image', src: '/images/icons8-ar-condicionado-64.png' };
-    } else if (amenityLower.includes('piscina')) {
-      return { type: 'emoji', content: '🏊' };
-    } else if (amenityLower.includes('restaurante')) {
-      return { type: 'image', src: '/images/icons8-talheres-64.png' };
-    } else if (amenityLower.includes('spa')) {
-      return { type: 'emoji', content: '💆' };
-    } else if (amenityLower.includes('jardim')) {
-      return { type: 'emoji', content: '🌳' };
-    } else if (amenityLower.includes('sala de reunião') || amenityLower.includes('business')) {
-      return { type: 'image', src: '/images/icons8-sala-de-reuniões-50.png' };
-    } else if (amenityLower.includes('área de lazer')) {
-      return { type: 'emoji', content: '🎯' };
-    } else if (amenityLower.includes('quartos familiares')) {
-      return { type: 'image', src: '/images/icons8-família-50.png' };
-    } else {
-      return { type: 'emoji', content: '✨' };
-    }
-  };
+  useEffect(() => {
+    const prevTitle = document.title;
+    const meta = document.querySelector('meta[name="description"]');
+    const prevDesc = meta?.getAttribute('content') || '';
+    document.title = 'Hotéis em Aparecida SP perto da Basílica';
+    meta?.setAttribute('content', 'Reserve com antecedência hospedagem em Aparecida (SP). Encontre hotéis perto da Basílica, veja disponibilidade na Booking e fale direto com hotéis parceiros pelo WhatsApp. Portal independente com foco em romarias e famílias.');
+    return () => {
+      document.title = prevTitle;
+      if (meta) meta.setAttribute('content', prevDesc);
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pt-24 sm:pt-28">
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">
-              Hotéis e Pousadas
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
+              Hotéis em Aparecida SP perto da Basílica
             </h1>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Encontre a melhor hospedagem para sua estadia em Aparecida do Norte
-            </p>
           </div>
+
+          <div className="max-w-4xl mx-auto text-gray-700 space-y-4 leading-relaxed px-2 sm:px-0">
+            <p>
+              Aparecida (SP) é o principal destino de turismo religioso do Brasil e recebe milhões de visitantes ao longo do ano. Em datas de grande devoção, como a Novena e a Festa da Padroeira (12 de Outubro), a cidade costuma registrar alta procura por hospedagem e vários hotéis ficam com disponibilidade limitada rapidamente. Reservar com antecedência é a melhor forma de garantir acomodações próximas ao Santuário Nacional, evitar deslocamentos longos e garantir uma experiência tranquila para romeiros, famílias e grupos organizados.
+            </p>
+            <p>
+              Se hospedar perto da Basílica facilita o acesso às celebrações, missas e atrações do complexo, como a Passarela da Fé, o Mirante e o Centro de Eventos. Para caravanas e romarias, estar na região central reduz o tempo de transporte e ajuda na logística de grupos. Famílias com crianças e idosos também se beneficiam ao escolher hotéis com comodidades como Wi-Fi, café da manhã, estacionamento e quartos acessíveis. Nossa recomendação é sempre verificar disponibilidade e condições atualizadas antes de confirmar a viagem.
+            </p>
           
-          <BookingSearch />
+            
+          </div>
+
+          <div className="mt-10">
+            <BookingSearch />
+          </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {hotels.map((hotel) => (
-            <div key={hotel.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
-              <div className="h-48 overflow-hidden">
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Onde se hospedar em Aparecida</h2>
+          <p className="text-gray-700">
+            Confira abaixo as opções de hospedagem próximas à Basílica e na região central, com acesso rápido às principais celebrações e pontos de interesse do Santuário Nacional.
+          </p>
+        </section>
+
+        <section aria-labelledby="hotels-partners" className="mb-16">
+          <div className="flex items-center justify-between mb-6">
+            <h2 id="hotels-partners" className="text-2xl font-bold text-gray-900">Hotéis Parceiros</h2>
+            <span className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-sm">
+              Hotel Parceiro Oficial
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Estado vazio: sem informações fictícias */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-3">
+              <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
+                <div className="inline-flex items-center gap-2 bg-yellow-50 text-yellow-700 border border-yellow-200 px-3 py-1 rounded-full text-sm mb-3">
+                  Destaque da Semana
+                </div>
+                <p className="text-gray-700 mb-4">
+                  Em breve você verá aqui os Hotéis Parceiros oficiais, com contato direto pelo WhatsApp, endereço e comodidades. Não exibimos preços fixos nem avaliações estáticas.
+                </p>
+                <Link
+                  to="/cadastrar-negocio"
+                  className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+                >
+                  Quero anunciar meu hotel
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="other-options" className="mb-16">
+          <h2 id="other-options" className="text-2xl font-bold text-gray-900 mb-6">Outras opções em Aparecida</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+              <div className="h-48 bg-gray-100 overflow-hidden">
                 <img
-                  src={hotel.image}
-                  alt={hotel.name}
+                  src="/aparecida.jpg"
+                  alt="hotel em aparecida sp perto da basílica de aparecida"
                   className="w-full h-full object-cover"
                 />
               </div>
-
               <div className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xl font-bold text-gray-800">{hotel.name}</h3>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-sm text-gray-600">{hotel.rating}</span>
-                  </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Ver opções na Booking</h3>
+                <p className="text-gray-700 mb-4">
+                  Acesse a página de Aparecida na Booking para conferir hotéis disponíveis, fotos reais e avaliações dos hóspedes.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <a
+                    href={bookingAffiliateURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-lg transition-colors"
+                  >
+                    Ver preço atualizado
+                  </a>
+                  <a
+                    href={bookingAffiliateURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center bg-gray-900 hover:bg-gray-800 text-white font-semibold px-5 py-3 rounded-lg transition-colors"
+                  >
+                    Reservar na Booking
+                  </a>
                 </div>
-
-                <p className="text-gray-600 text-sm mb-4">{hotel.description}</p>
-
-                <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
-                  <MapPin className="w-4 h-4" />
-                  <span>{hotel.address}</span>
-                </div>
-
-                <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
-                  <Phone className="w-4 h-4" />
-                  <span>{hotel.phone}</span>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {hotel.amenities.map((amenity, index) => {
-                    const icon = getAmenityIcon(amenity);
-                    return (
-                      <span
-                        key={index}
-                        className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border border-gray-200 hover:shadow-md transition-shadow"
-                      >
-                        {icon.type === 'image' ? (
-                          <img 
-                            src={icon.src} 
-                            alt="icon" 
-                            className="w-5 h-5 object-contain"
-                            style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
-                          />
-                        ) : (
-                          <span className="text-xl" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>
-                            {icon.content}
-                          </span>
-                        )}
-                        {amenity}
-                      </span>
-                    );
-                  })}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-gray-800">{hotel.price}</span>
-                  <button className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                    Reservar
-                  </button>
+                <div className="mt-3">
+                  <a
+                    href={bookingAffiliateURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-700 hover:text-blue-800 text-sm font-medium"
+                  >
+                    Ver avaliações na Booking
+                  </a>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="social-proof" className="mb-16">
+          <h2 id="social-proof" className="text-2xl font-bold text-gray-900 mb-4">Hotel perto da Basílica</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <p className="text-gray-700">
+              Aparecida recebe grande fluxo de visitantes durante todo o ano. Em datas como 12 de Outubro, a demanda por hospedagem aumenta significativamente e as vagas se esgotam com rapidez. Para garantir disponibilidade, recomendamos reservar com antecedência e considerar hotéis próximos ao Santuário Nacional, facilitando deslocamentos e acesso às celebrações.
+            </p>
+          </div>
+        </section>
+
+        <section aria-labelledby="budget-stays" className="mb-16">
+          <h3 id="budget-stays" className="text-xl font-semibold text-gray-900 mb-3">Hospedagem econômica em Aparecida</h3>
+          <p className="text-gray-700">
+            Para romarias, famílias e grupos, opções econômicas próximas ao centro podem oferecer ótimo custo-benefício. Verifique sempre as comodidades mais importantes para sua viagem e utilize os links para conferir preços atualizados e avaliações reais.
+          </p>
+        </section>
+
+        <section aria-labelledby="commercial" className="mb-20">
+          <h2 id="commercial" className="text-2xl font-bold text-gray-900 mb-4">Anuncie seu hotel aqui</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <p className="text-gray-700 mb-4">
+              Alcance público turístico qualificado com interesse em hospedagem próxima ao Santuário. Seu hotel pode ganhar destaque no portal, com selo de parceiro oficial e contato direto pelo WhatsApp.
+            </p>
+            <ul className="list-disc list-inside text-gray-700 mb-6">
+              <li>Alcance turístico e público religioso qualificado</li>
+              <li>Possibilidade de destaque com selo “Hotel Parceiro Oficial”</li>
+              <li>Integração simples e atendimento direto ao cliente</li>
+            </ul>
+            <Link
+              to="/cadastrar-negocio"
+              className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            >
+              Quero anunciar meu hotel
+            </Link>
+          </div>
+        </section>
       </div>
     </div>
   );

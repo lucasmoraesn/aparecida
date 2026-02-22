@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Search, MapPin, Calendar, Users, Play, Star, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Search, MapPin, Calendar, Users, ChevronDown } from 'lucide-react';
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -10,11 +10,7 @@ const Hero = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const categories = [
-    {
-      id: 'todas',
-      name: 'Todas as categorias',
-      options: []
-    },
+    { id: 'todas', name: 'Todas as categorias', options: [] },
     {
       id: 'hoteis',
       name: 'Hotéis e Pousadas',
@@ -87,80 +83,37 @@ const Hero = () => {
     }
   ];
 
-  const currentCategory = categories.find(cat => cat.name === selectedCategory);
-
-  // Handle search button click
   const handleSearch = () => {
-    // Se há um termo de busca específico, priorizar ele
     if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim();
-
-      // Verificar se o termo de busca corresponde a alguma categoria
-      if (searchLower.includes('hotel') || searchLower.includes('hoteis') || searchLower.includes('pousada') || searchLower.includes('hospedagem') || searchLower.includes('acomodação')) {
-        navigate('/hoteis');
+      const s = searchTerm.toLowerCase().trim();
+      if (s.includes('hotel') || s.includes('pousada') || s.includes('hospedagem')) {
+        navigate('/hoteis-em-aparecida-sp');
         return;
       }
-
-      if (searchLower.includes('restaurante') || searchLower.includes('comida') || searchLower.includes('jantar') || searchLower.includes('almoço') || searchLower.includes('lanche') || searchLower.includes('pizzaria')) {
+      if (s.includes('restaurante') || s.includes('comida') || s.includes('almoço') || s.includes('jantar') || s.includes('pizzaria')) {
         navigate('/restaurantes');
         return;
       }
-
-      if (searchLower.includes('loja') || searchLower.includes('religioso') || searchLower.includes('artigo') || searchLower.includes('souvenir') || searchLower.includes('vela') || searchLower.includes('terço')) {
+      if (s.includes('loja') || s.includes('religioso') || s.includes('souvenir') || s.includes('terço') || s.includes('vela')) {
         navigate('/lojas-religiosas');
         return;
       }
-
-      if (searchLower.includes('ponto') || searchLower.includes('turístico') || searchLower.includes('atração') || searchLower.includes('basílica') || searchLower.includes('museu') || searchLower.includes('mirante')) {
+      if (s.includes('ponto') || s.includes('turístico') || s.includes('atração') || s.includes('basílica') || s.includes('museu') || s.includes('mirante')) {
         navigate('/pontos-turisticos');
         return;
       }
-
-      if (searchLower.includes('evento') || searchLower.includes('missa') || searchLower.includes('procissão') || searchLower.includes('festa') || searchLower.includes('celebração') || searchLower.includes('caravana')) {
+      if (s.includes('evento') || s.includes('missa') || s.includes('procissão') || s.includes('festa') || s.includes('celebração') || s.includes('caravana')) {
         navigate('/eventos');
         return;
       }
-
-      // Verificar se o termo corresponde a alguma opção específica do dropdown
-      const allOptions = categories.flatMap(cat => cat.options);
-      const matchingOption = allOptions.find(option =>
-        option.toLowerCase().includes(searchLower) || searchLower.includes(option.toLowerCase())
-      );
-
-      if (matchingOption) {
-        // Encontrar a categoria da opção correspondente
-        const matchingCategory = categories.find(cat => cat.options.includes(matchingOption));
-        if (matchingCategory) {
-          if (matchingCategory.name === 'Hotéis e Pousadas') {
-            navigate('/hoteis');
-            return;
-          } else if (matchingCategory.name === 'Restaurantes') {
-            navigate('/restaurantes');
-            return;
-          } else if (matchingCategory.name === 'Lojas Religiosas') {
-            navigate('/lojas-religiosas');
-            return;
-          } else if (matchingCategory.name === 'Pontos Turísticos') {
-            navigate('/pontos-turisticos');
-            return;
-          } else if (matchingCategory.name === 'Eventos') {
-            navigate('/eventos');
-            return;
-          }
-        }
-      }
-
-      // Se não encontrou correspondência específica, navegar para home com o termo de busca
       navigate('/', { state: { searchTerm: searchTerm.trim() } });
       return;
     }
 
-    // Se não há termo de busca, usar a categoria selecionada
     if (!selectedCategory || selectedCategory === 'Todas as categorias') {
-      // Se não há categoria selecionada ou é "Todas as categorias", navegar para página que mostra todas as categorias
       navigate('/produtos', { state: { showAllCategories: true } });
     } else if (selectedCategory === 'Hotéis e Pousadas') {
-      navigate('/hoteis');
+      navigate('/hoteis-em-aparecida-sp');
     } else if (selectedCategory === 'Restaurantes') {
       navigate('/restaurantes');
     } else if (selectedCategory === 'Lojas Religiosas') {
@@ -170,39 +123,29 @@ const Hero = () => {
     } else if (selectedCategory === 'Eventos') {
       navigate('/eventos');
     } else {
-      // Fallback para home
       navigate('/');
     }
   };
 
-  // Handle Enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const onDocClick = (event: MouseEvent) => {
       const target = event.target as Element;
       if (!target.closest('.dropdown-container')) {
         setIsDropdownOpen(false);
       }
     };
-
-    if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (isDropdownOpen) document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
   }, [isDropdownOpen]);
 
   return (
     <section className="relative h-screen overflow-hidden">
-      {/* Video Background */}
       <div className="absolute inset-0">
         <img
           src="/aparecida.jpg"
@@ -212,10 +155,8 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
       </div>
 
-      {/* Content */}
       <div className="relative z-10 flex items-center justify-center h-full pt-20 pb-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Main Title */}
           <motion.h1
             className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-3 sm:mb-4 leading-tight"
             initial={{ opacity: 0, y: 50 }}
@@ -235,18 +176,6 @@ const Hero = () => {
             </motion.span>
           </motion.h1>
 
-          {/* Subtitle */}
-          <motion.p
-            className="text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto text-white font-bold leading-relaxed px-4"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.8 }}
-          >
-            Encontre os melhores hotéis, restaurantes, lojas e pontos turísticos
-            para sua peregrinação à Basílica de Nossa Senhora Aparecida
-          </motion.p>
-
-          {/* Search Box */}
           <motion.div
             className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-5xl mx-auto mb-6 sm:mb-8 border border-white/20 relative z-20"
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -265,20 +194,20 @@ const Hero = () => {
                 />
               </div>
               <div className="flex-1 md:flex-initial md:w-[340px] relative dropdown-container">
-                <div 
+                <div
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border-0 bg-white/90 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all duration-75 text-sm sm:text-base cursor-pointer flex justify-between items-center"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
                   <span className="truncate">{selectedCategory || 'Categoria'}</span>
                   <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ml-2" />
                 </div>
-                
+
                 {isDropdownOpen && (
                   <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-lg sm:rounded-xl shadow-lg z-50 overflow-hidden">
                     <div className="max-h-60 overflow-y-auto py-1">
                       {categories.map((category) => (
-                        <div 
-                          key={category.id} 
+                        <div
+                          key={category.id}
                           className="px-3 sm:px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm sm:text-base"
                           onClick={() => {
                             setSelectedCategory(category.name);
@@ -305,7 +234,6 @@ const Hero = () => {
             </div>
           </motion.div>
 
-          {/* Feature Pills */}
           <motion.div
             className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 justify-center items-center relative z-10 px-4"
             initial={{ opacity: 0, y: 30 }}
@@ -338,16 +266,16 @@ const Hero = () => {
             </motion.div>
           </motion.div>
 
-          {/* Scroll Indicator */}
           <motion.div
             className="absolute bottom-8 left-1/2 transform -translate-x-1/2 hidden sm:block"
             animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           >
             <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
               <div className="w-1 h-3 bg-white/70 rounded-full mt-2 animate-pulse"></div>
             </div>
           </motion.div>
+
         </div>
       </div>
     </section>
