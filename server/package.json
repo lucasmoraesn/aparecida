@@ -10,6 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "diagnose:ses": "node diagnose-ses.js",
+    "test:ses": "node test-ses-complete.js",
+    "test:payment": "node simulate-payment.js",
     "test:email": "node test-email.js",
     "test:email:notification": "node test-email.js notification",
     "test:email:customer": "node test-email.js customer",
@@ -20,6 +23,7 @@
   "license": "ISC",
   "description": "Backend do projeto Aparecida (Node + Express + Supabase)",
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.994.0",
     "@supabase/supabase-js": "^2.56.0",
     "axios": "^1.13.2",
     "cors": "^2.8.5",

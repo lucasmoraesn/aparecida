@@ -1,20 +1,24 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer } from "./services/emailService.js";
 
-// Carregar .env.local se existir, senão .env
-dotenv.config({ path: '.env.local' });
-if (!process.env.STRIPE_SECRET_KEY) {
-  dotenv.config(); // Fallback para .env
-}
-console.log('🔍 DEBUG index.js:');
-console.log('  SUPABASE_URL:', process.env.SUPABASE_URL);
-console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅ Configurada' : '❌ Não configurada');
-console.log('  STRIPE_KEY_TYPE:', process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? '🧪 TEST MODE' : '🔴 LIVE MODE');
-console.log('  STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? '✅ Configurada' : '❌ Não configurada');
+// ─── Carrega SEMPRE o .env do próprio diretório do servidor ───────────────────
+// Usa caminho absoluto para não depender do cwd do PM2
+const __envDir = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__envDir, '.env') });
+// ─────────────────────────────────────────────────────────────────────────────
+
+console.log('🔍 ENV carregado de:', join(__envDir, '.env'));
+console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌ AUSENTE');
+console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅' : '❌ AUSENTE');
+console.log('  STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? '✅' : '❌ AUSENTE');
+console.log('  AWS_REGION:', process.env.AWS_REGION ? '✅' : '❌ AUSENTE');
+console.log('  EMAIL_FROM:', process.env.EMAIL_FROM ? '✅' : '❌ AUSENTE');
 
 // --- Inicializar Supabase (precisa estar disponível no webhook) ---
 console.log("[SUPABASE_URL]", process.env.SUPABASE_URL);
@@ -48,29 +52,24 @@ const app = express();
 app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   console.log('\n🔔 WEBHOOK RECEBIDO!');
   console.log('   Timestamp:', new Date().toISOString());
-  console.log('   Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('   Body type:', typeof req.body);
   console.log('   Body is Buffer:', Buffer.isBuffer(req.body));
   console.log('   Body length:', req.body?.length);
-  
+
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   let event;
 
   try {
-    // 1. Verificar assinatura do webhook
     if (!webhookSecret) {
       console.error('❌ STRIPE_WEBHOOK_SECRET não configurado');
-      return res.status(500).json({ 
-        error: 'Webhook secret não configurado' 
-      });
+      return res.status(500).json({ error: 'Webhook secret não configurado' });
     }
 
-    console.log('🔐 Tentando validar assinatura...');
-    console.log('   Signature header:', sig);
-    console.log('   Webhook secret:', webhookSecret);
-    
+    // Log dos primeiros chars para confirmar qual secret está em uso
+    console.log('🔐 Secret em uso:', webhookSecret.substring(0, 14) + '...');
+    console.log('   Assinatura recebida:', sig?.substring(0, 30) + '...');
+
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     console.log('✅ Webhook verificado:', event.type);
 
@@ -85,7 +84,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   // 3. Processar evento de forma assíncrona
   try {
     switch (event.type) {
-      
+
       // A) CHECKOUT COMPLETADO
       case 'checkout.session.completed': {
         const session = event.data.object;
@@ -128,13 +127,13 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           console.log(`✅ Assinatura ${subscription.id} ATIVADA COM SUCESSO!`);
           console.log('   external_subscription_id:', session.subscription);
           console.log('   stripe_customer_id:', session.customer);
-          
+
           // 📧 ENVIAR E-MAIL DE NOTIFICAÇÃO PARA O ADMIN
           try {
             console.log('📧 Preparando envio de e-mail de notificação...');
-            
+
             // Buscar dados do estabelecimento
-              const { data: business, error: businessError } = await supabase
+            const { data: business, error: businessError } = await supabase
               .from('business_registrations')
               .select('establishment_name, contact_email, whatsapp')
               .eq('id', subscription.business_id)
@@ -146,17 +145,17 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
               // Buscar dados do plano
               const { data: plan, error: planError } = await supabase
                 .from('business_plans')
-                .select('name, price, price_cents')
+                .select('name, price')
                 .eq('id', subscription.plan_id)
                 .single();
 
               if (planError || !plan) {
                 console.error('⚠️ Não foi possível buscar dados do plano:', planError);
               } else {
+                console.log('✅ Dados do plano encontrados:', plan.name);
+                
                 // Enviar e-mail de notificação para o ADMIN
-                const planPriceCents = (typeof plan.price_cents === 'number' && Number.isFinite(plan.price_cents))
-                  ? plan.price_cents
-                  : Math.round(Number(plan.price) * 100);
+                const planPriceCents = Math.round(Number(plan.price) * 100);
 
                 const emailResult = await sendNewSubscriptionNotification({
                   businessName: business.establishment_name,
@@ -373,13 +372,13 @@ app.use((req, res, next) => {
 // Middleware para debug de requisições
 app.use((req, res, next) => {
   res.setHeader('ngrok-skip-browser-warning', 'true');
-  
+
   // Log de todas as requisições para debug
   console.log(`📥 ${req.method} ${req.path}`, {
     origin: req.headers.origin,
     userAgent: req.headers['user-agent']?.substring(0, 50)
   });
-  
+
   next();
 });
 
@@ -398,7 +397,7 @@ app.get("/api/plans", async (req, res) => {
     res.json(data || []);
   } catch (err) {
     console.error("Erro ao buscar planos:", err);
-    
+
     // Retornar planos padrão em caso de erro
     const defaultPlans = [
       {
@@ -426,7 +425,7 @@ app.get("/api/plans", async (req, res) => {
         is_active: true
       }
     ];
-    
+
     res.json(defaultPlans);
   }
 });
@@ -484,7 +483,7 @@ app.get("/api/check-session", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Erro ao verificar sessão:", err.message);
-    
+
     // Tratar erro específico de sessão não encontrada
     if (err.statusCode === 404) {
       return res.status(404).json({
@@ -571,9 +570,9 @@ app.post("/api/register-business", async (req, res) => {
       payer_email,
       created_at: new Date().toISOString(),
     };
-    
+
     console.log("📦 Dados a serem inseridos:", JSON.stringify(insertData, null, 2));
-    
+
     const { data, error } = await supabase
       .from("business_registrations")
       .insert([insertData])
@@ -598,7 +597,7 @@ app.post("/api/register-business", async (req, res) => {
     console.error("   Message:", err.message);
     console.error("   Stack:", err.stack);
     console.error("   Details:", err.response?.data || err.details || "");
-    
+
     res.status(500).json({
       error: true,
       message: err.message || "Erro ao processar cadastro",
@@ -626,22 +625,22 @@ app.post('/api/create-subscription', async (req, res) => {
 
     // 1. Validar dados obrigatórios
     if (!planId || !businessId) {
-      return res.status(400).json({ 
-        error: 'planId e businessId são obrigatórios' 
+      return res.status(400).json({
+        error: 'planId e businessId são obrigatórios'
       });
     }
 
     if (!customer || !customer.email) {
-      return res.status(400).json({ 
-        error: 'Email do cliente é obrigatório' 
+      return res.status(400).json({
+        error: 'Email do cliente é obrigatório'
       });
     }
 
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customer.email)) {
-      return res.status(400).json({ 
-        error: 'Email inválido' 
+      return res.status(400).json({
+        error: 'Email inválido'
       });
     }
 
@@ -654,9 +653,9 @@ app.post('/api/create-subscription', async (req, res) => {
 
     if (planError || !plan) {
       console.error("❌ Plano não encontrado:", planError);
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Plano não encontrado',
-        details: planError?.message 
+        details: planError?.message
       });
     }
 
@@ -669,7 +668,7 @@ app.post('/api/create-subscription', async (req, res) => {
       : (typeof plan.price_cents === 'number' ? plan.price_cents / 100 : NaN);
     if (isNaN(planPrice) || planPrice <= 0) {
       console.error("❌ Preço do plano inválido:", plan.price);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Preço do plano inválido',
         details: `O plano ${plan.name} tem preço inválido: ${plan.price}`
       });
@@ -690,9 +689,9 @@ app.post('/api/create-subscription', async (req, res) => {
 
     // 4. Criar Stripe Checkout Session (modo subscription)
     console.log("🔵 Criando Stripe Checkout Session...");
-    
+
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    
+
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomer.id,
       mode: 'subscription',
@@ -751,9 +750,9 @@ app.post('/api/create-subscription', async (req, res) => {
       } catch (cleanupError) {
         console.error("⚠️ Erro ao limpar Stripe Customer:", cleanupError);
       }
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Erro ao salvar assinatura no banco de dados',
-        details: subError.message 
+        details: subError.message
       });
     }
 
@@ -780,23 +779,46 @@ app.post('/api/create-subscription', async (req, res) => {
 
 app.post('/api/test-plan-2', async (req, res) => {
   try {
-    const { customer_email } = req.body;
+    const { customer_email, business_id, plan_id } = req.body;
 
+    // Validação de campos obrigatórios
     if (!customer_email) {
-      return res.status(400).json({ 
-        error: 'customer_email é obrigatório' 
+      return res.status(400).json({
+        error: 'customer_email é obrigatório'
+      });
+    }
+
+    if (!business_id) {
+      return res.status(400).json({
+        error: 'business_id é obrigatório'
       });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customer_email)) {
-      return res.status(400).json({ 
-        error: 'Email inválido' 
+      return res.status(400).json({
+        error: 'Email inválido'
+      });
+    }
+
+    // Validar que business_id existe
+    const { data: businessExists, error: businessError } = await supabase
+      .from('business_registrations')
+      .select('id')
+      .eq('id', business_id)
+      .single();
+
+    if (businessError || !businessExists) {
+      return res.status(404).json({
+        error: 'Estabelecimento não encontrado',
+        details: businessError?.message
       });
     }
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    
+    const amountCents = 200; // R$ 2,00
+
+    // 1. Criar sessão Stripe
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -807,7 +829,7 @@ app.post('/api/test-plan-2', async (req, res) => {
           product_data: {
             name: 'Teste real R$ 2,00',
           },
-          unit_amount: 200,
+          unit_amount: amountCents,
           recurring: {
             interval: 'month',
             interval_count: 1,
@@ -817,10 +839,54 @@ app.post('/api/test-plan-2', async (req, res) => {
       }],
       success_url: `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${frontendUrl}/subscription/cancel`,
+      metadata: {
+        business_id: business_id.toString(),
+        plan_id: plan_id ? plan_id.toString() : null,
+      },
     });
 
+    console.log('✅ Sessão Stripe criada:', session.id);
+
+    // 2. Salvar no Supabase com TODOS os campos obrigatórios
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .insert({
+        business_id: business_id,
+        plan_id: plan_id || null,
+        stripe_checkout_session_id: session.id,
+        status: 'pending',
+        amount_cents: amountCents,
+        frequency: 1,
+        frequency_type: 'months',
+        customer_email: customer_email,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (subError) {
+      console.error('❌ Erro ao salvar assinatura no Supabase:', subError);
+      // Tentar limpar a sessão no Stripe
+      try {
+        await stripe.checkout.sessions.expire(session.id);
+      } catch (cleanupError) {
+        console.error('⚠️ Erro ao limpar sessão Stripe:', cleanupError);
+      }
+      return res.status(500).json({
+        error: 'Erro ao salvar assinatura no banco de dados',
+        details: subError.message
+      });
+    }
+
+    console.log('✅ Assinatura salva no Supabase:', subscription.id);
+
     return res.json({
-      url: session.url
+      success: true,
+      checkoutUrl: session.url,
+      subscription_id: subscription.id,
+      stripe_session_id: session.id,
+      business_id: business_id,
+      amount_cents: amountCents
     });
 
   } catch (error) {
@@ -834,23 +900,46 @@ app.post('/api/test-plan-2', async (req, res) => {
 
 app.post('/api/test-plan-4', async (req, res) => {
   try {
-    const { customer_email } = req.body;
+    const { customer_email, business_id, plan_id } = req.body;
 
+    // Validação de campos obrigatórios
     if (!customer_email) {
-      return res.status(400).json({ 
-        error: 'customer_email é obrigatório' 
+      return res.status(400).json({
+        error: 'customer_email é obrigatório'
+      });
+    }
+
+    if (!business_id) {
+      return res.status(400).json({
+        error: 'business_id é obrigatório'
       });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customer_email)) {
-      return res.status(400).json({ 
-        error: 'Email inválido' 
+      return res.status(400).json({
+        error: 'Email inválido'
+      });
+    }
+
+    // Validar que business_id existe
+    const { data: businessExists, error: businessError } = await supabase
+      .from('business_registrations')
+      .select('id')
+      .eq('id', business_id)
+      .single();
+
+    if (businessError || !businessExists) {
+      return res.status(404).json({
+        error: 'Estabelecimento não encontrado',
+        details: businessError?.message
       });
     }
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    
+    const amountCents = 400; // R$ 4,00
+
+    // 1. Criar sessão Stripe
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -861,7 +950,7 @@ app.post('/api/test-plan-4', async (req, res) => {
           product_data: {
             name: 'Teste real R$ 4,00',
           },
-          unit_amount: 400,
+          unit_amount: amountCents,
           recurring: {
             interval: 'month',
             interval_count: 1,
@@ -871,10 +960,54 @@ app.post('/api/test-plan-4', async (req, res) => {
       }],
       success_url: `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${frontendUrl}/subscription/cancel`,
+      metadata: {
+        business_id: business_id.toString(),
+        plan_id: plan_id ? plan_id.toString() : null,
+      },
     });
 
+    console.log('✅ Sessão Stripe criada:', session.id);
+
+    // 2. Salvar no Supabase com TODOS os campos obrigatórios
+    const { data: subscription, error: subError } = await supabase
+      .from('subscriptions')
+      .insert({
+        business_id: business_id,
+        plan_id: plan_id || null,
+        stripe_checkout_session_id: session.id,
+        status: 'pending',
+        amount_cents: amountCents,
+        frequency: 1,
+        frequency_type: 'months',
+        customer_email: customer_email,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (subError) {
+      console.error('❌ Erro ao salvar assinatura no Supabase:', subError);
+      // Tentar limpar a sessão no Stripe
+      try {
+        await stripe.checkout.sessions.expire(session.id);
+      } catch (cleanupError) {
+        console.error('⚠️ Erro ao limpar sessão Stripe:', cleanupError);
+      }
+      return res.status(500).json({
+        error: 'Erro ao salvar assinatura no banco de dados',
+        details: subError.message
+      });
+    }
+
+    console.log('✅ Assinatura salva no Supabase:', subscription.id);
+
     return res.json({
-      url: session.url
+      success: true,
+      checkoutUrl: session.url,
+      subscription_id: subscription.id,
+      stripe_session_id: session.id,
+      business_id: business_id,
+      amount_cents: amountCents
     });
 
   } catch (error) {
@@ -892,7 +1025,6 @@ app.post('/api/test-plan-4', async (req, res) => {
 
 // Serve frontend static files from dist
 import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
