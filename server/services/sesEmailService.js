@@ -52,7 +52,14 @@ function getSESClient() {
 export async function sendEmail({ to, subject, html, text }) {
     try {
         const ses = getSESClient();
-        const fromAddress = process.env.EMAIL_FROM || 'noreply@aparecidadonortesp.com.br';
+        
+        // ⚠️ CRÍTICO: Garantir que EMAIL_FROM está SEMPRE definido
+        // Nunca usar fallback para evitar que um FROM não verificado seja usado
+        const fromAddress = process.env.EMAIL_FROM;
+        if (!fromAddress || !String(fromAddress).trim()) {
+            throw new Error('❌ [SES] EMAIL_FROM não configurado no .env — configure com um e-mail verificado no SES');
+        }
+        
         const toAddresses = Array.isArray(to) ? to : [to];
 
         const command = new SendEmailCommand({

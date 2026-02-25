@@ -6,6 +6,7 @@ import { dirname, join } from 'path';
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer } from "./services/emailService.js";
+import stripeWebhookRouter from './routes/stripeWebhook.js';
 
 // ─── Carrega SEMPRE o .env do próprio diretório do servidor ───────────────────
 // Usa caminho absoluto para não depender do cwd do PM2
@@ -18,7 +19,7 @@ console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌ AUSENTE')
 console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅' : '❌ AUSENTE');
 console.log('  STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? '✅' : '❌ AUSENTE');
 console.log('  AWS_REGION:', process.env.AWS_REGION ? '✅' : '❌ AUSENTE');
-console.log('  EMAIL_FROM:', process.env.EMAIL_FROM ? '✅' : '❌ AUSENTE');
+console.log('  EMAIL_FROM:', process.env.EMAIL_FROM ? (process.env.EMAIL_FROM.length > 50 ? process.env.EMAIL_FROM.substring(0, 50) + '...' : process.env.EMAIL_FROM) + ' ✅' : '❌ AUSENTE (e-mails falharão!)');
 
 // --- Inicializar Supabase (precisa estar disponível no webhook) ---
 console.log("[SUPABASE_URL]", process.env.SUPABASE_URL);
@@ -36,6 +37,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 console.log("✅ Stripe client created");
 
 const app = express();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stripe Webhook dedicado (raw body + assinatura)
+// Precisa vir ANTES de express.json()
+// ─────────────────────────────────────────────────────────────────────────────
+app.use(stripeWebhookRouter);
 
 /* =============================
    WEBHOOK STRIPE
@@ -92,6 +99,13 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         console.log('   Customer ID:', session.customer);
         console.log('   Subscription ID:', session.subscription);
 
+        // 🔍 RASTREAMENTO DE ORIGEM DO EMAIL (Debug)
+        console.log('\n🔍 [DEBUG] Rastreando origem do email:');
+        console.log('   session.customer_details?.email:', session.customer_details?.email || '(não definido)');
+        console.log('   session.customer_email:', session.customer_email || '(não definido)');
+        console.log('   session.metadata?.customerEmail:', session.metadata?.customerEmail || '(não definido)');
+        console.log('   process.env.EMAIL_FROM:', process.env.EMAIL_FROM || '❌ NÃO CONFIGURADO!');
+
         // Buscar assinatura pelo stripe_checkout_session_id
         const { data: subscription, error: findError } = await supabase
           .from('subscriptions')
@@ -142,6 +156,10 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
             if (businessError || !business) {
               console.error('⚠️ Não foi possível buscar dados do estabelecimento:', businessError);
             } else {
+              // 🔍 LOG: Email do Supabase
+              console.log('🔍 [DEBUG] Email do Supabase:');
+              console.log('   business.contact_email:', business.contact_email || '(não definido)');
+
               // Buscar dados do plano
               const { data: plan, error: planError } = await supabase
                 .from('business_plans')
@@ -154,16 +172,30 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
               } else {
                 console.log('✅ Dados do plano encontrados:', plan.name);
                 
+                // 🔍 LOG: Email que será usado como DESTINATÁRIO
+                // ⚠️ CRÍTICO: SEMPRE usar session.customer_details?.email (pagador real)
+                // Nunca usar business.contact_email pois pode não estar verificado no SES
+                const stripeCustomerEmail = session.customer_details?.email;
+                const emailParaAdmin = process.env.ADMIN_EMAIL;
+                const emailParaCliente = stripeCustomerEmail; // ✅ Use ONLY Stripe email
+                
+                console.log('\n🔍 [DEBUG] Emails que serão usados:');
+                console.log('   FROM (remetente):', process.env.EMAIL_FROM);
+                console.log('   TO (admin):', emailParaAdmin);
+                console.log('   TO (cliente - Stripe payer):', emailParaCliente);
+                console.log('   FROM_SOURCE: process.env.EMAIL_FROM ✅');
+                console.log('   TO_SOURCE (cliente): session.customer_details?.email ✅');
+
                 // Enviar e-mail de notificação para o ADMIN
                 const planPriceCents = Math.round(Number(plan.price) * 100);
 
                 const emailResult = await sendNewSubscriptionNotification({
                   businessName: business.establishment_name,
-                  businessEmail: business.contact_email || session.customer_details?.email,
+                  businessEmail: business.establishment_name, // Para contexto apenas (não é TO)
                   planName: plan.name,
                   planPrice: planPriceCents,
                   subscriptionId: subscription.id,
-                  customerEmail: session.customer_details?.email
+                  customerEmail: stripeCustomerEmail // ✅ Use Stripe email
                 });
 
                 if (emailResult.success) {
@@ -176,7 +208,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
                 // 📧 ENVIAR E-MAIL DE CONFIRMAÇÃO PARA O CLIENTE
                 console.log('📧 Enviando e-mail de confirmação para o cliente...');
                 const customerEmailResult = await sendSubscriptionConfirmationToCustomer({
-                  customerEmail: business.contact_email || session.customer_details?.email,
+                  customerEmail: stripeCustomerEmail, // ✅ Use ONLY Stripe email
                   businessName: business.establishment_name,
                   planName: plan.name,
                   planPrice: planPriceCents,
