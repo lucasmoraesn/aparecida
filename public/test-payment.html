@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Pagamento - Aparecida do Norte</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .amount {
+            font-size: 48px;
+            color: #667eea;
+            font-weight: bold;
+            margin: 30px 0;
+        }
+        .currency {
+            font-size: 24px;
+            color: #999;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+            color: #667eea;
+            font-size: 14px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .info {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 6px;
+            text-align: left;
+            font-size: 13px;
+            color: #555;
+        }
+        .info strong {
+            color: #667eea;
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste de Pagamento</h1>
+        <p class="subtitle">Aparecida do Norte</p>
+        
+        <div class="info">
+            <strong>ℹ️ Informações:</strong><br>
+            ✅ Modo: Live (pagamento real)<br>
+            ✅ Cartão de teste: 4242 4242 4242 4242<br>
+            ✅ Data/CVC: qualquer valor futuro<br>
+            ✅ Email: qualquer email válido
+        </div>
+
+        <div class="error" id="errorContainer"></div>
+
+        <div class="amount">
+            <span class="currency">R$</span> 2,00
+        </div>
+        
+        <p class="description">
+            Clique no botão abaixo para ir ao checkout Stripe e fazer o pagamento de teste. Você receberá um email de confirmação.
+        </p>
+
+        <div style="margin-bottom: 20px;">
+            <input 
+                type="email" 
+                id="emailInput" 
+                placeholder="seu-email@dominio.com" 
+                value=""
+                style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 2px solid #ddd;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-family: inherit;
+                    box-sizing: border-box;
+                    transition: border-color 0.2s;
+                "
+                onmouseover="this.style.borderColor='#667eea'"
+                onmouseout="this.style.borderColor='#ddd'"
+                onfocus="this.style.borderColor='#667eea'; this.style.outline='none'"
+                onblur="this.style.borderColor='#ddd'"
+            />
+            <p style="font-size: 12px; color: #999; margin-top: 8px;">
+                Digite o email onde você quer receber a confirmação do pagamento
+            </p>
+        </div>
+
+        <button id="payBtn" onclick="initializePayment()">
+            💳 Ir para Checkout
+        </button>
+
+        <div class="loading" id="loading">
+            <span class="spinner"></span> Iniciando pagamento...
+        </div>
+    </div>
+
+    <script>
+        async function initializePayment() {
+            const btn = document.getElementById('payBtn');
+            const loading = document.getElementById('loading');
+            const errorContainer = document.getElementById('errorContainer');
+            const emailInput = document.getElementById('emailInput');
+
+            // Validar email
+            const email = emailInput.value.trim();
+            if (!email) {
+                errorContainer.textContent = '❌ Digite um email válido';
+                errorContainer.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            loading.style.display = 'block';
+            errorContainer.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/test-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Erro ao criar pagamento');
+                }
+
+                if (data.url) {
+                    // Redirecionar para Stripe Checkout
+                    window.location.href = data.url;
+                } else {
+                    throw new Error('URL de checkout não retornada');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                errorContainer.textContent = '❌ ' + error.message;
+                errorContainer.style.display = 'block';
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
