@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createClient } from "@supabase/supabase-js";
@@ -37,6 +39,24 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 console.log("✅ Stripe client created");
 
 const app = express();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🛡️ SECURITY HARDENING (Fase 1)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Helmet: Security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Desabilitar para não quebrar assets estáticos
+  crossOriginResourcePolicy: { policy: 'cross-origin' } // Permitir CORS para recursos
+}));
+console.log('✅ Helmet security headers ativado');
+
+// Remover header "X-Powered-By"
+app.disable('x-powered-by');
+
+// Trust proxy (atrás de nginx/load balancer com HTTPS)
+app.set('trust proxy', 1);
+console.log('✅ Trust proxy configurado (HTTPS/nginx aware)');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stripe Webhook dedicado (raw body + assinatura)
@@ -394,16 +414,57 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Simple CORS - just allow everything
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
+// ─────────────────────────────────────────────────────────────────────────────
+// CORS com validação (apenas origem confiável)
+// ─────────────────────────────────────────────────────────────────────────────
+const allowedOrigins = [
+  'https://aparecidadonortesp.com.br',
+  'http://localhost:3000', // Dev local
+  'http://localhost:5173'  // Vite dev
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permitir requisições sem origin (mobile, Postman, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS rejeitado para origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400 // 24h cache
+}));
+console.log('✅ CORS configurado (whitelist)');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rate Limiting
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Rate limit geral: 100 req/15min por IP
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100,
+  message: '❌ Muitas requisições, tente novamente em alguns minutos',
+  standardHeaders: true, // Retorna rate limit info nos headers
+  skip: (req) => req.path === '/api/webhook' // Webhook tem seu próprio limit
 });
+
+app.use(generalLimiter);
+
+// Rate limit específico para webhook: 30 req/min por IP (Stripe pode enviar múltiplos)
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 30,
+  message: '❌ Webhook rate limit excedido',
+  skip: (req) => req.path !== '/api/webhook'
+});
+
+app.use(webhookLimiter);
+console.log('✅ Rate limiting ativado (geral + webhook)');
 
 // Middleware para debug de requisições
 app.use((req, res, next) => {
