@@ -415,30 +415,46 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CORS com validação (apenas origem confiável)
+// CORS com validação (apenas origens confiáveis - RESTRITIVO)
 // ─────────────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
+  // Production
   'https://aparecidadonortesp.com.br',
-  'http://localhost:3000', // Dev local
-  'http://localhost:5173'  // Vite dev
-];
+  'https://www.aparecidadonortesp.com.br',
+  // Development (Vite)
+  'http://localhost:5173',
+  // Fallback para dev se necessário
+  process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : undefined
+].filter(Boolean); // Remove undefined
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requisições sem origin (mobile, Postman, server-to-server)
+    // Requisições sem origin são permitidas (mobile app, server-to-server, Postman)
+    // Requisições COM origin precisam estar na whitelist
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`⚠️ CORS rejeitado para origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      console.warn(`⚠️ CORS REJEITADO - Origin não autorizado: ${origin}`);
+      callback(new Error('CORS: Origin not allowed'));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  maxAge: 86400 // 24h cache
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Stripe-Signature',  // ← Para webhook Stripe
+    'X-Requested-With'   // ← XMLHttpRequest
+  ],
+  exposedHeaders: [
+    'X-RateLimit-Limit',      // ← Rate limit info
+    'X-RateLimit-Remaining',
+    'X-RateLimit-Reset'
+  ],
+  maxAge: 86400, // 24h cache para preflight
+  preflightContinue: false
 }));
-console.log('✅ CORS configurado (whitelist)');
+console.log(`✅ CORS configurado (Production: 2 origins + Dev: ${process.env.NODE_ENV === 'development' ? 'YES' : 'NO'})`);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rate Limiting
