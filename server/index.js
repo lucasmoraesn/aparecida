@@ -10,6 +10,8 @@ import Stripe from "stripe";
 import logger, { requestLoggerMiddleware } from "./services/logger.js";
 import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer } from "./services/emailService.js";
 import stripeWebhookRouter from './routes/stripeWebhook.js';
+import { scannerBlockerMiddleware } from "./middleware/scannerBlocker.js";
+import healthRouter from './routes/health.js';
 
 // ─── Carrega SEMPRE o .env do próprio diretório do servidor ───────────────────
 // Usa caminho absoluto para não depender do cwd do PM2
@@ -58,6 +60,12 @@ app.disable('x-powered-by');
 // Trust proxy (atrás de nginx/load balancer com HTTPS)
 app.set('trust proxy', 1);
 logger.info('✅ Trust proxy configurado (HTTPS/nginx aware)');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🛡️ Scanner Blocker (bloqueia paths óbvios de scanner)
+// ─────────────────────────────────────────────────────────────────────────────
+app.use(scannerBlockerMiddleware);
+logger.info('✅ Scanner blocker ativado (/.env, /.git, /vendor, *.php, etc)');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stripe Webhook dedicado (raw body + assinatura)
@@ -502,8 +510,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health-check
-app.get("/health", (_req, res) => res.json({ ok: true }));
+// ─────────────────────────────────────────────────────────────────────────────
+// Health Check Routes (sem dependências de banco/Stripe)
+// ─────────────────────────────────────────────────────────────────────────────
+app.use(healthRouter);
+logger.info('✅ Health check endpoints: GET /health, GET /ready');
 
 // Endpoint para buscar planos disponíveis
 app.get("/api/plans", async (req, res) => {
