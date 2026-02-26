@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import logger, { requestLoggerMiddleware } from "./services/logger.js";
 import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer } from "./services/emailService.js";
 import stripeWebhookRouter from './routes/stripeWebhook.js';
 
@@ -16,27 +17,27 @@ const __envDir = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__envDir, '.env') });
 // ─────────────────────────────────────────────────────────────────────────────
 
-console.log('🔍 ENV carregado de:', join(__envDir, '.env'));
-console.log('  SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌ AUSENTE');
-console.log('  STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? '✅' : '❌ AUSENTE');
-console.log('  STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? '✅' : '❌ AUSENTE');
-console.log('  AWS_REGION:', process.env.AWS_REGION ? '✅' : '❌ AUSENTE');
-console.log('  EMAIL_FROM:', process.env.EMAIL_FROM ? (process.env.EMAIL_FROM.length > 50 ? process.env.EMAIL_FROM.substring(0, 50) + '...' : process.env.EMAIL_FROM) + ' ✅' : '❌ AUSENTE (e-mails falharão!)');
+logger.info('ENV carregado', {
+  path: join(__envDir, '.env'),
+  SUPABASE_URL: process.env.SUPABASE_URL ? '✅' : '❌ AUSENTE',
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ? '✅' : '❌ AUSENTE',
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ? '✅' : '❌ AUSENTE',
+  AWS_REGION: process.env.AWS_REGION ? '✅' : '❌ AUSENTE',
+  EMAIL_FROM: process.env.EMAIL_FROM ? '✅' : '❌ AUSENTE (e-mails falharão!)'
+});
 
 // --- Inicializar Supabase (precisa estar disponível no webhook) ---
-console.log("[SUPABASE_URL]", process.env.SUPABASE_URL);
-console.log("[SUPABASE_SERVICE_KEY]", process.env.SUPABASE_SERVICE_KEY?.slice(0, 20) + "...");
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
-console.log("✅ Supabase client created");
+logger.info('✅ Supabase client created');
 
 // --- Inicializar Stripe (precisa estar disponível no webhook) ---
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: "2024-06-20"
 });
-console.log("✅ Stripe client created");
+logger.info('✅ Stripe client created');
 
 const app = express();
 
@@ -49,14 +50,14 @@ app.use(helmet({
   contentSecurityPolicy: false, // Desabilitar para não quebrar assets estáticos
   crossOriginResourcePolicy: { policy: 'cross-origin' } // Permitir CORS para recursos
 }));
-console.log('✅ Helmet security headers ativado');
+logger.info('✅ Helmet security headers ativado');
 
 // Remover header "X-Powered-By"
 app.disable('x-powered-by');
 
 // Trust proxy (atrás de nginx/load balancer com HTTPS)
 app.set('trust proxy', 1);
-console.log('✅ Trust proxy configurado (HTTPS/nginx aware)');
+logger.info('✅ Trust proxy configurado (HTTPS/nginx aware)');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stripe Webhook dedicado (raw body + assinatura)
@@ -454,7 +455,7 @@ app.use(cors({
   maxAge: 86400, // 24h cache para preflight
   preflightContinue: false
 }));
-console.log(`✅ CORS configurado (Production: 2 origins + Dev: ${process.env.NODE_ENV === 'development' ? 'YES' : 'NO'})`);
+logger.info(`✅ CORS configurado (Production: 2 origins + Dev: ${process.env.NODE_ENV === 'development' ? 'YES' : 'NO'})`);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rate Limiting
@@ -480,7 +481,13 @@ const webhookLimiter = rateLimit({
 });
 
 app.use(webhookLimiter);
-console.log('✅ Rate limiting ativado (geral + webhook)');
+logger.info('✅ Rate limiting ativado (geral + webhook)');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Request Logging Middleware (com requestId)
+// ─────────────────────────────────────────────────────────────────────────────
+app.use(requestLoggerMiddleware);
+logger.info('✅ Request logging middleware ativado');
 
 // Middleware para debug de requisições
 app.use((req, res, next) => {
