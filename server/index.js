@@ -98,6 +98,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         console.log('📦 checkout.session.completed:', session.id);
         console.log('   Customer ID:', session.customer);
         console.log('   Subscription ID:', session.subscription);
+        console.log('   Mode:', session.mode);
 
         // 🔍 RASTREAMENTO DE ORIGEM DO EMAIL (Debug)
         console.log('\n🔍 [DEBUG] Rastreando origem do email:');
@@ -379,6 +380,9 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   } catch (error) {
     console.error('❌ Erro ao processar webhook:', error);
   }
+
+  // Sempre responder com 200 OK (Stripe requer confirmação)
+  res.status(200).json({ received: true });
 });
 
 /* =============================
@@ -1089,7 +1093,6 @@ console.log(`📂 Serving static files from: ${distPath}`);
 
 // Serve static files
 app.use(express.static(distPath));
-
 
 // SPA fallback - serve index.html for all non-API routes
 app.get('*', (req, res) => {
