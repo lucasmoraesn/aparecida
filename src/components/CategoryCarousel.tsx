@@ -1,19 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+// Array fixo com apenas 5 categorias principais do portal
 const categories = [
   {
-    to: '/hoteis-em-aparecida-sp',
+    to: '/hoteis',
     image: '/images/hotel.png',
-    title: 'Hotéis e Pousadas',
+    title: 'Hotéis',
     description: 'Encontre a melhor hospedagem para sua estadia em Aparecida',
     tag: 'Hospedagem',
     tagColor: '#3B82F6',
   },
   {
-    to: '/restaurantes-em-aparecida-sp',
+    to: '/restaurantes',
     image: '/images/restaurante.png',
     title: 'Restaurantes',
     description: 'Saborosa culinária local e regional para todos os gostos',
@@ -21,15 +22,15 @@ const categories = [
     tagColor: '#F59E0B',
   },
   {
-    to: '/lojas-religiosas-em-aparecida-sp',
+    to: '/lojas',
     image: '/images/lojareligiosa.png',
-    title: 'Lojas Religiosas',
+    title: 'Lojas',
     description: 'Artigos religiosos, souvenirs e lembranças especiais',
     tag: 'Compras',
     tagColor: '#8B5CF6',
   },
   {
-    to: '/pontos-turisticos-em-aparecida-sp',
+    to: '/pontos-turisticos',
     image: '/images/pontoturistico.png',
     title: 'Pontos Turísticos',
     description: 'Conheça as principais atrações e experiências da cidade',
@@ -37,8 +38,8 @@ const categories = [
     tagColor: '#10B981',
   },
   {
-    to: '/eventos-em-aparecida-sp',
-    image: '/images/evento.png',
+    to: '/eventos',
+    image: 'https://images.unsplash.com/photo-1508854710579-5cecc3a9ff17?w=640&h=480&fit=crop&q=80',
     title: 'Eventos',
     description: 'Missas, procissões e celebrações especiais em Aparecida',
     tag: 'Eventos',
@@ -46,38 +47,22 @@ const categories = [
   },
 ];
 
-const C = categories.length; // 5
-
-// Trilha: [clone-último | card0…card4 | clone-primeiro]
-// Índices:      0       |   1 … 5    |      6
-const displayItems = [categories[C - 1], ...categories, categories[0]];
-
-const CARD_W     = 320;
-const CARD_GAP   = 24;
-const STEP       = CARD_W + CARD_GAP;
-const FIRST_REAL = 1;
-const LAST_REAL  = C;
-const CLONE_END  = C + 1; // 6
-const SNAP_MS    = 240;
-
-const TRANSITION = 'transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+const CARD_W = 320;
+const CARD_GAP = 24;
+const STEP = CARD_W + CARD_GAP;
+const TOTAL = categories.length; // 5
 
 const CategoryCarousel: React.FC = () => {
-  const [current, setCurrent]               = useState(FIRST_REAL);
-  const [containerW, setContainerW]         = useState(0);
-  const [withTransition, setWithTransition] = useState(true);
-  const pausedRef    = useRef(false);
+  const [current, setCurrent] = useState(0);
+  const [containerW, setContainerW] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const touchStartX  = useRef(0);
-  const dragging     = useRef(false);
+  const touchStartX = useRef(0);
+  const pausedRef = useRef(false);
 
-  // trackOffset calculado DIRETAMENTE de current e containerW — nunca desincroniza
+  // Calcula o offset para centralizar o card atual
   const trackOffset = containerW > 0 ? (containerW - CARD_W) / 2 - current * STEP : 0;
 
-  // Índice lógico 0–(C-1) para dots
-  const activeIndex = (current - 1 + C) % C;
-
-  // Mede o container inicialmente e a cada resize
+  // Mede o container
   useEffect(() => {
     const measure = () => {
       if (containerRef.current) setContainerW(containerRef.current.offsetWidth);
@@ -87,47 +72,25 @@ const CategoryCarousel: React.FC = () => {
     return () => window.removeEventListener('resize', measure);
   }, []);
 
-  // Snap seamless: clone-início → último real | clone-fim → primeiro real
-  useEffect(() => {
-    if (current !== 0 && current !== CLONE_END) return;
-    const snapTo = current === CLONE_END ? FIRST_REAL : LAST_REAL;
-    const t = setTimeout(() => {
-      // setWithTransition(false) + setCurrent(snapTo) no mesmo batch:
-      // React renderiza com transition:'none' E nova posição ao mesmo tempo → snap 100% instantâneo
-      setWithTransition(false);
-      setCurrent(snapTo);
-    }, SNAP_MS);
-    return () => clearTimeout(t);
-  }, [current]);
-
-  // Reativa a transição após 2 frames (garante que o browser pintou o frame do snap)
-  useEffect(() => {
-    if (withTransition) return;
-    const id = requestAnimationFrame(() =>
-      requestAnimationFrame(() => setWithTransition(true))
-    );
-    return () => cancelAnimationFrame(id);
-  }, [withTransition]);
-
   // Auto-play
   useEffect(() => {
     const id = setInterval(() => {
-      if (!pausedRef.current) setCurrent(c => Math.min(c + 1, CLONE_END));
-    }, 3000);
+      if (!pausedRef.current) {
+        setCurrent(c => (c + 1) % TOTAL);
+      }
+    }, 4000);
     return () => clearInterval(id);
   }, []);
 
-  const prev = () => setCurrent(c => Math.max(c - 1, 0));
-  const next = () => setCurrent(c => Math.min(c + 1, CLONE_END));
+  const prev = () => setCurrent(c => (c - 1 + TOTAL) % TOTAL);
+  const next = () => setCurrent(c => (c + 1) % TOTAL);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
-    dragging.current    = true;
-    pausedRef.current   = true;
+    pausedRef.current = true;
   };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!dragging.current) return;
-    dragging.current  = false;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
     if (diff > 50) next();
     else if (diff < -50) prev();
@@ -176,79 +139,73 @@ const CategoryCarousel: React.FC = () => {
           <div
             className="flex select-none"
             style={{
-              transform:  `translateX(${trackOffset}px)`,
-              transition: withTransition ? TRANSITION : 'none',
-              gap:        `${CARD_GAP}px`,
+              transform: `translateX(${trackOffset}px)`,
+              transition: 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+              gap: `${CARD_GAP}px`,
             }}
           >
-            {displayItems.map((cat, i) => {
-              const isClone = i === 0 || i === CLONE_END;
-              const key     = i === 0 ? `${cat.to}-clone-start`
-                            : i === CLONE_END ? `${cat.to}-clone-end`
-                            : cat.to;
-              return (
-                <div
-                  key={key}
-                  style={{ width: `${CARD_W}px`, flexShrink: 0 }}
-                  className={`transition-all duration-200 ease-in-out ${
-                    i === current ? 'scale-100 opacity-100' : 'scale-[0.87] opacity-[0.32]'
-                  }`}
+            {categories.map((cat, i) => (
+              <div
+                key={cat.to}
+                style={{ width: `${CARD_W}px`, flexShrink: 0 }}
+                className={`transition-all duration-300 ease-in-out ${
+                  i === current ? 'scale-100 opacity-100' : 'scale-[0.87] opacity-40'
+                }`}
+              >
+                <Link
+                  to={cat.to}
+                  tabIndex={i === current ? 0 : -1}
+                  draggable={false}
+                  className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-[28px]"
                 >
-                  <Link
-                    to={cat.to}
-                    tabIndex={i === current ? 0 : -1}
-                    draggable={false}
-                    className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-[28px]"
+                  <div
+                    className="bg-white overflow-hidden rounded-[28px]"
+                    style={{
+                      boxShadow: i === current
+                        ? '0 24px 64px rgba(0,0,0,0.13), 0 4px 16px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04)'
+                        : '0 2px 12px rgba(0,0,0,0.06)',
+                    }}
                   >
-                    <div
-                      className="bg-white overflow-hidden rounded-[28px]"
-                      style={{
-                        boxShadow: i === current
-                          ? '0 24px 64px rgba(0,0,0,0.13), 0 4px 16px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04)'
-                          : '0 2px 12px rgba(0,0,0,0.06)',
-                      }}
-                    >
-                      <div className="relative overflow-hidden" style={{ height: '220px' }}>
-                        <img
-                          src={cat.image}
-                          alt={cat.title}
-                          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                          loading="lazy"
-                          draggable={false}
-                        />
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            background: 'linear-gradient(to top, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.06) 40%, transparent 68%)',
-                          }}
-                        />
-                        <div
-                          className="absolute top-4 left-4 px-2.5 py-1 rounded-full text-white text-[10px] font-bold tracking-widest uppercase"
-                          style={{ backgroundColor: cat.tagColor }}
-                        >
-                          {cat.tag}
-                        </div>
-                      </div>
-
-                      <div className="px-6 pt-5 pb-6">
-                        <h3 className="text-base font-bold text-gray-900 mb-1.5 leading-snug">
-                          {cat.title}
-                        </h3>
-                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-4">
-                          {cat.description}
-                        </p>
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 group-hover:gap-2 transition-all duration-200">
-                          Explorar
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </span>
+                    <div className="relative overflow-hidden" style={{ height: '220px' }}>
+                      <img
+                        src={cat.image}
+                        alt={cat.title}
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                        loading="lazy"
+                        draggable={false}
+                      />
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background: 'linear-gradient(to top, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.06) 40%, transparent 68%)',
+                        }}
+                      />
+                      <div
+                        className="absolute top-4 left-4 px-2.5 py-1 rounded-full text-white text-[10px] font-bold tracking-widest uppercase"
+                        style={{ backgroundColor: cat.tagColor }}
+                      >
+                        {cat.tag}
                       </div>
                     </div>
-                  </Link>
-                </div>
-              );
-            })}
+
+                    <div className="px-6 pt-5 pb-6">
+                      <h3 className="text-base font-bold text-gray-900 mb-1.5 leading-snug">
+                        {cat.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-4">
+                        {cat.description}
+                      </p>
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 group-hover:gap-2 transition-all duration-200">
+                        Explorar
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -271,20 +228,20 @@ const CategoryCarousel: React.FC = () => {
         </button>
       </div>
 
-      {/* Dots */}
+      {/* Dots indicadores */}
       <div className="relative flex justify-center items-center gap-2 mt-10" role="tablist" aria-label="Slides">
-        {categories.map((_, i) => (
+        {categories.map((cat, i) => (
           <button
-            key={i}
-            onClick={() => setCurrent(i + FIRST_REAL)}
+            key={cat.to}
+            onClick={() => setCurrent(i)}
             role="tab"
-            aria-selected={i === activeIndex}
-            aria-label={categories[i].title}
+            aria-selected={i === current}
+            aria-label={cat.title}
             className="rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             style={{
-              width:           i === activeIndex ? '28px' : '8px',
-              height:          '8px',
-              backgroundColor: i === activeIndex ? '#3B82F6' : '#D1D5DB',
+              width: i === current ? '28px' : '8px',
+              height: '8px',
+              backgroundColor: i === current ? '#3B82F6' : '#D1D5DB',
             }}
           />
         ))}
