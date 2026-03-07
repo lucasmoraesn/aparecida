@@ -36,72 +36,89 @@ const categories = [
     tag: 'Turismo',
     tagColor: '#10B981',
   },
+  {
+    to: '/eventos-em-aparecida-sp',
+    image: '/images/evento.png',
+    title: 'Eventos',
+    description: 'Missas, procissões e celebrações especiais em Aparecida',
+    tag: 'Eventos',
+    tagColor: '#EF4444',
+  },
 ];
 
-// Clone do primeiro card no final — permite loop seamless
-const displayItems = [...categories, categories[0]];
+const C = categories.length; // 5
 
-const CARD_W   = 320;
-const CARD_GAP = 24;
-const STEP     = CARD_W + CARD_GAP;
+// Trilha: [clone-último | card0…card4 | clone-primeiro]
+// Índices:      0       |   1 … 5    |      6
+const displayItems = [categories[C - 1], ...categories, categories[0]];
+
+const CARD_W     = 320;
+const CARD_GAP   = 24;
+const STEP       = CARD_W + CARD_GAP;
+const FIRST_REAL = 1;
+const LAST_REAL  = C;
+const CLONE_END  = C + 1; // 6
+const SNAP_MS    = 240;
 
 const TRANSITION = 'transform 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
 
 const CategoryCarousel: React.FC = () => {
-  const [current, setCurrent] = useState(0);
-  const [trackOffset, setTrackOffset] = useState(0);
+  const [current, setCurrent]               = useState(FIRST_REAL);
+  const [containerW, setContainerW]         = useState(0);
+  const [withTransition, setWithTransition] = useState(true);
   const pausedRef    = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const trackRef     = useRef<HTMLDivElement>(null); // ref direta na trilha
   const touchStartX  = useRef(0);
   const dragging     = useRef(false);
 
-  // Índice lógico (0-3) para dots e highlight
-  const activeIndex = current === categories.length ? 0 : current;
+  // trackOffset calculado DIRETAMENTE de current e containerW — nunca desincroniza
+  const trackOffset = containerW > 0 ? (containerW - CARD_W) / 2 - current * STEP : 0;
 
-  const calcOffset = useCallback((idx: number) => {
-    if (!containerRef.current) return;
-    const cw     = containerRef.current.offsetWidth;
-    const center = (cw - CARD_W) / 2;
-    setTrackOffset(center - idx * STEP);
+  // Índice lógico 0–(C-1) para dots
+  const activeIndex = (current - 1 + C) % C;
+
+  // Mede o container inicialmente e a cada resize
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) setContainerW(containerRef.current.offsetWidth);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
   }, []);
 
+  // Snap seamless: clone-início → último real | clone-fim → primeiro real
   useEffect(() => {
-    calcOffset(current);
-    const onResize = () => calcOffset(current);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [current, calcOffset]);
-
-  // Quando chega no clone (índice 4), aguarda a transição e salta para o card real 0
-  useEffect(() => {
-    if (current !== categories.length) return;
+    if (current !== 0 && current !== CLONE_END) return;
+    const snapTo = current === CLONE_END ? FIRST_REAL : LAST_REAL;
     const t = setTimeout(() => {
-      // Desativa transição diretamente no DOM — sem re-render extra
-      if (trackRef.current) trackRef.current.style.transition = 'none';
-      setCurrent(0);
-      // Reativa transição após o browser pintar o frame sem animação
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          if (trackRef.current) trackRef.current.style.transition = TRANSITION;
-        })
-      );
-    }, 220);
+      // setWithTransition(false) + setCurrent(snapTo) no mesmo batch:
+      // React renderiza com transition:'none' E nova posição ao mesmo tempo → snap 100% instantâneo
+      setWithTransition(false);
+      setCurrent(snapTo);
+    }, SNAP_MS);
     return () => clearTimeout(t);
   }, [current]);
+
+  // Reativa a transição após 2 frames (garante que o browser pintou o frame do snap)
+  useEffect(() => {
+    if (withTransition) return;
+    const id = requestAnimationFrame(() =>
+      requestAnimationFrame(() => setWithTransition(true))
+    );
+    return () => cancelAnimationFrame(id);
+  }, [withTransition]);
 
   // Auto-play
   useEffect(() => {
     const id = setInterval(() => {
-      if (!pausedRef.current) {
-        setCurrent(c => c + 1);
-      }
+      if (!pausedRef.current) setCurrent(c => Math.min(c + 1, CLONE_END));
     }, 3000);
     return () => clearInterval(id);
   }, []);
 
-  const prev = () => setCurrent(c => Math.max(0, c - 1));
-  const next = () => setCurrent(c => Math.min(categories.length, c + 1));
+  const prev = () => setCurrent(c => Math.max(c - 1, 0));
+  const next = () => setCurrent(c => Math.min(c + 1, CLONE_END));
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -124,10 +141,9 @@ const CategoryCarousel: React.FC = () => {
       onMouseEnter={() => { pausedRef.current = true; }}
       onMouseLeave={() => { pausedRef.current = false; }}
     >
-      {/* Decoração de fundo — sutil */}
       <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-blue-50/50 rounded-full blur-3xl" />
 
-      {/* ── Cabeçalho ──────────────────────────────────────────── */}
+      {/* Cabeçalho */}
       <motion.div
         className="relative text-center mb-14 sm:mb-18 px-4"
         initial={{ opacity: 0, y: 32 }}
@@ -148,10 +164,8 @@ const CategoryCarousel: React.FC = () => {
         </p>
       </motion.div>
 
-      {/* ── Carrossel ──────────────────────────────────────────── */}
+      {/* Carrossel */}
       <div className="relative">
-
-        {/* Trilha */}
         <div
           ref={containerRef}
           className="relative overflow-hidden cursor-grab active:cursor-grabbing"
@@ -160,20 +174,21 @@ const CategoryCarousel: React.FC = () => {
           onTouchEnd={handleTouchEnd}
         >
           <div
-            ref={trackRef}
             className="flex select-none"
             style={{
               transform:  `translateX(${trackOffset}px)`,
-              transition: TRANSITION,
+              transition: withTransition ? TRANSITION : 'none',
               gap:        `${CARD_GAP}px`,
             }}
           >
             {displayItems.map((cat, i) => {
-              const isActive = i === activeIndex && !(i === 0 && current === categories.length);
-              const isClone  = i === categories.length; // último item é o clone
+              const isClone = i === 0 || i === CLONE_END;
+              const key     = i === 0 ? `${cat.to}-clone-start`
+                            : i === CLONE_END ? `${cat.to}-clone-end`
+                            : cat.to;
               return (
                 <div
-                  key={isClone ? `${cat.to}-clone` : cat.to}
+                  key={key}
                   style={{ width: `${CARD_W}px`, flexShrink: 0 }}
                   className={`transition-all duration-200 ease-in-out ${
                     i === current ? 'scale-100 opacity-100' : 'scale-[0.87] opacity-[0.32]'
@@ -186,14 +201,13 @@ const CategoryCarousel: React.FC = () => {
                     className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-[28px]"
                   >
                     <div
-                      className="bg-white overflow-hidden rounded-[28px] transition-shadow duration-400"
+                      className="bg-white overflow-hidden rounded-[28px]"
                       style={{
                         boxShadow: i === current
                           ? '0 24px 64px rgba(0,0,0,0.13), 0 4px 16px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04)'
                           : '0 2px 12px rgba(0,0,0,0.06)',
                       }}
                     >
-                      {/* Imagem */}
                       <div className="relative overflow-hidden" style={{ height: '220px' }}>
                         <img
                           src={cat.image}
@@ -205,8 +219,7 @@ const CategoryCarousel: React.FC = () => {
                         <div
                           className="absolute inset-0"
                           style={{
-                            background:
-                              'linear-gradient(to top, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.06) 40%, transparent 68%)',
+                            background: 'linear-gradient(to top, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.06) 40%, transparent 68%)',
                           }}
                         />
                         <div
@@ -217,7 +230,6 @@ const CategoryCarousel: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Corpo do card */}
                       <div className="px-6 pt-5 pb-6">
                         <h3 className="text-base font-bold text-gray-900 mb-1.5 leading-snug">
                           {cat.title}
@@ -227,18 +239,8 @@ const CategoryCarousel: React.FC = () => {
                         </p>
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 group-hover:gap-2 transition-all duration-200">
                           Explorar
-                          <svg
-                            className="w-3.5 h-3.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2.5}
-                              d="M9 5l7 7-7 7"
-                            />
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                           </svg>
                         </span>
                       </div>
@@ -250,44 +252,34 @@ const CategoryCarousel: React.FC = () => {
           </div>
         </div>
 
-        {/* Seta – esquerda */}
+        {/* Seta esquerda */}
         <button
           onClick={prev}
-          disabled={current === 0}
           aria-label="Categoria anterior"
-          className={`absolute top-1/2 -translate-y-1/2 left-2 sm:left-4 lg:left-6 z-20 w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
-            current === 0
-              ? 'bg-white/60 border border-gray-200/60 text-gray-300 cursor-not-allowed'
-              : 'bg-white border border-gray-200 shadow-md text-gray-500 hover:text-blue-600 hover:border-blue-300 hover:shadow-lg'
-          }`}
+          className="absolute top-1/2 -translate-y-1/2 left-2 sm:left-4 lg:left-6 z-20 w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 bg-white border border-gray-200 shadow-md text-gray-500 hover:text-blue-600 hover:border-blue-300 hover:shadow-lg"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        {/* Seta – direita */}
+        {/* Seta direita */}
         <button
           onClick={next}
-          disabled={current >= categories.length - 1}
           aria-label="Próxima categoria"
-          className={`absolute top-1/2 -translate-y-1/2 right-2 sm:right-4 lg:right-6 z-20 w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
-            current >= categories.length - 1
-              ? 'bg-white/60 border border-gray-200/60 text-gray-300 cursor-not-allowed'
-              : 'bg-white border border-gray-200 shadow-md text-gray-500 hover:text-blue-600 hover:border-blue-300 hover:shadow-lg'
-          }`}
+          className="absolute top-1/2 -translate-y-1/2 right-2 sm:right-4 lg:right-6 z-20 w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 bg-white border border-gray-200 shadow-md text-gray-500 hover:text-blue-600 hover:border-blue-300 hover:shadow-lg"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
-      {/* ── Dots ──────────────────────────────────────────────── */}
+      {/* Dots */}
       <div className="relative flex justify-center items-center gap-2 mt-10" role="tablist" aria-label="Slides">
         {categories.map((_, i) => (
           <button
             key={i}
-            onClick={() => setCurrent(i)}
+            onClick={() => setCurrent(i + FIRST_REAL)}
             role="tab"
             aria-selected={i === activeIndex}
-            aria-label={`${categories[i].title}`}
+            aria-label={categories[i].title}
             className="rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             style={{
               width:           i === activeIndex ? '28px' : '8px',
