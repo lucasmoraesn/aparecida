@@ -26,7 +26,7 @@ const allEvents = [
       type: "Religioso",
       attendance: "5.000 pessoas",
       highlights: ["Procissão", "Comidas típicas", "Danças tradicionais"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/2693328/pexels-photo-2693328.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    {
       id: 3,
@@ -38,7 +38,7 @@ const allEvents = [
       type: "Religioso",
       attendance: "15.000 pessoas",
       highlights: ["Missa dominical", "Coral", "Orquestra"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/1299066/pexels-photo-1299066.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    {
       id: 4,
@@ -50,7 +50,7 @@ const allEvents = [
       type: "Religioso",
       attendance: "20.000 pessoas",
       highlights: ["Novena", "Orações", "Bênçãos"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/2696060/pexels-photo-2696060.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    {
       id: 5,
@@ -62,7 +62,7 @@ const allEvents = [
       type: "Religioso",
       attendance: "25.000 pessoas",
       highlights: ["Missa especial", "Bênção dos romeiros", "Acolhida"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/1267338/pexels-photo-1267338.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    {
       id: 6,
@@ -74,7 +74,7 @@ const allEvents = [
       type: "Religioso",
       attendance: "3.000 pessoas",
       highlights: ["Distribuição de pães", "Missa", "Procissão"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/3807517/pexels-photo-3807517.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    {
       id: 7,
@@ -86,7 +86,7 @@ const allEvents = [
       type: "Religioso",
       attendance: "8.000 pessoas",
       highlights: ["Missa matinal", "Oração", "Bênção do dia"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/6001552/pexels-photo-6001552.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    // Eventos Culturais
    {
@@ -99,7 +99,7 @@ const allEvents = [
       type: "Cultural",
       attendance: "10.000 pessoas",
       highlights: ["Música", "Dança", "Arte"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/1159037/pexels-photo-1159037.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    {
       id: 9,
@@ -111,7 +111,7 @@ const allEvents = [
       type: "Cultural",
       attendance: "2.000 pessoas",
       highlights: ["Artesanato", "Comidas típicas", "Apresentações"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/1488530/pexels-photo-1488530.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    {
       id: 10,
@@ -123,7 +123,7 @@ const allEvents = [
       type: "Cultural",
       attendance: "500 pessoas",
       highlights: ["Arte sacra", "História", "Cultura"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    {
       id: 11,
@@ -135,7 +135,7 @@ const allEvents = [
       type: "Cultural",
       attendance: "12.000 pessoas",
       highlights: ["Música sacra", "Coral", "Concerto"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/3726530/pexels-photo-3726530.jpeg?auto=compress&cs=tinysrgb&w=800"
    },
    {
       id: 12,
@@ -147,7 +147,7 @@ const allEvents = [
       type: "Cultural",
       attendance: "3.000 pessoas",
       highlights: ["Gastronomia", "Pratos típicos", "Culinária local"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "https://images.pexels.com/photos/3298271/pexels-photo-3298271.jpeg?auto=compress&cs=tinysrgb&w=800"
    }
 ];
 
