@@ -3,6 +3,23 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Calendar, Users, ChevronDown } from 'lucide-react';
 
+// ═══════════════════════════════════════════════════════════════
+//  AJUSTE DA ONDA — mexa apenas aqui
+//
+//  WAVE_PEAK  → altura do pico (quanto a onda sobe no centro)
+//               menor número = onda MAIOR  |  ex: 20 (grande) → 70 (quase nada)
+//
+//  WAVE_BASE  → altura das laterais (quão reto fica nas bordas)
+//               maior número = laterais mais RETAS  |  ex: 70 a 79
+//
+//  WAVE_HEIGHT → altura total do SVG em pixels
+//               maior número = área total da onda mais alta
+// ═══════════════════════════════════════════════════════════════
+const WAVE_PEAK   = 50; // 0–79  (menor = onda maior)
+const WAVE_BASE   = 75; // 0–80  (maior = laterais mais retas)
+const WAVE_HEIGHT = 80; // px    (altura total do bloco da onda)
+// ═══════════════════════════════════════════════════════════════
+
 const Hero = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -267,7 +284,7 @@ const Hero = () => {
           </motion.div>
 
           <motion.div
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 hidden sm:block"
+            className="absolute bottom-20 left-1/2 transform -translate-x-1/2 hidden sm:block"
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           >
@@ -277,6 +294,21 @@ const Hero = () => {
           </motion.div>
 
         </div>
+      </div>
+
+      {/* Wave Divider */}
+      <div className="absolute bottom-0 left-0 w-full z-10 pointer-events-none">
+        <svg
+          viewBox={`0 0 1440 ${WAVE_HEIGHT}`}
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+          style={{ display: 'block', width: '100%', height: `${WAVE_HEIGHT}px` }}
+        >
+          <path
+            fill="#ffffff"
+            d={`M0,${WAVE_HEIGHT} L0,${WAVE_BASE} C320,${WAVE_BASE} 460,${WAVE_PEAK} 720,${WAVE_PEAK} C980,${WAVE_PEAK} 1120,${WAVE_BASE} 1440,${WAVE_BASE} L1440,${WAVE_HEIGHT} Z`}
+          />
+        </svg>
       </div>
     </section>
   );
