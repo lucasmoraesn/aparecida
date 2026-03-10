@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingCart, Trash2, Plus, Minus, CreditCard, Truck, Shield } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import ProductCard from '../components/ProductCard';
+import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 const Cart: React.FC = () => {
   const { state, removeItem, updateQuantity, clearCart } = useCart();
@@ -89,6 +90,8 @@ const Cart: React.FC = () => {
                   {/* Imagem */}
                   <div className="md:w-32 md:h-32 w-full h-48">
                     <img
+                      srcSet={generateCompleteSrcSet(item.product.image)}
+                      sizes="(max-width: 640px) 100vw, 128px"
                       src={item.product.image}
                       alt={item.product.name}
                       className="w-full h-full object-cover rounded-lg"

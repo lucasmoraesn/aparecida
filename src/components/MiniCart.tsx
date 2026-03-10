@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Trash2, ArrowRight } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 interface MiniCartProps {
   isVisible: boolean;
@@ -37,6 +38,7 @@ const MiniCart: React.FC<MiniCartProps> = ({ isVisible }) => {
           {state.items.slice(0, 3).map((item) => (
             <div key={item.product.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <img
+                srcSet={`${item.product.image}?w=24 1x, ${item.product.image}?w=48 2x`}
                 src={item.product.image}
                 alt={item.product.name}
                 className="w-12 h-12 object-cover rounded-lg"

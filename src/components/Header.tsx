@@ -24,9 +24,9 @@ const Header = () => {
 
   const navItems = [
     { to: '/hoteis-em-aparecida-sp', label: 'Hotéis' },
-    { to: '/restaurantes', label: 'Restaurantes' },
-    { to: '/lojas-religiosas', label: 'Lojas' },
-    { to: '/pontos-turisticos', label: 'Pontos Turísticos' },
+    { to: '/restaurantes-em-aparecida-sp', label: 'Restaurantes' },
+    { to: '/lojas-religiosas-em-aparecida-sp', label: 'Lojas' },
+    { to: '/pontos-turisticos-em-aparecida-sp', label: 'Pontos Turísticos' },
     { to: '/eventos', label: 'Eventos' },
   ];
 

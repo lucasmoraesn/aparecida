@@ -659,6 +659,7 @@ app.post("/api/register-business", async (req, res) => {
       card_security_code,
       card_holder_name,
       card_holder_tax_id,
+      content_authorization,
     } = registration;
 
     // Validação de campos obrigatórios
@@ -699,6 +700,7 @@ app.post("/api/register-business", async (req, res) => {
       admin_email,
       contact_email,
       payer_email,
+      content_authorization: content_authorization === true,
       created_at: new Date().toISOString(),
     };
 

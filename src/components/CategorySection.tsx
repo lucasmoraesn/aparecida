@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Phone, Star, ExternalLink, MessageCircle } from 'lucide-react';
 import { useEstablishments } from '../hooks/useEstablishments';
 import { EstablishmentType } from '../lib/supabase';
+import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 interface Establishment {
   id: number;
@@ -89,6 +90,8 @@ const CategorySection: React.FC<CategorySectionProps> = ({
 
               <div className="relative">
                 <img
+                  srcSet={generateCompleteSrcSet(place.image)}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   src={place.image}
                   alt={place.name}
                   className="w-full h-48 object-cover"

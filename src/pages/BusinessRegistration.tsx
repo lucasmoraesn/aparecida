@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Camera, CheckCircle } from 'lucide-react';
 import { BusinessService, BusinessPlan } from '../lib/businessService';
+import { trackClickSignup, trackAccountCreated, trackPlanSelected } from '../lib/analytics';
 
 interface FormData {
   establishmentName: string;
@@ -14,6 +15,7 @@ interface FormData {
   description: string;
   plan: string;
   acceptTerms: boolean;
+  contentAuthorization: boolean;
   payerEmail: string;
 }
 
@@ -30,6 +32,7 @@ interface RegistrationData {
   admin_email: string;
   contact_email: string;
   payer_email: string;
+  content_authorization: boolean;
 }
 
 const BusinessRegistration: React.FC = () => {
@@ -45,6 +48,7 @@ const BusinessRegistration: React.FC = () => {
     description: '',
     plan: '',
     acceptTerms: false,
+    contentAuthorization: false,
     payerEmail: '',
   });
 
@@ -92,6 +96,7 @@ const BusinessRegistration: React.FC = () => {
   // Scroll para o topo quando o componente é montado
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    trackClickSignup();
   }, []);
 
   useEffect(() => {
@@ -214,7 +219,14 @@ const BusinessRegistration: React.FC = () => {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
 
-    // Se mudou o plano, validar fotos existentes
+    // Se mudou o plano, disparar evento GA4 e validar fotos existentes
+    if (field === 'plan' && value) {
+      const selected = plans.find(p => p.id === value);
+      if (selected) {
+        trackPlanSelected({ plan_name: selected.name, plan_id: selected.id, price: selected.price });
+      }
+    }
+
     if (field === 'plan' && formData.photos.length > 0) {
       const newLimit = getPhotoLimit(value);
       if (formData.photos.length > newLimit) {
@@ -308,6 +320,9 @@ const BusinessRegistration: React.FC = () => {
     if (!formData.acceptTerms) {
       newErrors.acceptTerms = 'Aceite os termos é obrigatório';
     }
+    if (!formData.contentAuthorization) {
+      newErrors.contentAuthorization = 'Você precisa aceitar os termos de autorização de uso de conteúdo para continuar.';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -341,6 +356,7 @@ const BusinessRegistration: React.FC = () => {
         admin_email: 'admin@aparecida.com',
         contact_email: 'contato@aparecida.com',
         payer_email: formData.payerEmail,
+        content_authorization: formData.contentAuthorization,
       };
 
       console.log('📤 Dados sendo enviados:', registrationData);
@@ -349,6 +365,7 @@ const BusinessRegistration: React.FC = () => {
       console.log('🔄 Criando cadastro do negócio...');
       const businessId = await BusinessService.createRegistration(registrationData);
       console.log('✅ Cadastro criado com ID:', businessId);
+      trackAccountCreated({ plan_name: selectedPlan.name, plan_id: selectedPlan.id });
 
       // 2. Criar assinatura
       console.log('🔄 Criando assinatura para business:', businessId);
@@ -634,6 +651,25 @@ const BusinessRegistration: React.FC = () => {
             {errors.acceptTerms && (
               <p className="text-red-500 text-sm mt-1">{errors.acceptTerms}</p>
             )}
+
+            {/* Autorização de uso de conteúdo */}
+            <div className={`rounded-lg border p-4 ${errors.contentAuthorization ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50'}`}>
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="contentAuthorization"
+                  checked={formData.contentAuthorization}
+                  onChange={(e) => handleInputChange('contentAuthorization', e.target.checked)}
+                  className="mt-1 h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                />
+                <label htmlFor="contentAuthorization" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
+                  Ao enviar fotos e informações do estabelecimento, você declara que possui os direitos sobre esse conteúdo ou autorização para utilizá-lo e concorda que ele seja exibido no portal Explore Aparecida para fins de divulgação do seu negócio. *
+                </label>
+              </div>
+              {errors.contentAuthorization && (
+                <p className="text-red-600 text-sm mt-2 font-medium">{errors.contentAuthorization}</p>
+              )}
+            </div>
 
             {/* Botão de envio */}
             <div className="pt-6">

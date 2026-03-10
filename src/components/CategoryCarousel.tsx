@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 // Array fixo com apenas 5 categorias principais do portal
 const categories = [

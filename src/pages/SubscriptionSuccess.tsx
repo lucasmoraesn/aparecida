@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
+import { trackPurchase } from '../lib/analytics';
 
 const SubscriptionSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -141,6 +142,12 @@ const SubscriptionSuccess: React.FC = () => {
 
         console.log('✅ Sessão válida:', data);
         setSessionData(data);
+        trackPurchase({
+          transaction_id: data.subscriptionId,
+          value: data.amountTotal / 100,
+          currency: 'BRL',
+          item_name: 'Assinatura Explore Aparecida',
+        });
         setStatus('success');
       } catch (error) {
         console.error('❌ Erro ao verificar sessão:', error);

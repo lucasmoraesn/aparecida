@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, MapPin, Clock, Star, Camera, Info } from 'lucide-react';
+import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 const touristAttractions = [
   {
@@ -107,9 +108,11 @@ const TouristAttractions = () => {
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-              Pontos turísticos em Aparecida do Norte (SP)
-            </h1>
+            
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-4">
+            Pontos Turísticos em Aparecida SP
+          </h1>
+
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
               Descubra o que fazer em Aparecida: santuários, mirantes, passarelas da fé e locais
               históricos que fazem da cidade o principal destino de turismo religioso do Brasil.
@@ -124,6 +127,8 @@ const TouristAttractions = () => {
             <div key={attraction.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
               <div className="h-48 overflow-hidden">
                 <img
+                  srcSet={generateCompleteSrcSet(attraction.image)}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   src={attraction.image}
                   alt={attraction.name}
                   className="w-full h-full object-cover"
@@ -177,6 +182,38 @@ const TouristAttractions = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <section aria-labelledby="attractions-partners" className="mb-16">
+          <div className="flex items-center justify-between mb-6">
+            <h2 id="attractions-partners" className="text-2xl font-bold text-gray-900">Anuncie aqui o seu Ponto Turístico</h2>
+            <span className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-sm">
+              Atração Parceira Oficial
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="col-span-1 md:col-span-2 lg:col-span-3">
+              <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+                <p className="text-gray-700 mb-4">
+                  Alcance público turístico interessado em conhecer os principais pontos de interesse de Aparecida. Sua atração pode ganhar destaque no portal, com contato direto pelo WhatsApp e acesso a visitantes nacionais.
+                </p>
+                <ul className="list-disc list-inside text-gray-700 mb-6">
+                  <li>Alcance turístico e público interessado em atrações locais</li>
+                  <li>Possibilidade de destaque com selo "Atração Parceira Oficial"</li>
+                  <li>Integração simples e atendimento direto ao visitante</li>
+                </ul>
+                <Link
+                  to="/cadastrar-negocio"
+                  className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+                >
+                  Quero anunciar minha atração
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );

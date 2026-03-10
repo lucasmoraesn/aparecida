@@ -13,6 +13,7 @@ export interface BusinessRegistration {
    plan_id: string;
    status?: 'pending' | 'approved' | 'rejected';
    payment_status?: 'pending' | 'paid' | 'failed';
+   content_authorization?: boolean;
    created_at?: string;
    updated_at?: string;
 }

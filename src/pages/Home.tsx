@@ -1,48 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
 import Hero from '../components/Hero';
-import { Bed, Utensils, ShoppingBag, MapPin } from 'lucide-react';
+import CategoryCarousel from '../components/CategoryCarousel';
 
 const Home = () => {
   const bookingAffiliateURL = 'https://tidd.ly/4puN43K';
-
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1
-  });
-
-  const categories = [
-    {
-      to: '/hoteis',
-      image: '/images/hotel.png',
-      title: 'Hotéis e Pousadas',
-      description: 'Encontre a melhor hospedagem para sua estadia',
-      color: 'from-blue-500 to-blue-600'
-    },
-    {
-      to: '/restaurantes',
-      image: '/images/restaurante.png',
-      title: 'Restaurantes',
-      description: 'Saborosa culinária local e regional',
-      color: 'from-yellow-500 to-orange-500'
-    },
-    {
-      to: '/lojas-religiosas',
-      image: '/images/lojareligiosa.png',
-      title: 'Lojas Religiosas',
-      description: 'Artigos religiosos e souvenirs',
-      color: 'from-purple-500 to-purple-600'
-    },
-    {
-      to: '/pontos-turisticos',
-      image: '/images/pontoturistico.png',
-      title: 'Pontos Turísticos',
-      description: 'Conheça as principais atrações da cidade',
-      color: 'from-green-500 to-green-600'
-    }
-  ];
 
   const events = [
     {
@@ -65,68 +28,7 @@ const Home = () => {
     <>
       <Hero />
 
-      <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="text-center mb-10 sm:mb-14 md:mb-16 lg:mb-20"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-4 sm:mb-6">
-              Explore <span className="bg-gradient-to-r from-blue-600 to-yellow-500 bg-clip-text text-transparent">Aparecida</span>
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
-              Descubra os melhores estabelecimentos selecionados especialmente para sua visita
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.to}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="h-full"
-              >
-                <Link
-                  to={category.to}
-                  className="group block h-full"
-                >
-                  <motion.div
-                    className="bg-white rounded-2xl sm:rounded-3xl shadow-lg p-4 sm:p-6 md:p-8 text-center hover-lift border border-gray-100 relative overflow-hidden h-full flex flex-col"
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ duration: 0.075 }}
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-5 transition-opacity duration-75`}></div>
-                    <motion.div
-                      className="relative w-full h-32 sm:h-40 md:h-48 rounded-xl sm:rounded-2xl overflow-hidden mb-4 sm:mb-6 group-hover:scale-105 transition-transform duration-75 shadow-lg"
-                      transition={{ duration: 0.075 }}
-                    >
-                      <img
-                        src={category.image}
-                        alt={category.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-75"
-                        loading="lazy"
-                      />
-                      <div className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-20 group-hover:opacity-30 transition-opacity duration-75`}></div>
-                    </motion.div>
-                    <div className="flex-1 flex flex-col justify-center">
-                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 mb-2 sm:mb-3 group-hover:text-blue-600 transition-colors duration-75">
-                        {category.title}
-                      </h3>
-                      <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
-                        {category.description}
-                      </p>
-                    </div>
-                  </motion.div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <CategoryCarousel />
 
       <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

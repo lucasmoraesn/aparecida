@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
+import CategoryLanding from './pages/CategoryLanding';
 import Hotels from './pages/Hotels';
 import Restaurants from './pages/Restaurants';
 import ReligiousShops from './pages/ReligiousShops';
@@ -16,6 +18,11 @@ import SubscriptionCancel from './pages/SubscriptionCancel';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfUse from './pages/TermsOfUse';
 import CookiePolicy from './pages/CookiePolicy';
+import HotelDetail from './pages/HotelDetail';
+import HotelsNearBasilica from './pages/HotelsNearBasilica';
+import WhatToDoAparecida from './pages/WhatToDoAparecida';
+import { supabase } from './lib/supabase';
+import { trackLogin } from './lib/analytics';
 
 function App() {
   const handleWhatsAppClick = () => {
@@ -24,16 +31,35 @@ function App() {
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        trackLogin();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
+      <ScrollToTop />
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/hoteis-em-aparecida-sp" element={<Hotels />} />
+        
+        {/* Redirects - Rotas curtas redirecionam para SEO-friendly */}
         <Route path="/hoteis" element={<Navigate to="/hoteis-em-aparecida-sp" replace />} />
-        <Route path="/restaurantes" element={<Restaurants />} />
-        <Route path="/lojas-religiosas" element={<ReligiousShops />} />
-        <Route path="/pontos-turisticos" element={<TouristAttractions />} />
+        <Route path="/restaurantes" element={<Navigate to="/restaurantes-em-aparecida-sp" replace />} />
+        <Route path="/lojas-religiosas" element={<Navigate to="/lojas-religiosas-em-aparecida-sp" replace />} />
+        <Route path="/pontos-turisticos" element={<Navigate to="/pontos-turisticos-em-aparecida-sp" replace />} />
+        
+        {/* Full Listings - URLs otimizadas para SEO */}
+        <Route path="/hoteis-em-aparecida-sp" element={<Hotels />} />
+        <Route path="/restaurantes-em-aparecida-sp" element={<Restaurants />} />
+        <Route path="/lojas-religiosas-em-aparecida-sp" element={<ReligiousShops />} />
+        <Route path="/pontos-turisticos-em-aparecida-sp" element={<TouristAttractions />} />
+        
+        {/* Other Pages */}
         <Route path="/eventos" element={<Events />} />
         <Route path="/todos-eventos" element={<AllEvents />} />
         <Route path="/cadastrar-negocio" element={<BusinessRegistration />} />
@@ -44,6 +70,15 @@ function App() {
         <Route path="/politica-privacidade" element={<PrivacyPolicy />} />
         <Route path="/termos-uso" element={<TermsOfUse />} />
         <Route path="/cookies" element={<CookiePolicy />} />
+
+        {/* Páginas SEO de hotéis */}
+        <Route path="/hoteis-perto-da-basilica-aparecida" element={<HotelsNearBasilica />} />
+
+        {/* Páginas SEO de turismo */}
+        <Route path="/o-que-fazer-em-aparecida-sp" element={<WhatToDoAparecida />} />
+
+        {/* Páginas individuais de hotéis – ex: /hotel-rainha-do-brasil */}
+        <Route path="/:slug" element={<HotelDetail />} />
       </Routes>
       <Footer />
       

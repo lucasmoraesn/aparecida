@@ -2,6 +2,7 @@ import React from 'react';
 import { Star, ShoppingCart, Plus, Minus } from 'lucide-react';
 import { Product } from '../contexts/CartContext';
 import { useCart } from '../contexts/CartContext';
+import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 interface ProductCardProps {
   product: Product;
@@ -33,6 +34,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, showQuantity = false
     <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100">
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
         <img
+          srcSet={generateCompleteSrcSet(product.image)}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           src={product.image}
           alt={product.name}
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"

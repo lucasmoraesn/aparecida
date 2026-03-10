@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Clock, MapPin, Users } from 'lucide-react';
+import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 const EventsSection = () => {
   const events = [
@@ -56,7 +57,9 @@ const EventsSection = () => {
             >
               <div className="md:flex">
                 <div className="md:w-1/3">
-                  <img 
+                  <img
+                    srcSet={generateCompleteSrcSet(event.image)}
+                    sizes="(max-width: 768px) 100vw, 33vw"
                     src={event.image}
                     alt={event.title}
                     className="w-full h-48 md:h-full object-cover group-hover:scale-105 transition-transform duration-300"

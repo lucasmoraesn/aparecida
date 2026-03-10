@@ -24,15 +24,15 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE 
 }
 
-Write-Host "3. Enviar para o servidor (root@72.60.251.96)..."
-scp frontend-update.tar.gz root@72.60.251.96:/var/www/frontend/
+Write-Host "3. Enviar para o servidor (ubuntu@52.14.244.186)..."
+scp -i "C:\Users\Lucas\OneDrive\Documentos\aparecida-server.pem" frontend-update.tar.gz ubuntu@52.14.244.186:/home/ubuntu/
 if ($LASTEXITCODE -ne 0) { 
     Write-Error "Falha no envio via SCP"
     exit $LASTEXITCODE 
 }
 
 Write-Host "4. Atualizar no servidor..."
-ssh root@72.60.251.96 "cd /var/www/frontend/dist && rm -rf * && cd .. && tar -xzf frontend-update.tar.gz -C dist && rm frontend-update.tar.gz"
+ssh -i "C:\Users\Lucas\OneDrive\Documentos\aparecida-server.pem" ubuntu@52.14.244.186 "sudo rm -rf /var/www/html/* && sudo tar -xzf /home/ubuntu/frontend-update.tar.gz -C /var/www/html && sudo chown -R www-data:www-data /var/www/html && sudo rm /home/ubuntu/frontend-update.tar.gz"
 if ($LASTEXITCODE -ne 0) { 
     Write-Error "Falha na execução remota via SSH"
     exit $LASTEXITCODE 
