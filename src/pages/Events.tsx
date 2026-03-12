@@ -14,7 +14,7 @@ const events = [
       type: "Religioso",
       attendance: "45.000 pessoas",
       highlights: ["Missa solene", "Procissão", "Bênção especial"],
-      image: "/images/missasolene.png"
+      image: ""
    },
    {
       id: 2,
