@@ -21,7 +21,7 @@ const restaurants = [
   {
     id: 2,
     name: "Lanchonete Barão",
-    description: "Lanchonete Barão desde 2014 servindo produtos da melhor qualidade e sabor, com o diferenciado Hambúrguer Artesanal.",
+    description: "Lanchonete Barão desde 2014 servindo produtos da melhor qualidade e sabor, com o diferenciado Hambúrguer Artesanal e uma maionese de sabor inigualável.",
     address: "Rua Barão do Rio Branco, 213 - Centro, Aparecida - SP",
     phone: "(12) 99120-2030",
     whatsapp: "5512991202030",

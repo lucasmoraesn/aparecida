@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Star } from 'lucide-react';
-import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 const events = [
    {
@@ -15,7 +14,7 @@ const events = [
       type: "Religioso",
       attendance: "45.000 pessoas",
       highlights: ["Missa solene", "Procissão", "Bênção especial"],
-      image: "https://images.pexels.com/photos/208315/pexels-photo-208315.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: "/images/missasolene.png"
    },
    {
       id: 2,
@@ -28,7 +27,7 @@ const events = [
       type: "Religioso",
       attendance: "5.000 pessoas",
       highlights: ["Procissão", "Comidas típicas", "Danças tradicionais"],
-      image: "https://images.pexels.com/photos/2693328/pexels-photo-2693328.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: ""
    },
    {
       id: 3,
@@ -41,7 +40,7 @@ const events = [
       type: "Religioso",
       attendance: "15.000 pessoas",
       highlights: ["Missa dominical", "Coral", "Orquestra"],
-      image: "https://images.pexels.com/photos/1299066/pexels-photo-1299066.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: ""
    },
    {
       id: 4,
@@ -54,7 +53,7 @@ const events = [
       type: "Religioso",
       attendance: "20.000 pessoas",
       highlights: ["Novena", "Orações", "Bênçãos"],
-      image: "https://images.pexels.com/photos/2696060/pexels-photo-2696060.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: ""
    },
    {
       id: 5,
@@ -67,7 +66,7 @@ const events = [
       type: "Cultural",
       attendance: "10.000 pessoas",
       highlights: ["Música", "Dança", "Arte"],
-      image: "https://images.pexels.com/photos/1159037/pexels-photo-1159037.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: ""
    },
    {
       id: 6,
@@ -80,7 +79,7 @@ const events = [
       type: "Religioso",
       attendance: "25.000 pessoas",
       highlights: ["Missa especial", "Bênção dos romeiros", "Acolhida"],
-      image: "https://images.pexels.com/photos/1267338/pexels-photo-1267338.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: ""
    },
    {
       id: 7,
@@ -93,7 +92,7 @@ const events = [
       type: "Religioso",
       attendance: "3.000 pessoas",
       highlights: ["Distribuição de pães", "Missa", "Procissão"],
-      image: "https://images.pexels.com/photos/3807517/pexels-photo-3807517.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: ""
    },
    {
       id: 8,
@@ -106,7 +105,7 @@ const events = [
       type: "Religioso",
       attendance: "8.000 pessoas",
       highlights: ["Missa matinal", "Oração", "Bênção do dia"],
-      image: "https://images.pexels.com/photos/6001552/pexels-photo-6001552.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: ""
    }
 ];
 
@@ -133,8 +132,6 @@ const Events = () => {
                   <div key={event.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
                      <div className="h-48 overflow-hidden">
                         <img
-                           srcSet={generateCompleteSrcSet(event.image)}
-                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                            src={event.image}
                            alt={event.name}
                            className="w-full h-full object-cover"

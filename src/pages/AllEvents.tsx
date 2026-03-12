@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Filter } from 'lucide-react';
-import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 const allEvents = [
    // Eventos Religiosos
@@ -27,7 +26,7 @@ const allEvents = [
       type: "Religioso",
       attendance: "5.000 pessoas",
       highlights: ["Procissão", "Comidas típicas", "Danças tradicionais"],
-      image: "https://images.pexels.com/photos/2693328/pexels-photo-2693328.jpeg?auto=compress&cs=tinysrgb&w=800"
+      image: ""
    },
    {
       id: 3,
@@ -186,8 +185,6 @@ const AllEvents = () => {
                   <div key={event.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
                      <div className="h-48 overflow-hidden">
                         <img
-                           srcSet={generateCompleteSrcSet(event.image)}
-                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                            src={event.image}
                            alt={event.name}
                            className="w-full h-full object-cover"
