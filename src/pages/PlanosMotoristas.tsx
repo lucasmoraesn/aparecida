@@ -1,15 +1,50 @@
-import React, { useEffect } from 'react';
-import { Check, Star, Shield, Award } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Check, Star, Shield, Award, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const PRICE_IDS: Record<string, string> = {
+  basico: 'price_1TGkA6JRpc53eVmKCYLeNscU',
+  destaque: 'price_1TGkA6JRpc53eVmKJE8ff09p',
+  premium: 'price_1TGkA7JRpc53eVmKM0gNo3FZ'
+};
+
+// Use environment variable or relative URL
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 const PlanosMotoristas = () => {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
   useEffect(() => {
     document.title = 'Planos para Motoristas | Explore Aparecida';
   }, []);
 
-  const handleChoosePlan = (plano: string) => {
-    // Para simplificar, direciona para o cadastro passando o plano como query
-    window.location.href = `/cadastrar-negocio?tipo=motorista&plano=${plano}`;
+  const handleChoosePlan = async (plano: string) => {
+    const priceId = PRICE_IDS[plano];
+    if (!priceId) return;
+
+    setLoadingPlan(plano);
+    try {
+      const response = await fetch(`${API_BASE}/api/create-motorista-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priceId }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl; // Redireciona para o Stripe Checkout
+      } else {
+        throw new Error(data.error || 'Erro ao criar sessão');
+      }
+    } catch (error) {
+      console.error('Erro ao redirecionar para o Stripe:', error);
+      alert('Tivemos um problema ao conectar com o provedor de pagamentos. Tente novamente.');
+    } finally {
+      setLoadingPlan(null);
+    }
   };
 
   return (
@@ -62,9 +97,10 @@ const PlanosMotoristas = () => {
 
             <button 
               onClick={() => handleChoosePlan('basico')}
-              className="mt-auto w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold rounded-xl transition-colors"
+              disabled={loadingPlan === 'basico'}
+              className="mt-auto w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center"
             >
-              Escolher Plano
+              {loadingPlan === 'basico' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Escolher Plano'}
             </button>
           </div>
 
@@ -105,9 +141,10 @@ const PlanosMotoristas = () => {
 
             <button 
               onClick={() => handleChoosePlan('destaque')}
-              className="mt-auto w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all"
+              disabled={loadingPlan === 'destaque'}
+              className="mt-auto w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center"
             >
-              Escolher Plano
+              {loadingPlan === 'destaque' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Escolher Plano'}
             </button>
           </div>
 
@@ -151,9 +188,10 @@ const PlanosMotoristas = () => {
 
             <button 
               onClick={() => handleChoosePlan('premium')}
-              className="mt-auto w-full py-3 px-4 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-xl shadow-md transition-colors"
+              disabled={loadingPlan === 'premium'}
+              className="mt-auto w-full py-3 px-4 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-xl shadow-md transition-colors disabled:opacity-50 flex items-center justify-center"
             >
-              Escolher Plano
+              {loadingPlan === 'premium' ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Escolher Plano'}
             </button>
           </div>
 

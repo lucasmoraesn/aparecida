@@ -23,6 +23,7 @@ import HotelsNearBasilica from './pages/HotelsNearBasilica';
 import WhatToDoAparecida from './pages/WhatToDoAparecida';
 import MotoristasParticulares from './pages/MotoristasParticulares';
 import PlanosMotoristas from './pages/PlanosMotoristas';
+import CadastroSucessoMotorista from './pages/CadastroSucessoMotorista';
 import { supabase } from './lib/supabase';
 import { trackLogin } from './lib/analytics';
 
@@ -82,6 +83,7 @@ function App() {
         {/* Página de Motoristas Particulares */}
         <Route path="/motoristas-particulares" element={<MotoristasParticulares />} />
         <Route path="/planos-motoristas" element={<PlanosMotoristas />} />
+        <Route path="/cadastro-sucesso" element={<CadastroSucessoMotorista />} />
 
         {/* Páginas individuais de hotéis – ex: /hotel-rainha-do-brasil */}
         <Route path="/:slug" element={<HotelDetail />} />

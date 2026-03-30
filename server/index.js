@@ -910,6 +910,106 @@ app.post('/api/create-subscription', async (req, res) => {
   }
 });
 
+/* =============================
+   CRIAR ASSINATURA PARA MOTORISTAS (Fluxo Direto)
+============================= */
+app.post('/api/create-motorista-subscription', async (req, res) => {
+  try {
+    const { priceId } = req.body;
+    if (!priceId) return res.status(400).json({ error: 'priceId é obrigatório' });
+
+    // Usa o Origin do request para definir para onde redirecionar (vital p/ teste local)
+    const frontendUrl = req.headers.origin || process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    // Cria sessão de checkout apenas com o ID do Price
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{
+        price: priceId,
+        quantity: 1,
+      }],
+      success_url: `${frontendUrl}/cadastro-sucesso?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendUrl}/planos-motoristas`,
+    });
+
+    res.json({ success: true, checkoutUrl: session.url });
+  } catch (error) {
+    console.error("❌ Erro em create-motorista-subscription:", error);
+    res.status(500).json({ error: "Erro ao iniciar pagamento", details: error.message });
+  }
+});
+
+/* =============================
+   REGISTRAR MOTORISTA APÓS SUCESSO DO PAGAMENTO
+============================= */
+app.post('/api/register-motorista', async (req, res) => {
+  try {
+    const { sessionId, motoristaData } = req.body;
+    if (!sessionId || !motoristaData) {
+      return res.status(400).json({ error: 'sessionId e motoristaData são obrigatórios' });
+    }
+
+    console.log("🔍 Validando sessão Stripe para Motorista:", sessionId);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['line_items'] });
+    
+    if (!session || session.payment_status !== 'paid') {
+      return res.status(400).json({ error: 'Pagamento não confirmado ou sessão inválida' });
+    }
+
+    const priceId = session.line_items?.data[0]?.price?.id;
+    let destaque = false;
+    let verificado = false;
+    let planoNome = 'basico';
+
+    if (priceId === 'price_1TGkA6JRpc53eVmKJE8ff09p') {  // ID gerado no seu Stripe (Test Mode)
+      planoNome = 'destaque';
+      destaque = true;
+      verificado = true;
+    } else if (priceId === 'price_1TGkA7JRpc53eVmKM0gNo3FZ') {
+       planoNome = 'premium';
+       destaque = true;
+       verificado = true;
+    }
+
+    // Se o user usou o priceId_basico_e_premium fornecido antes:
+    // Pela regra de negócio, Premium também é destaque = true. 
+    // Vamos garantir no mínimo o basico, mas precisamos do frontend ou webhook no futuro se forem IDs iguais.
+    
+    // Inserir usando a SERVICE_KEY do Supabase para ignorar RLS
+    console.log("✅ Pagamento validado, criando motorista no banco...", { planoNome, destaque });
+    const { data, error } = await supabase
+      .from('motoristas')
+      .insert({
+        nome: motoristaData.nome,
+        whatsapp: motoristaData.whatsapp,
+        telefone: motoristaData.whatsapp, // Mesmo valor como fallback
+        veiculo: motoristaData.veiculo,
+        passageiros: motoristaData.passageiros,
+        cidades: motoristaData.cidades, // array ou string
+        descricao: motoristaData.descricao || '',
+        plano: planoNome,
+        destaque: destaque,
+        verificado: verificado,
+        ativo: true,
+        stripe_session_id: sessionId 
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ Erro ao inserir motorista no Supabase:", error);
+      return res.status(500).json({ error: "Erro ao salvar cadastro", details: error.message });
+    }
+
+    console.log("✅ Motorista cadastrado com sucesso:", data.id);
+    res.json({ success: true, motorista: data });
+  } catch (error) {
+    console.error("❌ Erro em register-motorista:", error);
+    res.status(500).json({ error: "Erro interno", details: error.message });
+  }
+});
+
 app.post('/api/test-plan-2', async (req, res) => {
   try {
     const { customer_email, business_id, plan_id } = req.body;
