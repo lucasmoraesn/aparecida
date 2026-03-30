@@ -21,6 +21,8 @@ import CookiePolicy from './pages/CookiePolicy';
 import HotelDetail from './pages/HotelDetail';
 import HotelsNearBasilica from './pages/HotelsNearBasilica';
 import WhatToDoAparecida from './pages/WhatToDoAparecida';
+import MotoristasParticulares from './pages/MotoristasParticulares';
+import PlanosMotoristas from './pages/PlanosMotoristas';
 import { supabase } from './lib/supabase';
 import { trackLogin } from './lib/analytics';
 
@@ -76,6 +78,10 @@ function App() {
 
         {/* Páginas SEO de turismo */}
         <Route path="/o-que-fazer-em-aparecida-sp" element={<WhatToDoAparecida />} />
+
+        {/* Página de Motoristas Particulares */}
+        <Route path="/motoristas-particulares" element={<MotoristasParticulares />} />
+        <Route path="/planos-motoristas" element={<PlanosMotoristas />} />
 
         {/* Páginas individuais de hotéis – ex: /hotel-rainha-do-brasil */}
         <Route path="/:slug" element={<HotelDetail />} />

@@ -148,15 +148,12 @@ const restaurants = [
 
 const Restaurants = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 page-container">
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col items-center justify-center text-center mb-12 w-full">
             <h1 className="text-4xl font-bold text-gray-800 mb-4">
               Restaurantes em Aparecida do Norte (SP)
-            </h1>
-            <h1 className="mt-12 text-3xl md:text-4xl font-bold text-gray-900 text-center mb-4">
-                    Restaurantes em Aparecida SP
             </h1>
             <p className="text-gray-600 text-lg max-w-3xl mx-auto text-center leading-relaxed px-4">
               Onde comer em Aparecida: restaurantes, lanchonetes e cafés próximos à Basílica,

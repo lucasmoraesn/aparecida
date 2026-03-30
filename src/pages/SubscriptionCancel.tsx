@@ -6,7 +6,7 @@ const SubscriptionCancel: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 page-container pb-8">
       <div className="max-w-2xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-lg p-8 text-center">
           <XCircle className="w-20 h-20 text-yellow-500 mx-auto mb-4" />

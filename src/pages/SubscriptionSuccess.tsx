@@ -193,7 +193,7 @@ const SubscriptionSuccess: React.FC = () => {
   const { status: paymentStatus, subscriptionId, customerEmail, amountTotal } = sessionData;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-16 px-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-16 px-4 page-container">
       <div className="max-w-md w-full my-8">
         <div className="bg-white rounded-2xl shadow-sm p-8">
           {/* Ícone de sucesso */}

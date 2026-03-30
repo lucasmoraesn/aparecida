@@ -27,6 +27,7 @@ const Header = () => {
     { to: '/restaurantes-em-aparecida-sp', label: 'Restaurantes' },
     { to: '/lojas-religiosas-em-aparecida-sp', label: 'Lojas' },
     { to: '/pontos-turisticos-em-aparecida-sp', label: 'Pontos Turísticos' },
+    { to: '/motoristas-particulares', label: 'Motoristas' },
     { to: '/eventos', label: 'Eventos' },
   ];
 
@@ -129,9 +130,11 @@ const Header = () => {
               >
                 Explore Aparecida
               </Link>
-              <span className={`text-xs sm:text-sm hidden md:block transition-colors duration-300 ${getSubtitleStyle()}`}>
-                Tudo o que você precisa saber antes de visitar a Casa da Mãe
-              </span>
+              {isHomePage && (
+                <span className={`text-xs sm:text-sm hidden md:block transition-colors duration-300 ${getSubtitleStyle()}`}>
+                  Tudo o que você precisa saber antes de visitar a Casa da Mãe
+                </span>
+              )}
             </div>
           </div>
 
@@ -141,7 +144,7 @@ const Header = () => {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`relative font-medium transition-all duration-300 group ${getNavLinkStyle()}`}
+                className={`relative font-medium transition-all duration-300 group whitespace-nowrap ${getNavLinkStyle()}`}
               >
                 {item.label}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>

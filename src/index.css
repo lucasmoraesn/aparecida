@@ -228,3 +228,8 @@ img {
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, var(--deep-gold), var(--accent-gold));
 }
+
+/* Container global para páginas internas (compensar header fixo) */
+.page-container {
+  padding-top: 90px;
+}

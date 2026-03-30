@@ -20,7 +20,7 @@ const Hotels = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 sm:pt-28">
+    <div className="min-h-screen bg-gray-50 page-container">
 
       {/* ── Banda branca: SEO header ───────────────────────────── */}
       <div className="bg-white shadow-sm">
