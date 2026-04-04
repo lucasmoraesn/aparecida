@@ -2,11 +2,43 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Car, Shield, Clock, Star } from 'lucide-react';
 import MotoristaCard from '../components/MotoristaCard';
-import { getMotoristasOrdenados } from '../data/motoristas';
+import { getMotoristasOrdenados, type Motorista } from '../data/motoristas';
+import { supabase } from '../lib/supabaseClient';
 
 const MotoristasParticulares = () => {
-  const motoristas = getMotoristasOrdenados();
+  const motoristasEstaticos = getMotoristasOrdenados();
+  const [motoristasDB, setMotoristasDB] = useState<Motorista[]>([]);
   const [busca, setBusca] = useState('');
+
+  useEffect(() => {
+    supabase
+      .from('motoristas')
+      .select('*')
+      .eq('ativo', true)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const formatados = data.map((m) => ({
+            ...m,
+            foto: m.foto_url || '',
+            cidades: Array.isArray(m.cidades)
+              ? m.cidades
+              : typeof m.cidades === 'string'
+              ? JSON.parse(m.cidades)
+              : [],
+          }));
+          // Ordena: premium → destaque → basico
+          formatados.sort((a: any, b: any) => {
+            const ordem: Record<string, number> = { premium: 0, destaque: 1, basico: 2 };
+            return (ordem[a.plano] ?? 2) - (ordem[b.plano] ?? 2);
+          });
+          setMotoristasDB(formatados);
+        }
+      });
+  }, []);
+
+  // Usa motoristas do banco se existirem; senão, usa os estáticos de demonstração
+  const motoristas = motoristasDB.length > 0 ? motoristasDB : motoristasEstaticos;
 
   // Filtrar motoristas por nome, cidade ou veículo
   const motoristasFiltrados = motoristas.filter((m) => {

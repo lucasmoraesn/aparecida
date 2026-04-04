@@ -2,12 +2,17 @@ export interface Motorista {
   id: string;
   nome: string;
   foto: string;
+  foto_url?: string;
   telefone: string;
+  whatsapp?: string;
   veiculo: string;
   passageiros: number;
-  cidades: string[];
+  cidades: string[] | string;
   descricao: string;
   destaque: boolean;
+  ativo?: boolean;
+  plano?: string;
+  verificado?: boolean;
 }
 
 export const motoristas: Motorista[] = [

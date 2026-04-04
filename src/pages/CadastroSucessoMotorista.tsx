@@ -16,6 +16,7 @@ const CadastroSucessoMotorista: React.FC = () => {
   const [cidades, setCidades] = useState('');
   const [descricao, setDescricao] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [foto, setFoto] = useState<File | null>(null);
 
   const sessionId = searchParams.get('session_id');
   const API_BASE = import.meta.env.VITE_API_URL || "https://aparecidadonortesp.com.br";
@@ -53,23 +54,25 @@ const CadastroSucessoMotorista: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // API call to the backend to register the driver
+      // Enviar via FormData (sem base64, sem limite de payload)
+      const formData = new FormData();
+      formData.append('sessionId', sessionId || '');
+      formData.append('motoristaData', JSON.stringify({
+        nome,
+        whatsapp,
+        veiculo,
+        passageiros: parseInt(passageiros),
+        cidades: cidades.split(',').map(c => c.trim()).filter(Boolean),
+        descricao,
+      }));
+      if (foto) {
+        formData.append('foto', foto);
+      }
+
       const response = await fetch(`${API_BASE}/api/register-motorista`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sessionId,
-          motoristaData: {
-            nome,
-            whatsapp,
-            veiculo,
-            passageiros: parseInt(passageiros),
-            cidades: cidades.split(',').map(c => c.trim()).filter(Boolean),
-            descricao
-          }
-        }),
+        body: formData,
+        // Sem Content-Type header — browser define automaticamente com boundary
       });
 
       const data = await response.json();
@@ -119,9 +122,9 @@ const CadastroSucessoMotorista: React.FC = () => {
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-green-600" strokeWidth={2.5} />
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Perfil Criado com Sucesso!</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Cadastro Recebido!</h1>
           <p className="text-gray-500 text-sm mb-8">
-            Seu pagamento foi confirmado e seu perfil de motorista já está ativo na plataforma.
+            Seus dados foram enviados com sucesso. Seu perfil está em análise e será aprovado em até 24 horas — você receberá um e-mail de confirmação.
           </p>
           <button onClick={() => navigate('/motoristas-particulares')} className="w-full bg-blue-600 text-white py-3.5 rounded-lg font-medium hover:bg-blue-700">
             Ver Página de Motoristas
@@ -137,10 +140,28 @@ const CadastroSucessoMotorista: React.FC = () => {
         <div className="bg-white rounded-2xl shadow-sm p-8">
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">Complete seu Perfil</h1>
           <p className="text-gray-500 text-sm mb-8">
-            Pagamento confirmado (ID: {sessionData.subscriptionId}). Agora preencha os dados que aparecerão na sua página.
+            Pagamento confirmado! Agora preencha os dados que aparecerão na sua página de motorista.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Foto do Perfil (opcional)</label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setFoto(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300"
+                          />
+                          {foto && (
+                            <div className="mt-2">
+                              <img
+                                src={URL.createObjectURL(foto)}
+                                alt="Pré-visualização da foto"
+                                className="h-24 rounded-lg object-cover border"
+                              />
+                            </div>
+                          )}
+                        </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
               <input type="text" required value={nome} onChange={e => setNome(e.target.value)}

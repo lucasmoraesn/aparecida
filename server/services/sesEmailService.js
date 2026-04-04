@@ -254,3 +254,105 @@ export async function sendNewsletterWelcomeEmail({ email }) {
     const { subject, html, text } = buildNewsletterWelcomeEmail({ email });
     return sendEmail({ to: email, subject, html, text });
 }
+
+/**
+ * Notifica o administrador que um novo motorista foi cadastrado e aguarda aprovação.
+ *
+ * @param {Object} params
+ * @param {string} params.nome     - Nome do motorista
+ * @param {string} params.whatsapp - WhatsApp do motorista
+ * @param {string} params.plano    - Plano contratado (basico/destaque/premium)
+ * @param {string} [params.email]  - E-mail do motorista (do Stripe)
+ */
+export async function sendNewMotoristaNotification({ nome, whatsapp, plano, email }) {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) {
+        console.warn('⚠️  [SES] ADMIN_EMAIL não configurado — notificação de motorista ignorada.');
+        return { success: false, error: 'ADMIN_EMAIL não configurado' };
+    }
+
+    const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const planoBadge = plano === 'premium' ? '⭐ Premium' : plano === 'destaque' ? '🔶 Destaque' : '🔵 Básico';
+    const subject = `🚗 Novo Motorista Aguardando Aprovação: ${nome}`;
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>Novo Motorista</title></head>
+<body style="font-family:Arial,sans-serif;background:#f5f5f5;padding:40px 0;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <div style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:24px;">🚗 Novo Motorista Cadastrado</h1>
+      <p style="margin:8px 0 0;color:#bfdbfe;font-size:14px;">Aguardando sua aprovação</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="font-size:15px;color:#374151;">Um novo motorista se cadastrou no <strong>Explore Aparecida</strong> e está aguardando aprovação.</p>
+      <table style="width:100%;background:#f8fafc;border-radius:6px;border-left:4px solid #3b82f6;margin:20px 0;">
+        <tr><td style="padding:20px;">
+          <p style="margin:0 0 8px;color:#6b7280;font-size:13px;"><strong>Nome:</strong></p>
+          <p style="margin:0 0 16px;font-size:16px;color:#111827;font-weight:600;">${nome}</p>
+          <p style="margin:0 0 8px;color:#6b7280;font-size:13px;"><strong>WhatsApp:</strong></p>
+          <p style="margin:0 0 16px;font-size:15px;color:#111827;">${whatsapp}</p>
+          ${email ? `<p style="margin:0 0 8px;color:#6b7280;font-size:13px;"><strong>E-mail:</strong></p><p style="margin:0 0 16px;font-size:15px;color:#111827;">${email}</p>` : ''}
+          <p style="margin:0 0 8px;color:#6b7280;font-size:13px;"><strong>Plano:</strong></p>
+          <p style="margin:0;font-size:16px;color:#111827;font-weight:600;">${planoBadge}</p>
+        </td></tr>
+      </table>
+      <p style="font-size:13px;color:#6b7280;margin:0;">Data do cadastro: ${now}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const text = `🚗 NOVO MOTORISTA — Explore Aparecida\n\nUm novo motorista aguarda aprovação:\n\nNome: ${nome}\nWhatsApp: ${whatsapp}\n${email ? `E-mail: ${email}\n` : ''}Plano: ${planoBadge}\n\nData: ${now}`;
+
+    return sendEmail({ to: adminEmail, subject, html, text });
+}
+
+/**
+ * Envia e-mail ao motorista informando que o perfil está em análise.
+ *
+ * @param {Object} params
+ * @param {string} params.nome  - Nome do motorista
+ * @param {string} params.email - E-mail do motorista
+ */
+export async function sendMotoristaAnaliseEmail({ nome, email }) {
+    if (!email) {
+        console.warn('⚠️  [SES] E-mail do motorista não informado — e-mail de análise ignorado.');
+        return { success: false, error: 'E-mail do motorista não informado' };
+    }
+
+    const subject = `Seu perfil está em análise — Explore Aparecida`;
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>Perfil em Análise</title></head>
+<body style="font-family:Arial,sans-serif;background:#f5f5f5;padding:40px 0;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <div style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);padding:32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:24px;">Perfil Recebido! ✅</h1>
+      <p style="margin:8px 0 0;color:#bfdbfe;font-size:14px;">Explore Aparecida</p>
+    </div>
+    <div style="padding:32px;">
+      <p style="font-size:16px;color:#374151;">Olá, <strong>${nome}</strong>!</p>
+      <p style="font-size:15px;color:#374151;line-height:1.6;">
+        Recebemos seu cadastro como motorista particular no <strong>Explore Aparecida</strong>.
+        Seu perfil está sendo analisado pela nossa equipe e em breve estará visível na plataforma.
+      </p>
+      <div style="background:#eff6ff;border-left:4px solid #3b82f6;border-radius:4px;padding:16px 20px;margin:24px 0;">
+        <p style="margin:0;font-size:14px;color:#1d4ed8;font-weight:600;">⏳ Prazo de análise: até 24 horas</p>
+        <p style="margin:8px 0 0;font-size:14px;color:#374151;">Assim que aprovado, você será notificado e seu perfil ficará disponível para os visitantes do site.</p>
+      </div>
+      <p style="font-size:14px;color:#6b7280;">Dúvidas? Entre em contato pelo WhatsApp ou responda este e-mail.</p>
+      <p style="font-size:14px;color:#374151;margin-top:24px;">Obrigado por fazer parte do Explore Aparecida! 🙏</p>
+    </div>
+    <div style="background:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="margin:0;font-size:12px;color:#9ca3af;">© Explore Aparecida — aparecidadonortesp.com.br</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const text = `Olá, ${nome}!\n\nRecebemos seu cadastro como motorista no Explore Aparecida.\nSeu perfil está em análise e será aprovado em até 24 horas.\n\nObrigado!\nEquipe Explore Aparecida`;
+
+    return sendEmail({ to: email, subject, html, text });
+}

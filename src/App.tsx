@@ -24,6 +24,7 @@ import WhatToDoAparecida from './pages/WhatToDoAparecida';
 import MotoristasParticulares from './pages/MotoristasParticulares';
 import PlanosMotoristas from './pages/PlanosMotoristas';
 import CadastroSucessoMotorista from './pages/CadastroSucessoMotorista';
+import AdminMotoristas from './pages/AdminMotoristas';
 import { supabase } from './lib/supabase';
 import { trackLogin } from './lib/analytics';
 
@@ -84,6 +85,7 @@ function App() {
         <Route path="/motoristas-particulares" element={<MotoristasParticulares />} />
         <Route path="/planos-motoristas" element={<PlanosMotoristas />} />
         <Route path="/cadastro-sucesso" element={<CadastroSucessoMotorista />} />
+        <Route path="/admin-motoristas" element={<AdminMotoristas />} />
 
         {/* Páginas individuais de hotéis – ex: /hotel-rainha-do-brasil */}
         <Route path="/:slug" element={<HotelDetail />} />

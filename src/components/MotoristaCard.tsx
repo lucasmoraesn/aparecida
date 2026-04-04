@@ -1,5 +1,5 @@
 import React from 'react';
-import { Car, Users, MapPin, Star, MessageCircle } from 'lucide-react';
+import { Car, Users, MapPin, Star, MessageCircle, Shield, Award } from 'lucide-react';
 import type { Motorista } from '../data/motoristas';
 
 interface MotoristaCardProps {
@@ -10,46 +10,77 @@ const MotoristaCard: React.FC<MotoristaCardProps> = ({ motorista }) => {
   const whatsappMessage = encodeURIComponent(
     'Olá, encontrei você no site aparecidadonortesp.com.br'
   );
-  const whatsappLink = `https://wa.me/${motorista.telefone}?text=${whatsappMessage}`;
+  const telefone = motorista.whatsapp || motorista.telefone;
+  const whatsappLink = `https://wa.me/${telefone}?text=${whatsappMessage}`;
+
+  const isPremium = motorista.plano === 'premium';
+  const isDestaque = motorista.plano === 'destaque' || isPremium;
+
+  // Limita cidades conforme plano
+  const cidades = Array.isArray(motorista.cidades) ? motorista.cidades : [];
+  const maxCidades = isPremium ? 10 : isDestaque ? 6 : 3;
+  const cidadesExibidas = cidades.slice(0, maxCidades);
 
   return (
     <div
       className={`
         relative bg-white rounded-2xl shadow-lg overflow-hidden border
         transition-all duration-300 hover:shadow-2xl hover:-translate-y-1
-        ${motorista.destaque
+        ${isPremium
+          ? 'border-purple-300 ring-2 ring-purple-200/60'
+          : isDestaque
           ? 'border-amber-300 ring-2 ring-amber-200/60'
           : 'border-gray-200'
         }
       `}
     >
-      {/* Badge de Destaque */}
-      {motorista.destaque && (
+      {/* Badge Premium */}
+      {isPremium && (
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+          <Award className="w-3.5 h-3.5 fill-current" />
+          Recomendado
+        </div>
+      )}
+
+      {/* Badge Destaque */}
+      {isDestaque && !isPremium && (
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
           <Star className="w-3.5 h-3.5 fill-current" />
           Destaque
         </div>
       )}
 
-      {/* Foto do Motorista */}
+      {/* Foto */}
       <div className="relative h-56 sm:h-60 overflow-hidden bg-gray-100">
-        <img
-          src={motorista.foto}
-          alt={`Motorista particular ${motorista.nome} em Aparecida do Norte`}
-          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-          loading="lazy"
-        />
+        {(motorista.foto_url || motorista.foto) ? (
+          <img
+            src={motorista.foto_url || motorista.foto}
+            alt={`Motorista particular ${motorista.nome} em Aparecida do Norte`}
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <Car className="w-16 h-16 text-gray-300" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-        <div className="absolute bottom-4 left-4">
+        <div className="absolute bottom-4 left-4 flex items-center gap-2">
           <h3 className="text-xl font-bold text-white drop-shadow-lg">
             {motorista.nome}
           </h3>
+          {/* Selo Verificado (Destaque e Premium) */}
+          {(motorista.verificado || isDestaque) && (
+            <span className="flex items-center gap-1 bg-green-500/90 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+              <Shield className="w-3 h-3" />
+              Verificado
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Conteúdo do Card */}
+      {/* Conteúdo */}
       <div className="p-5 sm:p-6">
-        {/* Informações do Veículo */}
         <div className="space-y-3 mb-4">
           <div className="flex items-center gap-3 text-gray-700">
             <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 text-blue-600 shrink-0">
@@ -70,7 +101,7 @@ const MotoristaCard: React.FC<MotoristaCardProps> = ({ motorista }) => {
               <MapPin className="w-4.5 h-4.5" />
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {motorista.cidades.map((cidade) => (
+              {cidadesExibidas.map((cidade) => (
                 <span
                   key={cidade}
                   className="inline-block text-xs font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full"
@@ -82,12 +113,13 @@ const MotoristaCard: React.FC<MotoristaCardProps> = ({ motorista }) => {
           </div>
         </div>
 
-        {/* Descrição */}
-        <p className="text-sm text-gray-600 leading-relaxed mb-5">
-          {motorista.descricao}
-        </p>
+        {/* Descrição — só Destaque e Premium */}
+        {(isDestaque || isPremium) && motorista.descricao && (
+          <p className="text-sm text-gray-600 leading-relaxed mb-5">
+            {motorista.descricao}
+          </p>
+        )}
 
-        {/* Botão WhatsApp */}
         <a
           href={whatsappLink}
           target="_blank"

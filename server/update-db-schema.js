@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   'https://rhkwickoweflamflgzeo.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoa3dpY2tvd2VmbGFtZmxnemVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDc2MjI4MywiZXhwIjoyMDcwMzM4MjgzfQ.wNurKd9yi4X9ylkGkanHdRHBxCOlcLxipEoKo0gl4U4'
+  process.env.SUPABASE_SERVICE_KEY
 );
 
 async function updateWithRawSQL() {

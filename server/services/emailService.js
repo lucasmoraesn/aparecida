@@ -15,4 +15,6 @@ export {
   sendNewSubscriptionNotification,
   sendSubscriptionConfirmationToCustomer,
   sendNewsletterWelcomeEmail,
+  sendNewMotoristaNotification,
+  sendMotoristaAnaliseEmail,
 } from './sesEmailService.js';

@@ -8,8 +8,11 @@ import { dirname, join } from 'path';
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import logger, { requestLoggerMiddleware } from "./services/logger.js";
-import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer } from "./services/emailService.js";
+import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer, sendNewMotoristaNotification, sendMotoristaAnaliseEmail } from "./services/emailService.js";
 import stripeWebhookRouter from './routes/stripeWebhook.js';
+import multer from 'multer';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 import { scannerBlockerMiddleware } from "./middleware/scannerBlocker.js";
 import healthRouter from './routes/health.js';
 
@@ -145,6 +148,9 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
         if (findError || !subscription) {
           console.error('❌ Assinatura não encontrada para session:', session.id);
+          if (findError) {
+            console.error('   Erro detalhado do Supabase:', JSON.stringify(findError, null, 2));
+          }
           console.error('   Erro Supabase:', findError);
           break;
         }
@@ -430,11 +436,16 @@ const allowedOrigins = [
   // Production
   'https://aparecidadonortesp.com.br',
   'https://www.aparecidadonortesp.com.br',
-  // Development (Vite)
-  'http://localhost:5173',
-  // Fallback para dev se necessário
-  process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : undefined
-].filter(Boolean); // Remove undefined
+  // Development (Vite usa 5173, 5174, 5175... se a porta estiver ocupada)
+  ...(process.env.NODE_ENV === 'development' || !process.env.NODE_ENV ? [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176',
+    'http://localhost:5177',
+  ] : []),
+].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -453,7 +464,8 @@ app.use(cors({
     'Content-Type',
     'Authorization',
     'Stripe-Signature',  // ← Para webhook Stripe
-    'X-Requested-With'   // ← XMLHttpRequest
+    'X-Requested-With',  // ← XMLHttpRequest
+    'X-Admin-Password'   // ← Admin endpoints
   ],
   exposedHeaders: [
     'X-RateLimit-Limit',      // ← Rate limit info
@@ -915,11 +927,14 @@ app.post('/api/create-subscription', async (req, res) => {
 ============================= */
 app.post('/api/create-motorista-subscription', async (req, res) => {
   try {
-    const { priceId } = req.body;
+    const { priceId, successUrl, cancelUrl } = req.body;
     if (!priceId) return res.status(400).json({ error: 'priceId é obrigatório' });
 
-    // Usa o Origin do request para definir para onde redirecionar (vital p/ teste local)
+    // Usa o Url passado pelo frontend (no caso do teste vem puro localhost), fallback para o Origin ou o FRONTEND_URL
     const frontendUrl = req.headers.origin || process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    const safeSuccessUrl = successUrl || `${frontendUrl}/cadastro-sucesso?session_id={CHECKOUT_SESSION_ID}`;
+    const safeCancelUrl = cancelUrl || `${frontendUrl}/planos-motoristas`;
 
     // Cria sessão de checkout apenas com o ID do Price
     const session = await stripe.checkout.sessions.create({
@@ -929,8 +944,8 @@ app.post('/api/create-motorista-subscription', async (req, res) => {
         price: priceId,
         quantity: 1,
       }],
-      success_url: `${frontendUrl}/cadastro-sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${frontendUrl}/planos-motoristas`,
+      success_url: safeSuccessUrl,
+      cancel_url: safeCancelUrl,
     });
 
     res.json({ success: true, checkoutUrl: session.url });
@@ -943,9 +958,21 @@ app.post('/api/create-motorista-subscription', async (req, res) => {
 /* =============================
    REGISTRAR MOTORISTA APÓS SUCESSO DO PAGAMENTO
 ============================= */
-app.post('/api/register-motorista', async (req, res) => {
+app.post('/api/register-motorista', (req, res, next) => {
+  upload.single('foto')(req, res, (err) => {
+    if (err) {
+      console.error('❌ Multer erro:', err.message);
+      return res.status(400).json({ error: 'Erro no upload do arquivo: ' + err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
-    const { sessionId, motoristaData } = req.body;
+    const sessionId = req.body.sessionId;
+    const rawMotoristaData = req.body.motoristaData;
+    const motoristaData = typeof rawMotoristaData === 'string'
+      ? JSON.parse(rawMotoristaData)
+      : rawMotoristaData;
     if (!sessionId || !motoristaData) {
       return res.status(400).json({ error: 'sessionId e motoristaData são obrigatórios' });
     }
@@ -962,20 +989,47 @@ app.post('/api/register-motorista', async (req, res) => {
     let verificado = false;
     let planoNome = 'basico';
 
-    if (priceId === 'price_1TGkA6JRpc53eVmKJE8ff09p') {  // ID gerado no seu Stripe (Test Mode)
+    if (priceId === 'price_1TGkA6JRpc53eVmKCYLeNscU') {  // Básico R$39,90
+      planoNome = 'basico';
+      destaque = false;
+      verificado = false;
+    } else if (priceId === 'price_1TGkA6JRpc53eVmKJE8ff09p') {  // Destaque R$49,90
       planoNome = 'destaque';
       destaque = true;
       verificado = true;
-    } else if (priceId === 'price_1TGkA7JRpc53eVmKM0gNo3FZ') {
-       planoNome = 'premium';
-       destaque = true;
-       verificado = true;
+    } else if (priceId === 'price_1TGkA7JRpc53eVmKM0gNo3FZ') {  // Premium R$89,90
+      planoNome = 'premium';
+      destaque = true;
+      verificado = true;
+    }
+    
+    // Upload da foto no backend usando service role (bypassa RLS)
+    let fotoUrl = '';
+    if (req.file) {
+      try {
+        const ext = req.file.originalname.split('.').pop() || 'jpg';
+        const fileName = `motorista_${Date.now()}.${ext}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('motoristas-fotos')
+          .upload(fileName, req.file.buffer, {
+            contentType: req.file.mimetype,
+            cacheControl: '3600',
+            upsert: true
+          });
+        if (uploadError) {
+          console.error('❌ Erro ao fazer upload da foto:', uploadError);
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from('motoristas-fotos')
+            .getPublicUrl(fileName);
+          fotoUrl = publicUrlData?.publicUrl || '';
+          console.log('✅ Foto enviada ao Storage:', fotoUrl);
+        }
+      } catch (fotoError) {
+        console.error('❌ Erro inesperado no upload da foto:', fotoError);
+      }
     }
 
-    // Se o user usou o priceId_basico_e_premium fornecido antes:
-    // Pela regra de negócio, Premium também é destaque = true. 
-    // Vamos garantir no mínimo o basico, mas precisamos do frontend ou webhook no futuro se forem IDs iguais.
-    
     // Inserir usando a SERVICE_KEY do Supabase para ignorar RLS
     console.log("✅ Pagamento validado, criando motorista no banco...", { planoNome, destaque });
     const { data, error } = await supabase
@@ -988,10 +1042,11 @@ app.post('/api/register-motorista', async (req, res) => {
         passageiros: motoristaData.passageiros,
         cidades: motoristaData.cidades, // array ou string
         descricao: motoristaData.descricao || '',
+        foto_url: fotoUrl,
         plano: planoNome,
         destaque: destaque,
         verificado: verificado,
-        ativo: true,
+        ativo: false, // Aguarda aprovação do administrador
         stripe_session_id: sessionId 
       })
       .select()
@@ -1003,12 +1058,91 @@ app.post('/api/register-motorista', async (req, res) => {
     }
 
     console.log("✅ Motorista cadastrado com sucesso:", data.id);
+
+    // Notificações por e-mail (sem bloquear a resposta)
+    const driverEmail = session.customer_details?.email;
+
+    try {
+      await sendNewMotoristaNotification({
+        nome: motoristaData.nome,
+        whatsapp: motoristaData.whatsapp,
+        plano: planoNome,
+        email: driverEmail,
+      });
+      console.log('✅ E-mail de notificação enviado ao admin');
+    } catch (emailErr) {
+      console.error('⚠️ Erro ao enviar e-mail ao admin:', emailErr.message);
+    }
+
+    try {
+      if (driverEmail) {
+        await sendMotoristaAnaliseEmail({ nome: motoristaData.nome, email: driverEmail });
+        console.log('✅ E-mail de análise enviado ao motorista:', driverEmail);
+      }
+    } catch (emailErr) {
+      console.error('⚠️ Erro ao enviar e-mail de análise ao motorista:', emailErr.message);
+    }
+
     res.json({ success: true, motorista: data });
   } catch (error) {
     console.error("❌ Erro em register-motorista:", error);
     res.status(500).json({ error: "Erro interno", details: error.message });
   }
 });
+
+// ─── ADMIN: Motoristas Pendentes ──────────────────────────────────────────────
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+function checkAdminPassword(req, res) {
+  const senha = req.headers['x-admin-password'] || req.body?.adminPassword;
+  if (senha !== ADMIN_PASSWORD) {
+    res.status(401).json({ error: 'Não autorizado' });
+    return false;
+  }
+  return true;
+}
+
+app.get('/api/admin/motoristas-pendentes', async (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  try {
+    const { data, error } = await supabase
+      .from('motoristas')
+      .select('id, nome, foto_url, whatsapp, telefone, veiculo, passageiros, cidades, descricao, plano, stripe_session_id')
+      .eq('ativo', false)
+      .order('id', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, motoristas: data });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/aprovar-motorista', async (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ error: 'id obrigatório' });
+  try {
+    const { error } = await supabase.from('motoristas').update({ ativo: true }).eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/rejeitar-motorista', async (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ error: 'id obrigatório' });
+  try {
+    const { error } = await supabase.from('motoristas').delete().eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 app.post('/api/test-plan-2', async (req, res) => {
   try {

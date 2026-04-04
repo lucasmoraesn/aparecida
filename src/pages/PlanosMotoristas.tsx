@@ -29,7 +29,11 @@ const PlanosMotoristas = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ 
+          priceId,
+          successUrl: `${window.location.origin}/cadastro-sucesso?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${window.location.origin}/planos-motoristas`
+        }),
       });
 
       const data = await response.json();
