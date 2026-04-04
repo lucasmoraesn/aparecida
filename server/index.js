@@ -1144,6 +1144,22 @@ app.post('/api/admin/rejeitar-motorista', async (req, res) => {
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─── Endpoint público: lista motoristas aprovados ─────────────────────────────
+app.get('/api/motoristas', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('motoristas')
+      .select('id, nome, foto_url, whatsapp, veiculo, passageiros, cidades, descricao, plano, verificado')
+      .eq('ativo', true)
+      .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, motoristas: data || [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
 app.post('/api/test-plan-2', async (req, res) => {
   try {
     const { customer_email, business_id, plan_id } = req.body;

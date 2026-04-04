@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Search, Car, Shield, Clock, Star } from 'lucide-react';
 import MotoristaCard from '../components/MotoristaCard';
 import { getMotoristasOrdenados, type Motorista } from '../data/motoristas';
-import { supabase } from '../lib/supabaseClient';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const MotoristasParticulares = () => {
   const motoristasEstaticos = getMotoristasOrdenados();
@@ -11,14 +12,11 @@ const MotoristasParticulares = () => {
   const [busca, setBusca] = useState('');
 
   useEffect(() => {
-    supabase
-      .from('motoristas')
-      .select('*')
-      .eq('ativo', true)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          const formatados = data.map((m) => ({
+    fetch(`${API_BASE}/api/motoristas`)
+      .then((r) => r.json())
+      .then(({ motoristas }) => {
+        if (motoristas && motoristas.length > 0) {
+          const formatados = motoristas.map((m: any) => ({
             ...m,
             foto: m.foto_url || '',
             cidades: Array.isArray(m.cidades)
@@ -34,7 +32,8 @@ const MotoristasParticulares = () => {
           });
           setMotoristasDB(formatados);
         }
-      });
+      })
+      .catch((e) => console.error('Erro ao carregar motoristas:', e));
   }, []);
 
   // Usa motoristas do banco se existirem; senão, usa os estáticos de demonstração
