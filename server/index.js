@@ -147,11 +147,25 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           .single();
 
         if (findError || !subscription) {
-          console.error('❌ Assinatura não encontrada para session:', session.id);
-          if (findError) {
-            console.error('   Erro detalhado do Supabase:', JSON.stringify(findError, null, 2));
+          // Verificar se é um checkout de motorista
+          if (session.metadata?.type === 'motorista' && session.subscription) {
+            console.log('🚗 Checkout de motorista detectado — salvando stripe_subscription_id');
+            const { error: motoErr } = await supabase
+              .from('motoristas')
+              .update({ stripe_subscription_id: session.subscription })
+              .eq('stripe_session_id', session.id);
+            if (motoErr) {
+              console.error('❌ Erro ao salvar stripe_subscription_id no motorista:', motoErr);
+            } else {
+              console.log('✅ stripe_subscription_id salvo no motorista para session:', session.id);
+            }
+          } else {
+            console.error('❌ Assinatura não encontrada para session:', session.id);
+            if (findError) {
+              console.error('   Erro detalhado do Supabase:', JSON.stringify(findError, null, 2));
+            }
+            console.error('   Erro Supabase:', findError);
           }
-          console.error('   Erro Supabase:', findError);
           break;
         }
 
@@ -283,22 +297,42 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 
         if (findError || !subscription) {
           console.error('❌ Assinatura não encontrada:', stripeSubscription.id);
-          break;
+          // Mesmo sem encontrar no subscriptions, tentar desativar motorista pelo stripe_subscription_id
+        } else {
+          // Atualizar status para cancelado
+          const { error: updateError } = await supabase
+            .from('subscriptions')
+            .update({
+              status: 'cancelled',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', subscription.id);
+
+          if (updateError) {
+            console.error('❌ Erro ao cancelar assinatura:', updateError);
+          } else {
+            console.log(`✅ Assinatura ${subscription.id} CANCELADA`);
+          }
         }
 
-        // Atualizar status para cancelado
-        const { error: updateError } = await supabase
-          .from('subscriptions')
-          .update({
-            status: 'cancelled',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', subscription.id);
+        // Desativar motorista vinculado (independente de ter assinatura no banco)
+        const { data: motorista, error: motoFindErr } = await supabase
+          .from('motoristas')
+          .select('id, nome')
+          .eq('stripe_subscription_id', stripeSubscription.id)
+          .single();
 
-        if (updateError) {
-          console.error('❌ Erro ao cancelar assinatura:', updateError);
-        } else {
-          console.log(`✅ Assinatura ${subscription.id} CANCELADA`);
+        if (!motoFindErr && motorista) {
+          const { error: motoDeactivateErr } = await supabase
+            .from('motoristas')
+            .update({ ativo: false })
+            .eq('id', motorista.id);
+
+          if (motoDeactivateErr) {
+            console.error('❌ Erro ao desativar motorista:', motoDeactivateErr);
+          } else {
+            console.log(`✅ Motorista ${motorista.nome} desativado por cancelamento de assinatura`);
+          }
         }
 
         break;
@@ -327,9 +361,33 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           .single();
 
         if (findError || !subscription) {
-          console.error('❌ Assinatura não encontrada no banco para subscription_id:', invoice.subscription);
-          console.error('   Erro Supabase:', findError);
-          console.log('💡 DICA: Verifique se checkout.session.completed foi processado primeiro');
+          // Verificar se é pagamento de motorista
+          const { data: motorista, error: motoFindErr } = await supabase
+            .from('motoristas')
+            .select('id, nome, ativo')
+            .eq('stripe_subscription_id', invoice.subscription)
+            .single();
+
+          if (!motoFindErr && motorista) {
+            if (!motorista.ativo) {
+              const { error: motoActivateErr } = await supabase
+                .from('motoristas')
+                .update({ ativo: true })
+                .eq('id', motorista.id);
+
+              if (motoActivateErr) {
+                console.error('❌ Erro ao reativar motorista:', motoActivateErr);
+              } else {
+                console.log(`✅ Motorista ${motorista.nome} REATIVADO após pagamento bem-sucedido`);
+              }
+            } else {
+              console.log(`ℹ️ Motorista ${motorista.nome} já estava ativo`);
+            }
+          } else {
+            console.error('❌ Assinatura não encontrada no banco para subscription_id:', invoice.subscription);
+            console.error('   Erro Supabase:', findError);
+            console.log('💡 DICA: Verifique se checkout.session.completed foi processado primeiro');
+          }
           break;
         }
 
@@ -946,6 +1004,7 @@ app.post('/api/create-motorista-subscription', async (req, res) => {
       }],
       success_url: safeSuccessUrl,
       cancel_url: safeCancelUrl,
+      metadata: { type: 'motorista' },
     });
 
     res.json({ success: true, checkoutUrl: session.url });
@@ -1109,6 +1168,21 @@ app.get('/api/admin/motoristas-pendentes', async (req, res) => {
       .from('motoristas')
       .select('id, nome, foto_url, whatsapp, telefone, veiculo, passageiros, cidades, descricao, plano, stripe_session_id')
       .eq('ativo', false)
+      .order('id', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, motoristas: data });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/motoristas-ativos', async (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  try {
+    const { data, error } = await supabase
+      .from('motoristas')
+      .select('id, nome, foto_url, whatsapp, telefone, veiculo, passageiros, cidades, descricao, plano, stripe_session_id')
+      .eq('ativo', true)
       .order('id', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true, motoristas: data });

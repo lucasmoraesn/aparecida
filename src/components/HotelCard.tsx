@@ -6,9 +6,10 @@ import { generateCompleteSrcSet } from '../lib/imageUtils';
 
 interface HotelCardProps {
   hotel: Hotel;
+  compact?: boolean;
 }
 
-const HotelCard: React.FC<HotelCardProps> = ({ hotel }) => {
+const HotelCard: React.FC<HotelCardProps> = ({ hotel, compact = false }) => {
   const whatsappURL = `https://wa.me/${hotel.whatsapp}?text=${encodeURIComponent(
     `Olá! Vi o ${hotel.name} no portal Aparecida do Norte e gostaria de mais informações sobre hospedagem.`
   )}`;
@@ -19,7 +20,12 @@ const HotelCard: React.FC<HotelCardProps> = ({ hotel }) => {
   return (
     <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200">
       {/* Cover image */}
-      <div className="h-44 overflow-hidden bg-gray-100">
+      <div className={`${compact ? 'h-36' : 'h-44'} overflow-hidden bg-gray-100 relative`}>
+        {compact && (
+          <span className="absolute top-2 left-2 z-10 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full tracking-wide">
+            Exemplo
+          </span>
+        )}
         <img
           srcSet={generateCompleteSrcSet(hotel.image)}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

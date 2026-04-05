@@ -235,7 +235,7 @@ const Restaurants = () => {
                   </a>
                   {restaurant.whatsapp && (
                     <a
-                      href={`https://wa.me/${restaurant.whatsapp}`}
+                      href={`https://wa.me/${restaurant.whatsapp}?text=${encodeURIComponent('Olá, vim do site Aparecida do Norte Tour e gostaria de ver o cardápio...')}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
