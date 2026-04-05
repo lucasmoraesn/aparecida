@@ -34,6 +34,14 @@ const MotoristaCard: React.FC<MotoristaCardProps> = ({ motorista }) => {
         }
       `}
     >
+      {/* Badge Verificado — canto superior esquerdo */}
+      {(motorista.verificado || isDestaque) && (
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-green-500/90 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow">
+          <Shield className="w-3 h-3" />
+          Verificado
+        </div>
+      )}
+
       {/* Badge Premium */}
       {isPremium && (
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
@@ -69,13 +77,6 @@ const MotoristaCard: React.FC<MotoristaCardProps> = ({ motorista }) => {
           <h3 className="text-xl font-bold text-white drop-shadow-lg">
             {motorista.nome}
           </h3>
-          {/* Selo Verificado (Destaque e Premium) */}
-          {(motorista.verificado || isDestaque) && (
-            <span className="flex items-center gap-1 bg-green-500/90 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-              <Shield className="w-3 h-3" />
-              Verificado
-            </span>
-          )}
         </div>
       </div>
 
