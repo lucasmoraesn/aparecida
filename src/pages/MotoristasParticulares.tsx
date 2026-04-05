@@ -25,9 +25,9 @@ const MotoristasParticulares = () => {
               ? JSON.parse(m.cidades)
               : [],
           }));
-          // Ordena: premium → destaque → basico
+          // Ordena: destaque → premium → basico
           formatados.sort((a: any, b: any) => {
-            const ordem: Record<string, number> = { premium: 0, destaque: 1, basico: 2 };
+            const ordem: Record<string, number> = { destaque: 0, premium: 1, basico: 2 };
             return (ordem[a.plano] ?? 2) - (ordem[b.plano] ?? 2);
           });
           setMotoristasDB(formatados);
