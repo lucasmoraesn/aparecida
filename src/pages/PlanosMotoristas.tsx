@@ -3,9 +3,9 @@ import { Check, Star, Shield, Award, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const PRICE_IDS: Record<string, string> = {
-  basico: 'price_1TGkA6JRpc53eVmKCYLeNscU',
-  destaque: 'price_1TGkA6JRpc53eVmKJE8ff09p',
-  premium: 'price_1TGkA7JRpc53eVmKM0gNo3FZ'
+  basico: 'price_1TIwRWJRpc53eVmKjZLUHo0z',
+  destaque: 'price_1TIwRWJRpc53eVmKtX9SyYOl',
+  premium: 'price_1TIwRXJRpc53eVmKREwQNMjt'
 };
 
 // Use environment variable or relative URL
