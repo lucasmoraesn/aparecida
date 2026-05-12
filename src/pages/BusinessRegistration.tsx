@@ -75,7 +75,7 @@ const BusinessRegistration: React.FC = () => {
     switch (plan.name.toLowerCase()) {
       case 'básico':
         return 5;
-      case 'intermediário':
+      case 'destaque':
         return 10;
       case 'premium':
         return Infinity; // Ilimitado
@@ -121,7 +121,7 @@ const BusinessRegistration: React.FC = () => {
           },
           {
             id: '2',
-            name: 'Intermediário',
+            name: 'Destaque',
             price: 99.9,
             features: [
               'Perfil completo do estabelecimento',

@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import BookingSearch from '../components/BookingSearch';
+import { useEffect } from 'react';
+import { HotelBookingSection } from '../components/booking';
 import HotelCard from '../components/HotelCard';
 import { hotels } from '../data/hotels';
 
@@ -17,23 +16,27 @@ const Hotels = () => {
     };
   }, []);
 
+  const handleBookingSubmit = (_data: {
+    checkIn: string;
+    checkOut: string;
+    rooms: number;
+    guests: number;
+  }) => {
+    // Redirecionar para Booking com os parâmetros
+    const bookingAffiliateURL = 'https://www.awin1.com/cread.php?awinmid=18120&awinaffid=2711492&ued=https%3A%2F%2Fwww.booking.com%2Fcity%2Fbr%2Faparecida.pt-br.html';
+    window.open(bookingAffiliateURL, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-white page-container">
 
-      {/* ── HERO: busca principal via Booking ─────────────────── */}
-      <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-blue-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight">
-              Encontre hotéis em Aparecida perto da Basílica
-            </h1>
-            <p className="mt-3 text-blue-100 text-base sm:text-lg max-w-xl mx-auto">
-              Compare preços em dezenas de hotéis via Booking — escolha as datas e veja disponibilidade em segundos.
-            </p>
-          </div>
-          <BookingSearch />
-        </div>
-      </div>
+      {/* ── HERO + faixa de reserva (layout Figma-style) ───────────────── */}
+      <HotelBookingSection
+        title="Encontre hotéis em Aparecida perto da Basílica"
+        subtitle="Compare preços em dezenas de hotéis via Booking — escolha as datas e veja disponibilidade em segundos."
+        backgroundImageUrl="/images/aparecidafundo.png"
+        onSubmit={handleBookingSubmit}
+      />
 
       {/* ── Texto SEO ─────────────────────────────────────────── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-gray-700 space-y-4 leading-relaxed">
@@ -88,24 +91,6 @@ const Hotels = () => {
           <p className="text-gray-700">
             Para romarias, famílias e grupos, opções econômicas próximas ao centro podem oferecer ótimo custo-benefício. Verifique sempre as comodidades mais importantes para sua viagem e utilize os links para conferir preços atualizados e avaliações reais.
           </p>
-        </section>
-
-        {/* CTA menor — não compete com a busca principal */}
-        <section aria-labelledby="cta-owners" className="mb-16">
-          <div className="bg-green-600 rounded-xl p-6 text-center">
-            <h2 id="cta-owners" className="text-xl font-bold text-white mb-2">
-              Tem um hotel em Aparecida?
-            </h2>
-            <p className="text-green-100 text-sm mb-4 max-w-md mx-auto">
-              Cadastre gratuitamente e apareça para milhares de peregrinos que visitam a cidade todos os anos.
-            </p>
-            <Link
-              to="/cadastrar-negocio"
-              className="inline-flex items-center justify-center bg-white text-green-700 hover:bg-green-50 font-bold text-sm px-6 py-3 rounded-lg transition-colors shadow"
-            >
-              Cadastrar meu hotel
-            </Link>
-          </div>
         </section>
       </div>
     </div>

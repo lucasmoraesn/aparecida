@@ -72,7 +72,7 @@ const PlanosMotoristas = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 flex flex-col items-center hover:shadow-md transition-shadow">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Básico</h3>
             <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-extrabold text-gray-900">R$ 39,90</span>
+              <span className="text-4xl font-extrabold text-gray-900">R$ 49,90</span>
               <span className="text-gray-500">/mês</span>
             </div>
             
@@ -116,7 +116,7 @@ const PlanosMotoristas = () => {
             
             <h3 className="text-xl font-semibold text-blue-600 mb-2">Destaque</h3>
             <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-extrabold text-gray-900">R$ 49,90</span>
+              <span className="text-4xl font-extrabold text-gray-900">R$ 99,90</span>
               <span className="text-gray-500">/mês</span>
             </div>
             
@@ -159,7 +159,7 @@ const PlanosMotoristas = () => {
               <Award className="w-5 h-5" /> Premium
             </h3>
             <div className="flex items-baseline gap-1 mb-6 text-white">
-              <span className="text-4xl font-extrabold">R$ 89,90</span>
+              <span className="text-4xl font-extrabold">R$ 199,90</span>
               <span className="text-slate-400">/mês</span>
             </div>
             

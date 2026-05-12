@@ -88,63 +88,8 @@ const restaurants = [
     specialties: ["Prato feito", "Saladas", "Sobremesas"],
     image: "https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=800"
   },
-  {
-    id: 7,
-    name: "Café Mariana",
-    description: "Café especializado com doces caseiros e ambiente aconchegante.",
-    address: "Av. Basílica, 654 - Centro, Aparecida - SP",
-    phone: "(12) 3104-2005",
-    whatsapp: "",
-    rating: 4.8,
-    cuisine: "Café",
-    priceRange: "R$ 10-25",
-    hours: "07:00 - 19:00",
-    specialties: ["Café expresso", "Bolo de fubá", "Pão de queijo"],
-    image: "https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 8,
-    name: "Churrascaria São José",
-    description: "Churrascaria tradicional com carnes nobres e buffet completo.",
-    address: "Rua da Fé, 987 - Centro, Aparecida - SP",
-    phone: "(12) 3104-2006",
-    whatsapp: "",
-    rating: 4.3,
-    cuisine: "Churrasco",
-    priceRange: "R$ 50-80",
-    hours: "11:30 - 15:00 / 19:00 - 23:00",
-    specialties: ["Picanha", "Costela", "Linguiça"],
-    image: "https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 9,
-    name: "Sorveteria Nossa Senhora",
-    description: "Sorveteria artesanal com sabores tradicionais e especiais da região.",
-    address: "Av. Mariana, 147 - Centro, Aparecida - SP",
-    phone: "(12) 3104-2007",
-    whatsapp: "",
-    rating: 4.6,
-    cuisine: "Sorvetes",
-    priceRange: "R$ 8-20",
-    hours: "10:00 - 22:00",
-    specialties: ["Sorvete de creme", "Açaí", "Milkshake"],
-    image: "https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=800"
-  },
-  {
-    id: 10,
-    name: "Restaurante Familiar",
-    description: "Restaurante com pratos caseiros e ambiente acolhedor para toda família.",
-    address: "Rua São José, 258 - Centro, Aparecida - SP",
-    phone: "(12) 3104-2008",
-    whatsapp: "",
-    rating: 4.1,
-    cuisine: "Caseira",
-    priceRange: "R$ 25-45",
-    hours: "11:00 - 21:00",
-    specialties: ["Frango caipira", "Arroz carreteiro", "Doce de leite"],
-    image: "https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=800"
-  }
 ];
+
 
 const Restaurants = () => {
   return (
@@ -249,39 +194,6 @@ const Restaurants = () => {
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <section aria-labelledby="restaurants-partners" className="mb-16">
-          <div className="flex items-center justify-between mb-6">
-            <h2 id="restaurants-partners" className="text-2xl font-bold text-gray-900">Anuncie aqui o seu Restaurante</h2>
-            <span className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-sm">
-              Restaurante Parceiro Oficial
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="col-span-1 md:col-span-2 lg:col-span-3">
-              <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-                <p className="text-gray-700 mb-4">
-                  Alcance público turístico qualificado com interesse em gastronomia local. Seu restaurante pode ganhar destaque no portal, com contato direto pelo WhatsApp e acesso a visitantes em busca das melhores opções de comida em Aparecida.
-                </p>
-                <ul className="list-disc list-inside text-gray-700 mb-6">
-                  <li>Alcance turístico e público religioso qualificado</li>
-                  <li>Possibilidade de destaque com selo "Restaurante Parceiro Oficial"</li>
-                  <li>Integração simples e atendimento direto ao cliente</li>
-                </ul>
-                <Link
-                  to="/cadastrar-negocio"
-                  className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-                >
-                  Quero anunciar meu restaurante
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
       </div>
     </div>
   );

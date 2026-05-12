@@ -182,36 +182,6 @@ const ReligiousShops = () => {
             </div>
          </div>
 
-         <section aria-labelledby="shops-partners" className="mb-16 mt-16">
-            <div className="flex items-center justify-between mb-6">
-               <h2 id="shops-partners" className="text-2xl font-bold text-gray-900">Anuncie aqui a sua Loja</h2>
-               <span className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-sm">
-                  Loja Parceira Oficial
-               </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-               <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                  <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-                     <p className="text-gray-700 mb-4">
-                        Alcance público turístico e devoto diversificado com interesse em artigos religiosos e souvenirs. Sua loja pode ganhar destaque no portal, com contato direto pelo WhatsApp e acesso a visitantes da Basílica.
-                     </p>
-                     <ul className="list-disc list-inside text-gray-700 mb-6">
-                        <li>Alcance turístico e público religioso qualificado</li>
-                        <li>Possibilidade de destaque com selo "Loja Parceira Oficial"</li>
-                        <li>Integração simples e atendimento direto ao cliente</li>
-                     </ul>
-                     <Link
-                        to="/cadastrar-negocio"
-                        className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-                     >
-                        Quero anunciar minha loja
-                     </Link>
-                  </div>
-               </div>
-            </div>
-         </section>
-
       </div>
    );
 };

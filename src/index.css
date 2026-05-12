@@ -233,3 +233,34 @@ img {
 .page-container {
   padding-top: 90px;
 }
+
+/* react-day-picker — tema escuro na faixa de reserva (Hotéis) */
+.hotel-booking-calendar .rdp-root {
+  --rdp-accent-color: #bf9766;
+  --rdp-accent-background-color: rgba(191, 151, 102, 0.18);
+  --rdp-day-height: 38px;
+  --rdp-day-width: 38px;
+  --rdp-day_button-height: 36px;
+  --rdp-day_button-width: 36px;
+  color: #f5f0e8;
+  font-family: Poppins, system-ui, sans-serif;
+  font-size: 0.8rem;
+}
+
+.hotel-booking-calendar .rdp-caption_label {
+  font-family: Forum, serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+.hotel-booking-calendar .rdp-weekday {
+  opacity: 0.65;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hotel-booking-calendar .rdp-button_next,
+.hotel-booking-calendar .rdp-button_previous {
+  color: #bf9766;
+}

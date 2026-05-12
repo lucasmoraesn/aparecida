@@ -25,6 +25,13 @@ import MotoristasParticulares from './pages/MotoristasParticulares';
 import PlanosMotoristas from './pages/PlanosMotoristas';
 import CadastroSucessoMotorista from './pages/CadastroSucessoMotorista';
 import AdminMotoristas from './pages/AdminMotoristas';
+import PlanosHotels from './pages/PlanosHotels';
+import CadastroSucessoHotels from './pages/CadastroSucessoHotels';
+import AdminHotels from './pages/AdminHotels';
+import PlanosRestaurantes from './pages/PlanosRestaurantes';
+import CadastroSucessoRestaurantes from './pages/CadastroSucessoRestaurantes';
+import AdminRestaurantes from './pages/AdminRestaurantes';
+import AdminUnificado from './pages/AdminUnificado';
 import { supabase } from './lib/supabase';
 import { trackLogin } from './lib/analytics';
 
@@ -85,7 +92,25 @@ function App() {
         <Route path="/motoristas-particulares" element={<MotoristasParticulares />} />
         <Route path="/planos-motoristas" element={<PlanosMotoristas />} />
         <Route path="/cadastro-sucesso" element={<CadastroSucessoMotorista />} />
-        <Route path="/admin-motoristas" element={<AdminMotoristas />} />
+
+        {/* Página de Hotéis */}
+        <Route path="/planos-hoteis" element={<PlanosHotels />} />
+        <Route path="/cadastro-sucesso-hoteis" element={<CadastroSucessoHotels />} />
+
+        {/* Página de Restaurantes */}
+        <Route path="/planos-restaurantes" element={<PlanosRestaurantes />} />
+        <Route path="/cadastro-sucesso-restaurantes" element={<CadastroSucessoRestaurantes />} />
+
+        {/* ADMIN UNIFICADO - Centralizado */}
+        <Route path="/admin" element={<AdminUnificado />} />
+        {/* Redirecionamentos das páginas antigas para /admin */}
+        <Route path="/admin-motoristas" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin-hoteis" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin-restaurantes" element={<Navigate to="/admin" replace />} />
+
+        {/* Página de Restaurantes */}
+        <Route path="/planos-restaurantes" element={<PlanosRestaurantes />} />
+        <Route path="/cadastro-sucesso-restaurantes" element={<CadastroSucessoRestaurantes />} />
 
         {/* Páginas individuais de hotéis – ex: /hotel-rainha-do-brasil */}
         <Route path="/:slug" element={<HotelDetail />} />

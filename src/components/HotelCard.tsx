@@ -9,6 +9,8 @@ interface HotelCardProps {
   compact?: boolean;
 }
 
+const bookingAffiliateURL = 'https://www.awin1.com/cread.php?awinmid=18120&awinaffid=2711492&ued=https%3A%2F%2Fwww.booking.com%2Fcity%2Fbr%2Faparecida.pt-br.html';
+
 const HotelCard: React.FC<HotelCardProps> = ({ hotel, compact = false }) => {
   const whatsappURL = `https://wa.me/${hotel.whatsapp}?text=${encodeURIComponent(
     `Olá! Vi o ${hotel.name} no portal Aparecida do Norte e gostaria de mais informações sobre hospedagem.`
@@ -66,23 +68,31 @@ const HotelCard: React.FC<HotelCardProps> = ({ hotel, compact = false }) => {
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-2 mt-1">
+        <div className="grid grid-cols-2 gap-2 mt-1">
           <a
             href={whatsappURL}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 inline-flex items-center justify-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
           >
             <MessageCircle className="w-4 h-4" />
             WhatsApp
           </a>
           <Link
             to={`/${hotel.slug}`}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
           >
             Ver perfil
             <ArrowRight className="w-4 h-4" />
           </Link>
+          <a
+            href={bookingAffiliateURL}
+            target="_blank"
+            rel="nofollow sponsored noopener noreferrer"
+            className="col-span-2 inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
+          >
+            Ver preço no Booking
+          </a>
         </div>
       </div>
 

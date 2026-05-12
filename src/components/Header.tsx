@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Phone, X, ArrowLeft } from 'lucide-react';
+import { Menu, Phone, X, ArrowLeft, Megaphone } from 'lucide-react';
 
 const Header = () => {
   const location = useLocation();
@@ -30,6 +30,7 @@ const Header = () => {
     { to: '/motoristas-particulares', label: 'Motoristas' },
     { to: '/eventos', label: 'Eventos' },
   ];
+
 
   // Determinar o estilo do header baseado na página
   const getHeaderStyle = () => {
@@ -139,7 +140,7 @@ const Header = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex space-x-6 xl:space-x-8">
+          <nav className="hidden lg:flex space-x-6 xl:space-x-8 items-center">
             {navItems.map((item) => (
               <Link
                 key={item.to}
@@ -150,6 +151,8 @@ const Header = () => {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>
               </Link>
             ))}
+            
+
           </nav>
 
           {/* Contact & Mobile Menu */}
@@ -208,6 +211,7 @@ const Header = () => {
                   {item.label}
                 </Link>
               ))}
+
               <div className="flex items-center text-sm text-gray-600 pt-3 border-t border-gray-200">
                 <Phone className="w-4 h-4 mr-2" />
                 (12) 99212-6779

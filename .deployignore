@@ -1,0 +1,125 @@
+# ============================================
+# DEPLOY IGNORE - Produção AWS EC2
+# ============================================
+
+# Node modules (será reinstalado na EC2)
+node_modules/
+*/node_modules/
+server/node_modules/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentação (não é necessária em produção)
+*.md
+!README.md
+docs/
+BEFORE_DEPLOY/
+
+# Logs e temporários
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+
+# Build artifacts e cache
+dist/
+build/
+.cache/
+.next/
+.nuxt/
+out/
+
+# Ambientes e configuração local
+.env
+.env.local
+.env.*.local
+.env.test
+.env.development
+server/.env
+server/.env.local
+server/.env.test
+server/.env.development
+
+# VS Code e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+
+# IDE
+.DS_Store
+Thumbs.db
+*.code-workspace
+
+# Deploy scripts e backups
+deploy-*.ps1
+deploy-*.sh
+*.backup
+*.bak
+temp-backend-deploy/
+temp_prices.json
+
+# Testes (não rodam em produção)
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage/
+.vitest/
+vitest.config.ts
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Antiga estrutura de deploy
+deploy-frontend-hotfix.ps1
+deploy-backend-hotfix.ps1
+deploy-completo.ps1
+deploy-hostinger.ps1
+deploy-hostinger.sh
+deploy-vps.sh
+test-*.ps1
+test-*.sh
+fix-*.ps1
+
+# Arquivos específicos de dev
+rsync-exclude.txt
+et\ --hard\ e126442
+eslint.config.js
+postcss.config.js
+tailwind.config.js
+tsconfig.json
+tsconfig.app.json
+tsconfig.node.json
+vite.config.ts
+
+# Configuração de exemplo (usar env.example)
+env.example
+server/.env.example
+
+# Imagens e assets não utilizados
+public/images/archive/
+public/images/backup/
+
+# Temporários diversos
+temp/
+tmp/
+.temp/
+cache/
+.cache/
+
+# Sistema
+*.pid
+*.seed
+*.pid.lock

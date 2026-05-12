@@ -64,54 +64,56 @@ const BookingSearch = () => {
   return (
     <div className="w-full max-w-6xl mx-auto relative z-10 px-3 sm:px-4">
       <div className="bg-blue-400 p-1 rounded-lg shadow-xl">
-        <div className="bg-white p-6 rounded text-gray-800">
-          <form onSubmit={handleSearch} className="flex flex-col lg:flex-row flex-wrap gap-3 items-stretch relative">
+        <div className="bg-blue-600 p-6 rounded text-white">
+          <form onSubmit={handleSearch} className="flex flex-col gap-3 relative">
             
-            {/* Destino */}
-            <div className="flex-1 relative group min-w-[200px] w-full lg:w-auto">
-              <input
-                type="text"
-                value={destination}
-                readOnly
-                className="block w-full h-14 pl-10 pr-3 border border-blue-300 rounded-md leading-5 bg-gray-50 text-gray-700 font-semibold focus:outline-none cursor-default shadow-sm"
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
-                <Bed className="h-5 w-5 text-gray-500" />
-              </div>
-            </div>
-
-            {/* Datas */}
-            <div className="flex-[2] flex flex-col sm:flex-row gap-2 min-w-[280px] w-full lg:w-auto">
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                  <Calendar className="h-5 w-5 text-gray-500" />
-                </div>
+            {/* Search row */}
+            <div className="flex flex-col lg:flex-row gap-3 items-stretch">
+              {/* Destino */}
+              <div className="flex-1 relative group min-w-[200px]">
                 <input
-                  type="date"
-                  value={dates.checkin}
-                  onChange={(e) => setDates({...dates, checkin: e.target.value})}
-                  className="block w-full h-14 pl-10 pr-3 border border-blue-300 rounded-md leading-5 bg-white focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 sm:text-sm font-medium transition-colors cursor-pointer shadow-sm hover:bg-gray-50"
-                  placeholder="Check-in"
-                  required
+                  type="text"
+                  value={destination}
+                  readOnly
+                  className="block w-full h-14 pl-10 pr-3 border border-blue-300 rounded-md leading-5 bg-gray-50 text-gray-700 font-semibold focus:outline-none cursor-default shadow-sm"
                 />
-              </div>
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                  <Calendar className="h-5 w-5 text-gray-500" />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                  <Bed className="h-5 w-5 text-gray-500" />
                 </div>
-                <input
-                  type="date"
-                  value={dates.checkout}
-                  onChange={(e) => setDates({...dates, checkout: e.target.value})}
-                  className="block w-full h-14 pl-10 pr-3 border border-blue-300 rounded-md leading-5 bg-white focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 sm:text-sm font-medium transition-colors cursor-pointer shadow-sm hover:bg-gray-50"
-                  placeholder="Check-out"
-                  required
-                />
               </div>
-            </div>
 
-            {/* Hóspedes */}
-            <div className="flex-1 relative min-w-[240px] w-full lg:w-auto" ref={guestRef}>
+              {/* Datas */}
+              <div className="flex-[2] flex flex-col sm:flex-row gap-2 min-w-[280px]">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                    <Calendar className="h-5 w-5 text-gray-500" />
+                  </div>
+                  <input
+                    type="date"
+                    value={dates.checkin}
+                    onChange={(e) => setDates({...dates, checkin: e.target.value})}
+                    className="block w-full h-14 pl-10 pr-3 border border-blue-300 rounded-md leading-5 bg-white focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 sm:text-sm font-medium transition-colors cursor-pointer shadow-sm hover:bg-gray-50"
+                    placeholder="Check-in"
+                    required
+                  />
+                </div>
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                    <Calendar className="h-5 w-5 text-gray-500" />
+                  </div>
+                  <input
+                    type="date"
+                    value={dates.checkout}
+                    onChange={(e) => setDates({...dates, checkout: e.target.value})}
+                    className="block w-full h-14 pl-10 pr-3 border border-blue-300 rounded-md leading-5 bg-white focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 sm:text-sm font-medium transition-colors cursor-pointer shadow-sm hover:bg-gray-50"
+                    placeholder="Check-out"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Hóspedes */}
+              <div className="flex-1 relative min-w-[240px]" ref={guestRef}>
               <button
                 type="button"
                 onClick={() => setIsGuestOpen(!isGuestOpen)}
@@ -201,15 +203,25 @@ const BookingSearch = () => {
                 </div>
               )}
             </div>
+            </div>
 
-            {/* Botão Buscar */}
-            <button
-              type="submit"
-              className="h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 rounded-md transition-all duration-200 flex items-center justify-center gap-2 text-lg shadow-md hover:shadow-lg lg:w-auto w-full min-w-[150px]"
-            >
-              Ver disponibilidade na Booking
-            </button>
-            <p className="text-gray-500 text-sm mt-2">
+            {/* Botões em coluna */}
+            <div className="flex flex-col gap-1.5">
+              <button
+                type="submit"
+                className="w-fit bg-white border-2 border-blue-700 text-black font-bold py-2 px-5 rounded-md transition-colors flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:bg-gray-100"
+              >
+                Ver preços no Booking
+              </button>
+              <button
+                type="button"
+                onClick={() => window.open(bookingAffiliateURL, '_blank')}
+                className="w-fit bg-white border-2 border-blue-700 text-black font-bold py-2 px-5 rounded-md transition-colors flex items-center justify-center gap-2 text-sm shadow-md hover:shadow-lg hover:bg-gray-100"
+              >
+                Ver ofertas com até 15% OFF
+              </button>
+            </div>
+            <p className="text-black text-sm mt-1">
               Você será redirecionado para a Booking.com para concluir sua reserva.
             </p>
           </form>

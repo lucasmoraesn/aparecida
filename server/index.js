@@ -1,25 +1,28 @@
-import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+
+// ⚠️ CRÍTICO: Carregar .env ANTES de qualquer outro import que use process.env
+const __envDir = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__envDir, '.env') });
+// ─────────────────────────────────────────────────────────────────────────────
+
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import logger, { requestLoggerMiddleware } from "./services/logger.js";
 import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer, sendNewMotoristaNotification, sendMotoristaAnaliseEmail } from "./services/emailService.js";
 import stripeWebhookRouter from './routes/stripeWebhook.js';
 import multer from 'multer';
+import * as businessRegistrationService from './services/businessRegistrationService.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 import { scannerBlockerMiddleware } from "./middleware/scannerBlocker.js";
 import healthRouter from './routes/health.js';
 
-// ─── Carrega SEMPRE o .env do próprio diretório do servidor ───────────────────
-// Usa caminho absoluto para não depender do cwd do PM2
-const __envDir = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: join(__envDir, '.env') });
 // ─────────────────────────────────────────────────────────────────────────────
 
 logger.info('ENV carregado', {
@@ -147,17 +150,24 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           .single();
 
         if (findError || !subscription) {
-          // Verificar se é um checkout de motorista
-          if (session.metadata?.type === 'motorista' && session.subscription) {
-            console.log('🚗 Checkout de motorista detectado — salvando stripe_subscription_id');
-            const { error: motoErr } = await supabase
-              .from('motoristas')
-              .update({ stripe_subscription_id: session.subscription })
-              .eq('stripe_session_id', session.id);
-            if (motoErr) {
-              console.error('❌ Erro ao salvar stripe_subscription_id no motorista:', motoErr);
-            } else {
-              console.log('✅ stripe_subscription_id salvo no motorista para session:', session.id);
+          // Verificar se é um checkout de motorista, hotel ou restaurante
+          const businessType = session.metadata?.type;
+          
+          if (['motorista', 'hotel', 'restaurante'].includes(businessType) && session.subscription) {
+            console.log(`🔗 Checkout de ${businessType} detectado — salvando stripe_subscription_id`);
+            
+            const config = businessRegistrationService.BUSINESS_CONFIG[businessType];
+            if (config) {
+              const { error: updateErr } = await supabase
+                .from(config.table)
+                .update({ stripe_subscription_id: session.subscription })
+                .eq('stripe_session_id', session.id);
+              
+              if (updateErr) {
+                logger.error(`❌ Erro ao salvar stripe_subscription_id no ${businessType}:`, updateErr);
+              } else {
+                logger.info(`✅ stripe_subscription_id salvo no ${businessType} para session:`, session.id);
+              }
             }
           } else {
             console.error('❌ Assinatura não encontrada para session:', session.id);
@@ -723,12 +733,6 @@ app.post("/api/register-business", async (req, res) => {
       payer_email,
       admin_email,
       contact_email,
-      card_number,
-      card_exp_month,
-      card_exp_year,
-      card_security_code,
-      card_holder_name,
-      card_holder_tax_id,
       content_authorization,
     } = registration;
 
@@ -752,60 +756,60 @@ app.post("/api/register-business", async (req, res) => {
 
     console.log("✅ Validação de campos passou");
 
-    // 1. Salvar cadastro de negócio no Supabase
+    // 1. Salvar em business_registrations (tabela de referência para subscriptions)
+    console.log("📝 Salvando em tabela 'business_registrations'");
+    
     const normalizedPlanId = (typeof plan_id === 'string' && /^\d+$/.test(plan_id))
       ? parseInt(plan_id, 10)
       : plan_id;
 
-    const insertData = {
+    const businessRegData = {
       establishment_name,
       category,
       address,
-      location,
-      photos,
+      location: Array.isArray(location) ? location.join(', ') : location,
+      photos: Array.isArray(photos) ? photos : [photos], // Salvar como array JSON
       whatsapp,
-      phone,
+      phone: phone || null,
       description,
       plan_id: normalizedPlanId,
       admin_email,
       contact_email,
-      payer_email,
-      content_authorization: content_authorization === true,
-      created_at: new Date().toISOString(),
     };
 
-    console.log("📦 Dados a serem inseridos:", JSON.stringify(insertData, null, 2));
+    console.log("📦 Dados para business_registrations:", JSON.stringify(businessRegData, null, 2));
 
-    const { data, error } = await supabase
+    const { data: businessReg, error: businessRegError } = await supabase
       .from("business_registrations")
-      .insert([insertData])
+      .insert([businessRegData])
       .select("id")
       .single();
 
-    if (error) {
-      console.error("❌ Erro detalhado do Supabase:", JSON.stringify(error, null, 2));
-      throw new Error(`Erro no Supabase: ${error.message} - ${error.details || ''} - ${error.hint || ''}`);
+    if (businessRegError) {
+      console.error("❌ Erro ao inserir em business_registrations:", businessRegError);
+      return res.status(500).json({
+        error: true,
+        message: "Erro ao salvar cadastro",
+        details: businessRegError.message
+      });
     }
-    console.log("✅ Cadastro inserido no Supabase:", data);
 
-    // 2. Retorna apenas o businessId para o front
-    res.json({
+    console.log("✅ Cadastro salvo em business_registrations:", businessReg.id);
+
+    return res.json({
       success: true,
-      business_id: data.id,
-      businessId: data.id, // Compatibilidade
+      business_id: businessReg.id,
+      businessId: businessReg.id, // Compatibilidade
     });
 
   } catch (err) {
-    console.error("❌ Erro no fluxo completo:");
+    console.error("❌ Erro no fluxo de registro:");
     console.error("   Message:", err.message);
     console.error("   Stack:", err.stack);
-    console.error("   Details:", err.response?.data || err.details || "");
 
     res.status(500).json({
       error: true,
       message: err.message || "Erro ao processar cadastro",
-      details: err.details || err.response?.data || err.hint || null,
-      code: err.code || null
     });
   }
 });
@@ -823,143 +827,216 @@ app.post("/api/register-business", async (req, res) => {
 ============================= */
 app.post('/api/create-subscription', async (req, res) => {
   try {
+    // Logs extremamente detalhados
+    console.log("\n========== CRIAR ASSINATURA ==========");
+    console.log("📥 Body recebido COMPLETO:", JSON.stringify(req.body, null, 2));
+    
     const { planId, businessId, customer } = req.body;
-    console.log("📥 Criando assinatura Stripe:", { planId, businessId, customer });
+    console.log("📊 Dados extraídos:", {
+      planId: planId,
+      businessId: businessId,
+      businessIdType: typeof businessId,
+      customerEmail: customer?.email,
+      customerName: customer?.name
+    });
 
     // 1. Validar dados obrigatórios
     if (!planId || !businessId) {
+      console.error("❌ Validação falhou: planId ou businessId ausentes");
       return res.status(400).json({
-        error: 'planId e businessId são obrigatórios'
+        success: false,
+        error: 'planId e businessId são obrigatórios',
+        received: { planId, businessId }
       });
     }
 
     if (!customer || !customer.email) {
+      console.error("❌ Validação falhou: email ausente");
       return res.status(400).json({
-        error: 'Email do cliente é obrigatório'
+        success: false,
+        error: 'Email do cliente é obrigatório',
+        received: { customer }
       });
     }
 
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customer.email)) {
+      console.error("❌ Email inválido:", customer.email);
       return res.status(400).json({
+        success: false,
         error: 'Email inválido'
       });
     }
 
+    console.log("✅ Validações básicas passaram");
+
     // 2. Buscar plano no Supabase
+    console.log("🔍 Buscando plano com ID:", planId);
     const { data: plan, error: planError } = await supabase
       .from('business_plans')
       .select('*')
       .eq('id', planId)
       .single();
 
-    if (planError || !plan) {
-      console.error("❌ Plano não encontrado:", planError);
+    if (planError) {
+      console.error("❌ Erro ao buscar plano:", planError);
       return res.status(404).json({
+        success: false,
         error: 'Plano não encontrado',
-        details: planError?.message
+        details: planError?.message,
+        planId: planId
       });
     }
 
-    console.log("✅ Plano encontrado:", plan.name, "- R$", plan.price ?? plan.price_cents);
+    if (!plan) {
+      console.error("❌ Plano não encontrado para ID:", planId);
+      return res.status(404).json({
+        success: false,
+        error: 'Plano não existe no banco de dados'
+      });
+    }
+
+    console.log("✅ Plano encontrado:", { id: plan.id, name: plan.name, price: plan.price });
 
     // Validar e converter preço
-    // Suporta tanto `price` (em reais) quanto `price_cents`
     const planPrice = (typeof plan.price === 'number' || typeof plan.price === 'string')
       ? Number(plan.price)
       : (typeof plan.price_cents === 'number' ? plan.price_cents / 100 : NaN);
+    
+    console.log("💰 Preço convertido:", { originalPrice: plan.price, convertedPrice: planPrice });
+    
     if (isNaN(planPrice) || planPrice <= 0) {
-      console.error("❌ Preço do plano inválido:", plan.price);
-      return res.status(500).json({
+      console.error("❌ Preço inválido:", { price: plan.price, planPrice });
+      return res.status(400).json({
+        success: false,
         error: 'Preço do plano inválido',
-        details: `O plano ${plan.name} tem preço inválido: ${plan.price}`
+        details: `Preço recebido: ${plan.price}, convertido: ${planPrice}`
       });
     }
 
     // 3. Criar Stripe Customer
-    console.log("🔵 Criando Stripe Customer...");
-    const stripeCustomer = await stripe.customers.create({
-      email: customer.email,
-      name: customer.name || 'Cliente Aparecida',
-      metadata: {
-        business_id: businessId.toString(),
-        plan_id: planId.toString(),
-        source: 'aparecida_platform'
-      }
-    });
-    console.log("✅ Stripe Customer criado:", stripeCustomer.id);
+    console.log("🔵 Criando Stripe Customer com email:", customer.email);
+    let stripeCustomer;
+    try {
+      stripeCustomer = await stripe.customers.create({
+        email: customer.email,
+        name: customer.name || 'Cliente Aparecida',
+        metadata: {
+          business_id: businessId.toString(),
+          plan_id: planId.toString(),
+          source: 'aparecida_platform'
+        }
+      });
+      console.log("✅ Stripe Customer criado:", stripeCustomer.id);
+    } catch (stripeError) {
+      console.error("❌ Erro ao criar Stripe Customer:", stripeError);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro ao criar cliente no Stripe',
+        details: stripeError.message
+      });
+    }
 
-    // 4. Criar Stripe Checkout Session (modo subscription)
+    // 4. Criar Stripe Checkout Session
     console.log("🔵 Criando Stripe Checkout Session...");
-
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-
-    const session = await stripe.checkout.sessions.create({
-      customer: stripeCustomer.id,
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'brl',
-          product_data: {
-            name: plan.name,
-            description: plan.description || `Plano ${plan.name} - Aparecida`,
+    console.log("   Frontend URL:", frontendUrl);
+    
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        customer: stripeCustomer.id,
+        mode: 'subscription',
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'brl',
+            product_data: {
+              name: plan.name,
+              description: plan.description || `Plano ${plan.name} - Aparecida`,
+            },
+            unit_amount: Math.round(planPrice * 100),
+            recurring: {
+              interval: 'month',
+              interval_count: 1,
+            },
           },
-          unit_amount: Math.round(planPrice * 100), // Converter para centavos
-          recurring: {
-            interval: 'month',
-            interval_count: 1,
-          },
+          quantity: 1,
+        }],
+        success_url: `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${frontendUrl}/subscription/cancel`,
+        metadata: {
+          business_id: businessId.toString(),
+          plan_id: planId.toString(),
         },
-        quantity: 1,
-      }],
-      success_url: `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${frontendUrl}/subscription/cancel`,
-      metadata: {
-        business_id: businessId.toString(),
-        plan_id: planId.toString(),
-      },
-    });
+      });
+      console.log("✅ Checkout Session criada:", session.id);
+    } catch (stripeError) {
+      console.error("❌ Erro ao criar Stripe Session:", stripeError);
+      try {
+        await stripe.customers.del(stripeCustomer.id);
+      } catch (e) {
+        console.error("⚠️ Erro ao deletar customer de limpeza:", e);
+      }
+      return res.status(500).json({
+        success: false,
+        error: 'Erro ao criar sessão de checkout',
+        details: stripeError.message
+      });
+    }
 
-    console.log("✅ Checkout Session criada:", session.id);
-    console.log("   URL:", session.url);
+    // 5. Salvar assinatura no Supabase
+    console.log("\n📝 Preparando para salvar na tabela 'subscriptions'");
+    const subscriptionData = {
+      business_id: businessId,
+      plan_id: planId,
+      external_subscription_id: null,
+      status: 'pending',
+      amount_cents: Math.round(planPrice * 100),
+      frequency: 1,
+      frequency_type: 'months',
+      customer_email: customer.email,
+      customer_name: customer.name || null,
+      customer_tax_id: customer.tax_id || null,
+    };
+    console.log("📦 Dados para inserir:", JSON.stringify(subscriptionData, null, 2));
 
-    // 5. Salvar assinatura no Supabase com status "pending"
     const { data: subscription, error: subError } = await supabase
       .from('subscriptions')
-      .insert({
-        business_id: businessId,
-        plan_id: planId,
-        external_subscription_id: null, // Será preenchido pelo webhook
-        stripe_customer_id: stripeCustomer.id,
-        stripe_checkout_session_id: session.id,
-        status: 'pending',
-        amount_cents: Math.round(planPrice * 100),
-        frequency: 1,
-        frequency_type: 'months',
-        customer_email: customer.email,
-        customer_name: customer.name || null,
-        customer_tax_id: customer.tax_id || null,
-      })
+      .insert([subscriptionData])
       .select()
       .single();
 
     if (subError) {
-      console.error("❌ Erro ao salvar assinatura no Supabase:", subError);
-      // Tentar limpar o customer criado no Stripe
+      console.error("❌ ERRO AO SALVAR ASSINATURA:");
+      console.error("   Código:", subError.code);
+      console.error("   Mensagem:", subError.message);
+      console.error("   Detalhes:", subError.details);
+      console.error("   Hint:", subError.hint);
+      
+      // Tentar limpar Stripe Customer
       try {
         await stripe.customers.del(stripeCustomer.id);
+        console.log("✅ Stripe Customer deletado após erro");
       } catch (cleanupError) {
         console.error("⚠️ Erro ao limpar Stripe Customer:", cleanupError);
       }
+      
       return res.status(500).json({
+        success: false,
         error: 'Erro ao salvar assinatura no banco de dados',
-        details: subError.message
+        details: {
+          code: subError.code,
+          message: subError.message,
+          hint: subError.hint,
+          details: subError.details
+        }
       });
     }
 
-    console.log("✅ Assinatura salva no Supabase:", subscription.id);
+    console.log("✅ Assinatura salva com sucesso:", subscription);
+    console.log("========== FIM CRIAR ASSINATURA ==========\n");
 
     // 6. Retornar checkoutUrl para o frontend
     return res.json({
@@ -971,11 +1048,16 @@ app.post('/api/create-subscription', async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Erro ao criar assinatura:", error);
+    console.error("\n❌ ERRO NÃO TRATADO EM create-subscription:");
+    console.error("   Message:", error.message);
+    console.error("   Stack:", error.stack);
+    console.error("   Erro completo:", error);
+    
     return res.status(500).json({
+      success: false,
       error: "Erro ao criar assinatura",
       message: error.message,
-      details: error.stack
+      type: error.constructor.name
     });
   }
 });
@@ -1232,6 +1314,380 @@ app.get('/api/motoristas', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+// ─────────────────────────────────────────────────────────────────────────────
+
+/* =============================
+   ENDPOINTS GENÉRICOS: HOTELS, RESTAURANTES, ETC
+   Reutiliza a mesma lógica de Motoristas
+============================= */
+
+/**
+ * Criar assinatura para qualquer tipo de negócio
+ * POST /api/create-{tipo}-subscription
+ * Tipos: hotels, restaurantes
+ */
+app.post('/api/create-:businessType-subscription', async (req, res) => {
+  try {
+    const { businessType } = req.params;
+    const { priceId, successUrl, cancelUrl } = req.body;
+
+    // Validar tipo
+    if (!['hotels', 'restaurantes'].includes(businessType)) {
+      return res.status(400).json({ error: 'Tipo de negócio inválido' });
+    }
+    if (!priceId) {
+      return res.status(400).json({ error: 'priceId é obrigatório' });
+    }
+
+    const frontendUrl = req.headers.origin || process.env.FRONTEND_URL || 'http://localhost:5173';
+    const safeSuccessUrl = successUrl || `${frontendUrl}/cadastro-sucesso?type=${businessType}&session_id={CHECKOUT_SESSION_ID}`;
+    const safeCancelUrl = cancelUrl || `${frontendUrl}/planos-${businessType}`;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: safeSuccessUrl,
+      cancel_url: safeCancelUrl,
+      metadata: { type: businessType.slice(0, -1), businessType } // 'hotel' ou 'restaurante'
+    });
+
+    logger.info(`✅ Sessão Stripe criada para ${businessType}`, { sessionId: session.id });
+    res.json({ success: true, checkoutUrl: session.url });
+  } catch (error) {
+    logger.error(`❌ Erro em create-${req.params.businessType}-subscription:`, error);
+    res.status(500).json({ error: "Erro ao iniciar pagamento", details: error.message });
+  }
+});
+
+/**
+ * Registrar novo negócio (Hotel, Restaurante)
+ * POST /api/register-{tipo}
+ */
+app.post('/api/register-:businessType', (req, res, next) => {
+  upload.array('fotos', 5)(req, res, (err) => {
+    if (err) {
+      logger.error('❌ Multer erro:', err.message);
+      return res.status(400).json({ error: 'Erro no upload do arquivo: ' + err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    const { businessType: businessTypeParam } = req.params;
+    const { sessionId } = req.body;
+    const businessType = businessTypeParam.slice(0, -1); // volta 'hotels' → 'hotel'
+    
+    // Validar tipo
+    if (!['hotel', 'restaurante'].includes(businessType)) {
+      return res.status(400).json({ error: 'Tipo de negócio inválido' });
+    }
+
+    const rawData = req.body.businessData;
+    const businessData = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+
+    if (!sessionId || !businessData) {
+      return res.status(400).json({ error: 'sessionId e businessData são obrigatórios' });
+    }
+
+    logger.info(`🔍 Processando registro para ${businessType}:`, sessionId);
+
+    // Upload de múltiplas fotos
+    let photoUrls = [];
+    if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+      for (const file of req.files) {
+        const photoUrl = await businessRegistrationService.uploadBusinessPhoto(file, businessType);
+        if (photoUrl) {
+          photoUrls.push(photoUrl);
+        }
+      }
+    }
+
+    // Registrar negócio com array de fotos
+    const registered = await businessRegistrationService.registerBusiness(
+      businessType,
+      sessionId,
+      businessData,
+      photoUrls // Passar array em vez de string única
+    );
+
+    logger.info(`✅ ${businessType} registrado com sucesso:`, registered.id);
+    res.json({ success: true, [businessType]: registered });
+  } catch (error) {
+    logger.error(`❌ Erro em register-${req.params.businessType}:`, error);
+    res.status(500).json({ error: "Erro interno", details: error.message });
+  }
+});
+
+/**
+ * ADMIN: Listar pendentes por tipo (de business_registrations)
+ * GET /api/admin/:businessType-pendentes
+ */
+app.get('/api/admin/:businessType-pendentes', async (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  try {
+    const { businessType } = req.params;
+    
+    logger.info(`🔵 GET /:businessType-pendentes recebido:`, { businessType });
+    
+    // Mapear: 'motoristas-pendentes' → 'motorista', 'hotéis-pendentes' → 'hotel', etc
+    const tipoMap = {
+      'motoristas-pendentes': 'motorista',
+      'hotéis-pendentes': 'hotel',
+      'restaurantes-pendentes': 'restaurante'
+    };
+    const tipo = tipoMap[businessType];
+    
+    logger.info(`🔍 Tipo mapeado:`, { businessType, tipo });
+    
+    if (!tipo) {
+      logger.warn(`❌ Tipo não encontrado no mapa`, { businessType, tipoMap });
+      return res.status(400).json({ error: `Tipo inválido: ${businessType}. Tipos aceitos: ${Object.keys(tipoMap).join(', ')}` });
+    }
+    
+    // Se é motorista, busca na tabela motoristas (status ativo=false = pendente)
+    if (tipo === 'motorista') {
+      logger.info(`📋 Buscando motoristas com ativo=false`);
+      const { data, error } = await supabase
+        .from('motoristas')
+        .select('*')
+        .eq('ativo', false)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      logger.info(`✅ Motoristas encontrados:`, data?.length);
+      return res.json({ success: true, motoristas: data || [] });
+    }
+
+    // Se é hotel ou restaurante, busca em business_registrations com status='pending'
+    const categoryMap = {
+      'hotel': 'Hotel',
+      'restaurante': 'Restaurante',
+    };
+    
+    const category = categoryMap[tipo];
+    logger.info(`📋 Buscando ${tipo} em business_registrations`, { category, status: 'pending' });
+
+    const { data, error } = await supabase
+      .from('business_registrations')
+      .select('*')
+      .eq('category', category)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error(`❌ Erro Supabase ao buscar pendentes:`, error);
+      throw error;
+    }
+
+    logger.info(`✅ ${tipo} encontrados:`, { count: data?.length || 0, data: data?.map(d => ({ id: d.id, establishment_name: d.establishment_name })) });
+
+    // Retorna com a chave correta do tipo
+    const key = tipo === 'hotel' ? 'hotéis' : 'restaurantes';
+    res.json({ success: true, [key]: data || [] });
+  } catch (error) {
+    logger.error(`❌ Erro ao listar pendentes:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * ADMIN: Listar ativos por tipo (de business_registrations)
+ * GET /api/admin/:businessType-ativos
+ */
+app.get('/api/admin/:businessType-ativos', async (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  try {
+    const { businessType } = req.params;
+    
+    // Mapear: 'motoristas-ativos' → 'motorista', 'hotéis-ativos' → 'hotel', etc
+    const tipoMap = {
+      'motoristas-ativos': 'motorista',
+      'hotéis-ativos': 'hotel',
+      'restaurantes-ativos': 'restaurante'
+    };
+    const tipo = tipoMap[businessType];
+    
+    if (!tipo) {
+      return res.status(400).json({ error: `Tipo inválido: ${businessType}` });
+    }
+    
+    // Se é motorista, busca na tabela motoristas (ativo=true)
+    if (tipo === 'motorista') {
+      const { data, error } = await supabase
+        .from('motoristas')
+        .select('*')
+        .eq('ativo', true)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return res.json({ success: true, motoristas: data || [] });
+    }
+
+    // Se é hotel ou restaurante, busca em business_registrations com status='approved'
+    const categoryMap = {
+      'hotel': 'Hotel',
+      'restaurante': 'Restaurante',
+    };
+    
+    const category = categoryMap[tipo];
+
+    const { data, error } = await supabase
+      .from('business_registrations')
+      .select('*')
+      .eq('category', category)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Retorna com a chave correta do tipo
+    const key = tipo === 'hotel' ? 'hotéis' : 'restaurantes';
+    res.json({ success: true, [key]: data || [] });
+  } catch (error) {
+    logger.error(`❌ Erro ao listar ativos:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * ADMIN: Aprovar registro
+ * POST /api/admin/aprovar-{tipo}
+ */
+app.post('/api/admin/aprovar-:businessType', async (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  try {
+    const { businessType } = req.params;
+    // Mapear plural português para singular: 'motoristas' → 'motorista', 'hotéis' → 'hotel', 'restaurantes' → 'restaurante'
+    const tipoMap = {
+      'motoristas': 'motorista',
+      'hotéis': 'hotel',
+      'restaurantes': 'restaurante'
+    };
+    const tipo = tipoMap[businessType];
+    let { id } = req.body;
+
+    if (!tipo) return res.status(400).json({ error: `Tipo de negócio inválido: ${businessType}` });
+    if (!id) return res.status(400).json({ error: 'id obrigatório. Recebido: ' + JSON.stringify(id) });
+
+    // Converter ID para número se necessário
+    const numId = parseInt(String(id), 10);
+    if (isNaN(numId)) {
+      return res.status(400).json({ error: `ID inválido: ${id} não é um número` });
+    }
+
+    logger.info(`🔵 Aprovar ${tipo}:`, { businessType, id, numId });
+
+    // Se é motorista, usa o service existente
+    if (tipo === 'motorista') {
+      await businessRegistrationService.approveBusiness(tipo, id);
+      logger.info(`✅ motorista aprovado:`, id);
+      return res.json({ success: true });
+    }
+
+    // Se é hotel ou restaurante, atualiza em business_registrations
+    if (!['hotel', 'restaurante'].includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo inválido' });
+    }
+
+    const { error } = await supabase
+      .from('business_registrations')
+      .update({ status: 'approved' })
+      .eq('id', numId);
+
+    if (error) {
+      logger.error(`❌ Erro Supabase ao aprovar ${tipo} id=${numId}:`, error);
+      throw error;
+    }
+    
+    logger.info(`✅ ${tipo} aprovado: id=${numId}`);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error(`❌ Erro ao aprovar:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * ADMIN: Rejeitar registro
+ * POST /api/admin/rejeitar-{tipo}
+ */
+app.post('/api/admin/rejeitar-:businessType', async (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  try {
+    const { businessType } = req.params;
+    // Mapear plural português para singular: 'motoristas' → 'motorista', 'hotéis' → 'hotel', 'restaurantes' → 'restaurante'
+    const tipoMap = {
+      'motoristas': 'motorista',
+      'hotéis': 'hotel',
+      'restaurantes': 'restaurante'
+    };
+    const tipo = tipoMap[businessType];
+    let { id, reason } = req.body;
+
+    if (!tipo) return res.status(400).json({ error: `Tipo de negócio inválido: ${businessType}` });
+    if (!id) return res.status(400).json({ error: 'id obrigatório. Recebido: ' + JSON.stringify(id) });
+
+    // Converter ID para número se necessário
+    const numId = parseInt(String(id), 10);
+    if (isNaN(numId)) {
+      return res.status(400).json({ error: `ID inválido: ${id} não é um número` });
+    }
+
+    logger.info(`🔵 Rejeitar ${tipo}:`, { businessType, id, numId, reason });
+
+    // Se é motorista, usa o service existente
+    if (tipo === 'motorista') {
+      await businessRegistrationService.rejectBusiness(tipo, id, reason);
+      logger.info(`✅ motorista rejeitado:`, id);
+      return res.json({ success: true });
+    }
+
+    // Se é hotel ou restaurante, atualiza em business_registrations
+    if (!['hotel', 'restaurante'].includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo inválido' });
+    }
+
+    const { error } = await supabase
+      .from('business_registrations')
+      .update({ status: 'rejected' })
+      .eq('id', numId);
+
+    if (error) {
+      logger.error(`❌ Erro Supabase ao rejeitar ${tipo} id=${numId}:`, error);
+      throw error;
+    }
+    
+    logger.info(`✅ ${tipo} rejeitado: id=${numId}`);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error(`❌ Erro ao rejeitar:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PÚBLICO: Listar registros ativos por tipo
+ * GET /api/{tipo}s
+ */
+app.get('/api/:businessType', async (req, res) => {
+  try {
+    const { businessType } = req.params;
+    const tipo = businessType.slice(0, -1); // 'hotels' → 'hotel'
+
+    if (!['hotel', 'restaurante'].includes(tipo)) {
+      return res.status(404).json({ error: 'Tipo não encontrado' });
+    }
+
+    const registros = await businessRegistrationService.getActiveRegistrations(tipo);
+    logger.info(`✅ Retornados ${registros.length} ${tipo}s públicos`);
+    res.json({ success: true, [businessType]: registros });
+  } catch (error) {
+    logger.error(`❌ Erro ao listar ${businessType}:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.post('/api/test-plan-2', async (req, res) => {
@@ -1536,13 +1992,29 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-app.listen(port, '0.0.0.0', () => {
+const server = app.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Server on http://0.0.0.0:${port}`);
   console.log("✅ Server is ready and listening for requests");
   console.log("💳 Stripe Billing integrado e ativo");
   console.log(`   Webhook endpoint: https://www.aparecidadonortesp.com.br/api/webhook`);
   console.log(`   Success URL: ${process.env.FRONTEND_URL || 'https://www.aparecidadonortesp.com.br'}/subscription/success`);
-}).on('error', (err) => {
-  console.error('❌ Erro ao iniciar servidor:', err);
-  process.exit(1);
+});
+
+// Permitir reutilizar a porta imediatamente (evita EADDRINUSE após restart)
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Porta ${port} já está em uso. Aguardando liberação...`);
+    setTimeout(() => server.listen(port, '0.0.0.0'), 3000);
+  } else {
+    console.error('❌ Erro ao iniciar servidor:', err);
+    process.exit(1);
+  }
+});
+
+process.on('SIGTERM', () => {
+  console.log('📴 SIGTERM recebido, encerrando gracefully...');
+  server.close(() => {
+    console.log('✅ Servidor encerrado');
+    process.exit(0);
+  });
 });

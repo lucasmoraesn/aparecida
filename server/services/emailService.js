@@ -17,4 +17,6 @@ export {
   sendNewsletterWelcomeEmail,
   sendNewMotoristaNotification,
   sendMotoristaAnaliseEmail,
+  sendNewBusinessNotification,
+  sendBusinessAnalisisEmail,
 } from './sesEmailService.js';
