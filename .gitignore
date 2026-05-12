@@ -1,11 +1,40 @@
-node_modules
+# Dependencies & builds
+node_modules/
+dist/
+build/
+.next/
+
+# Local / IDE
+.cursor/
+.claude/
+.vscode/
+
+# Logs & temp
+*.log
+*.tmp
+*.cache
+*.pyc
+__pycache__/
+
+# Tests
+coverage/
+
+# Deploy / server artifacts
+server.tar.gz
+ubuntu@3.148.108.4/
+
+# Secrets
 .env
 .env.local
 .env.production
 .env.test
 .env.development
-.next
-dist
-build
-*.log
-.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Bundled fonts (use CDN or install locally; evita repo pesado)
+*.ttf
+*.woff
+*.woff2
