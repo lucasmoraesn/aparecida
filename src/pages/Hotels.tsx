@@ -38,8 +38,8 @@ const Hotels = () => {
         onSubmit={handleBookingSubmit}
       />
 
-      {/* ── Texto SEO ─────────────────────────────────────────── */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-gray-700 space-y-4 leading-relaxed">
+      {/* ── Texto SEO (respiro extra abaixo do hero / card de reserva) ── */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 sm:pt-[4.5rem] lg:pt-20 text-gray-700 space-y-4 leading-relaxed">
         <p>
           Aparecida (SP) é o principal destino de turismo religioso do Brasil e recebe milhões de visitantes ao longo do ano. Em datas de grande devoção, como a Novena e a Festa da Padroeira (12 de Outubro), a cidade costuma registrar alta procura por hospedagem e vários hotéis ficam com disponibilidade limitada rapidamente. Reservar com antecedência é a melhor forma de garantir acomodações próximas ao Santuário Nacional.
         </p>
@@ -48,16 +48,14 @@ const Hotels = () => {
         </p>
       </div>
 
-      {/* ── Divisor forte ─────────────────────────────────────── */}
-      <div className="border-t-4 border-gray-200">
-        <div className="flex items-center justify-center py-4 px-4">
-          <div className="flex items-center gap-4 w-full max-w-2xl">
-            <div className="flex-1 h-px bg-gray-300" />
-            <span className="text-xs font-bold text-gray-500 tracking-widest uppercase whitespace-nowrap">
-              Área para hotéis parceiros
-            </span>
-            <div className="flex-1 h-px bg-gray-300" />
-          </div>
+      {/* ── Rótulo: hotéis parceiros (sem faixa superior) ─────────────── */}
+      <div className="flex items-center justify-center py-4 px-4">
+        <div className="flex items-center gap-4 w-full max-w-2xl">
+          <div className="flex-1 h-px bg-gray-300" />
+          <span className="text-xs font-bold text-gray-500 tracking-widest uppercase whitespace-nowrap">
+            Área para hotéis parceiros
+          </span>
+          <div className="flex-1 h-px bg-gray-300" />
         </div>
       </div>
 

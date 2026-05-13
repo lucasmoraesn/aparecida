@@ -38,3 +38,21 @@ Thumbs.db
 *.ttf
 *.woff
 *.woff2
+
+# Ignore all env files recursively
+**/.env
+**/.env.*
+
+# Ignore node_modules recursively
+**/node_modules/
+
+# Ignore dist recursively
+**/dist/
+
+# Ignore editor folders recursively
+**/.vscode/
+**/.cursor/
+**/.claude/
+
+# Ignore tar.gz
+*.tar.gz

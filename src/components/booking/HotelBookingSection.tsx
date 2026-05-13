@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format, addDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DayPicker } from 'react-day-picker';
@@ -152,10 +152,18 @@ export default function HotelBookingSection({
         <div className="relative z-10 mx-auto flex min-h-[inherit] max-w-7xl flex-col px-4 pb-[clamp(10rem,26vw,14rem)] pt-10 sm:px-6 sm:pb-[clamp(10.5rem,24vw,13rem)] sm:pt-12 md:px-8 lg:pb-36 lg:pt-14">
           {/* Copy — esquerda no desktop para abrir espaço ao card à direita */}
           <div className="mx-auto max-w-xl text-center lg:mx-0 lg:max-w-[min(100%,26rem)] lg:text-left xl:max-w-[28rem]">
-            <h1 className="font-forum text-[1.5rem] font-normal leading-[1.2] tracking-[0.06em] text-white drop-shadow-[0_4px_32px_rgba(0,0,0,0.55)] sm:text-[1.75rem] md:text-[2rem] lg:text-[2.05rem]">
+            <h1
+              className="text-white leading-snug tracking-[0.04em] drop-shadow-[0_4px_32px_rgba(0,0,0,0.55)] text-[1.5rem] sm:text-[1.6rem] md:text-[1.85rem] lg:text-[2rem] xl:text-[2.400rem]"
+              style={{
+                fontFamily:
+                  'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                fontWeight: 500,
+                color: '#fff',
+              }}
+            >
               {title}
             </h1>
-            <p className="mt-3 font-poppins text-[13px] font-light leading-relaxed tracking-wide text-white/82 sm:mt-4 sm:text-sm md:text-[0.9375rem]">
+            <p className="mt-3 font-poppins text-[13px] font-light leading-relaxed tracking-wide text-white sm:mt-4 sm:text-sm md:text-[0.9375rem]">
               {subtitle}
             </p>
           </div>

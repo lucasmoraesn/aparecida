@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Phone, X, ArrowLeft, Megaphone } from 'lucide-react';
+import { Menu, X, ArrowLeft, ChevronDown } from 'lucide-react';
+import { O_QUE_FAZER_NAV_ITEMS } from '../data/oQueFazerGuia';
+
+const mainNavItems = [
+  { to: '/hoteis-em-aparecida-sp', label: 'HOTÉIS' },
+  { to: '/restaurantes-em-aparecida-sp', label: 'RESTAURANTES' },
+  { to: '/lojas-religiosas-em-aparecida-sp', label: 'LOJAS' },
+  { to: '/pontos-turisticos-em-aparecida-sp', label: 'PONTOS TURÍSTICOS' },
+  { to: '/motoristas-particulares', label: 'MOTORISTAS' },
+];
 
 const Header = () => {
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileOQueFazerOpen, setMobileOQueFazerOpen] = useState(false);
 
-  // Check if we're on the home page
   const isHomePage = location.pathname === '/';
 
   useEffect(() => {
@@ -15,101 +24,63 @@ const Header = () => {
       setIsScrolled(window.scrollY > 50);
     };
 
-    // Só adicionar o listener de scroll na home page
     if (isHomePage) {
       window.addEventListener('scroll', handleScroll);
       return () => window.removeEventListener('scroll', handleScroll);
     }
   }, [isHomePage]);
 
-  const navItems = [
-    { to: '/hoteis-em-aparecida-sp', label: 'Hotéis' },
-    { to: '/restaurantes-em-aparecida-sp', label: 'Restaurantes' },
-    { to: '/lojas-religiosas-em-aparecida-sp', label: 'Lojas' },
-    { to: '/pontos-turisticos-em-aparecida-sp', label: 'Pontos Turísticos' },
-    { to: '/motoristas-particulares', label: 'Motoristas' },
-    { to: '/eventos', label: 'Eventos' },
-  ];
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setMobileOQueFazerOpen(false);
+  }, [location.pathname]);
 
-
-  // Determinar o estilo do header baseado na página
   const getHeaderStyle = () => {
     if (isHomePage) {
-      // Na home: transparente por padrão, com fundo ao fazer scroll
       return isScrolled
         ? 'bg-white/95 backdrop-blur-md shadow-lg'
         : 'bg-transparent';
-    } else {
-      // Nas páginas internas: sempre com fundo sólido
-      return 'bg-white shadow-md';
     }
+    return 'bg-white shadow-md';
   };
 
-  // Determinar o estilo do texto baseado na página
   const getTextStyle = () => {
     if (isHomePage) {
-      // Na home: branco por padrão, escuro ao fazer scroll
       return isScrolled ? 'text-gray-800' : 'text-white drop-shadow-lg';
-    } else {
-      // Nas páginas internas: sempre escuro
-      return 'text-gray-800';
     }
+    return 'text-gray-800';
   };
 
-  // Determinar o estilo do subtítulo baseado na página
   const getSubtitleStyle = () => {
     if (isHomePage) {
-      // Na home: branco por padrão, escuro ao fazer scroll
       return isScrolled ? 'text-gray-600' : 'text-white/80';
-    } else {
-      // Nas páginas internas: sempre escuro
-      return 'text-gray-600';
     }
+    return 'text-gray-600';
   };
 
-  // Determinar o estilo dos links de navegação baseado na página
   const getNavLinkStyle = () => {
     if (isHomePage) {
-      // Na home: branco por padrão, escuro ao fazer scroll
       return isScrolled ? 'text-gray-700 hover:text-gray-900' : 'text-white/90 hover:text-white';
-    } else {
-      // Nas páginas internas: sempre escuro
-      return 'text-gray-700 hover:text-gray-900';
     }
+    return 'text-gray-700 hover:text-gray-900';
   };
 
-  // Determinar o estilo do botão de voltar baseado na página
   const getBackButtonStyle = () => {
     if (isHomePage) {
-      // Na home: branco por padrão, escuro ao fazer scroll
       return isScrolled ? 'text-gray-600 hover:text-gray-800' : 'text-white/80 hover:text-white';
-    } else {
-      // Nas páginas internas: sempre escuro
-      return 'text-gray-600 hover:text-gray-800';
     }
+    return 'text-gray-600 hover:text-gray-800';
   };
 
-  // Determinar o estilo do telefone baseado na página
-  const getPhoneStyle = () => {
-    if (isHomePage) {
-      // Na home: branco por padrão, escuro ao fazer scroll
-      return isScrolled ? 'text-gray-600' : 'text-white/80';
-    } else {
-      // Nas páginas internas: sempre escuro
-      return 'text-gray-600';
-    }
-  };
-
-  // Determinar o estilo do botão do menu mobile baseado na página
   const getMobileMenuButtonStyle = () => {
     if (isHomePage) {
-      // Na home: branco por padrão, escuro ao fazer scroll
       return isScrolled ? 'text-gray-700' : 'text-white';
-    } else {
-      // Nas páginas internas: sempre escuro
-      return 'text-gray-700';
     }
+    return 'text-gray-700';
   };
+
+  const dropdownLinkClass =
+    'block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800 transition-colors';
 
   return (
     <header
@@ -117,7 +88,6 @@ const Header = () => {
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex justify-between items-center py-3 sm:py-4">
-          {/* Logo */}
           <div className="flex items-center gap-2 sm:gap-4">
             <img
               src="/logo-sem-fundo.png"
@@ -132,8 +102,10 @@ const Header = () => {
                 Explore Aparecida
               </Link>
               {isHomePage && (
-                <span className={`text-xs sm:text-sm hidden md:block transition-colors duration-300 ${getSubtitleStyle()}`}>
-                  Tudo o que você precisa saber antes de visitar a Casa da Mãe
+                <span
+                  className={`hidden md:block text-xs lg:text-sm leading-snug max-w-[13rem] xl:max-w-[15rem] transition-colors duration-300 ${getSubtitleStyle()}`}
+                >
+                  <span className="block">APARECIDA DO NORTE</span>
                 </span>
               )}
             </div>
@@ -141,21 +113,52 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex space-x-6 xl:space-x-8 items-center">
-            {navItems.map((item) => (
+            {mainNavItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 className={`relative font-medium transition-all duration-300 group whitespace-nowrap ${getNavLinkStyle()}`}
               >
                 {item.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-yellow-500 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-yellow-500 transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
-            
 
+            {/* O QUE FAZER — dropdown ao passar o mouse */}
+            <div className="relative group focus-within:z-[60]">
+              <button
+                type="button"
+                className={`relative flex items-center gap-1 font-medium transition-all duration-300 whitespace-nowrap cursor-pointer ${getNavLinkStyle()}`}
+                aria-expanded="false"
+                aria-haspopup="true"
+                aria-label="Abrir menu O que fazer"
+              >
+                O QUE FAZER
+                <ChevronDown className="w-4 h-4 shrink-0 opacity-90 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180" aria-hidden />
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-yellow-500 transition-all duration-300 group-hover:w-full group-focus-within:w-full" />
+              </button>
+
+              <div
+                className="absolute right-0 top-full pt-1.5 opacity-0 invisible translate-y-1 pointer-events-none transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:pointer-events-auto z-[70]"
+                role="menu"
+                aria-label="O que fazer em Aparecida"
+              >
+                <div className="min-w-[17.5rem] max-w-[20rem] max-h-[min(70vh,26rem)] overflow-y-auto rounded-xl border border-gray-200/80 bg-white py-2 shadow-xl ring-1 ring-black/5">
+                  {O_QUE_FAZER_NAV_ITEMS.map((sub) => (
+                    <Link
+                      key={sub.label + sub.to}
+                      to={sub.to}
+                      role="menuitem"
+                      className={dropdownLinkClass}
+                    >
+                      {sub.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
           </nav>
 
-          {/* Contact & Mobile Menu */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             {!isHomePage && (
               <Link
@@ -167,12 +170,6 @@ const Header = () => {
               </Link>
             )}
 
-            <div className={`hidden lg:flex items-center text-sm transition-colors duration-300 ${getPhoneStyle()}`}>
-              <Phone className="w-4 h-4 mr-1" />
-              (12) 99212-6779
-            </div>
-
-            {/* Mobile Menu Button */}
             <button
               className="lg:hidden p-2 rounded-lg transition-colors duration-300 hover:bg-white/10"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -187,10 +184,9 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="lg:hidden bg-white/95 backdrop-blur-md rounded-lg mt-2 mb-2 p-4 shadow-xl animate-fade-in">
-            <nav className="flex flex-col space-y-3">
+            <nav className="flex flex-col space-y-1">
               {!isHomePage && (
                 <Link
                   to="/"
@@ -201,7 +197,7 @@ const Header = () => {
                   Voltar
                 </Link>
               )}
-              {navItems.map((item) => (
+              {mainNavItems.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -212,9 +208,35 @@ const Header = () => {
                 </Link>
               ))}
 
-              <div className="flex items-center text-sm text-gray-600 pt-3 border-t border-gray-200">
-                <Phone className="w-4 h-4 mr-2" />
-                (12) 99212-6779
+              <div className="border-t border-gray-200 pt-2 mt-1">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between text-gray-800 font-semibold py-2 pl-3 pr-1 text-left"
+                  onClick={() => setMobileOQueFazerOpen((o) => !o)}
+                  aria-expanded={mobileOQueFazerOpen}
+                >
+                  O QUE FAZER
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${mobileOQueFazerOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {mobileOQueFazerOpen && (
+                  <div className="pl-2 pb-2 flex flex-col border-l-2 border-blue-100 ml-3 mt-1 space-y-0.5">
+                    {O_QUE_FAZER_NAV_ITEMS.map((sub) => (
+                      <Link
+                        key={sub.label + sub.to}
+                        to={sub.to}
+                        className="text-sm text-gray-600 hover:text-blue-600 py-2 pl-3 rounded-r-md hover:bg-blue-50/80"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setMobileOQueFazerOpen(false);
+                        }}
+                      >
+                        {sub.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             </nav>
           </div>

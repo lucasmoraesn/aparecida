@@ -4,7 +4,9 @@ import { Search, Car, Shield, Clock, Star } from 'lucide-react';
 import MotoristaCard from '../components/MotoristaCard';
 import { getMotoristasOrdenados, type Motorista } from '../data/motoristas';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+import { getApiBaseUrl } from '../lib/apiBase';
+
+const API_BASE = getApiBaseUrl();
 
 const MotoristasParticulares = () => {
   const motoristasEstaticos = getMotoristasOrdenados();

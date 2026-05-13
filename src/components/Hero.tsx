@@ -20,6 +20,23 @@ const WAVE_BASE   = 75; // 0–80  (maior = laterais mais retas)
 const WAVE_HEIGHT = 80; // px    (altura total do bloco da onda)
 // ═══════════════════════════════════════════════════════════════
 
+/** Remove diacríticos para casar "hoteis" com "hotéis", "almoco" com "almoço", etc. */
+function normalizeSearch(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .trim();
+}
+
+const CATEGORY_ROUTES: Record<string, string> = {
+  'Hotéis e Pousadas': '/hoteis-em-aparecida-sp',
+  Restaurantes: '/restaurantes-em-aparecida-sp',
+  'Lojas Religiosas': '/lojas-religiosas-em-aparecida-sp',
+  'Pontos Turísticos': '/pontos-turisticos-em-aparecida-sp',
+  Eventos: '/eventos',
+};
+
 const Hero = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -101,51 +118,95 @@ const Hero = () => {
   ];
 
   const handleSearch = () => {
-    if (searchTerm.trim()) {
-      const s = searchTerm.toLowerCase().trim();
-      if (s.includes('hotel') || s.includes('pousada') || s.includes('hospedagem')) {
-        navigate('/hoteis-em-aparecida-sp');
+    const rawTerm = searchTerm.trim();
+    const norm = normalizeSearch(searchTerm);
+
+    const searchState = rawTerm ? { searchTerm: rawTerm } : undefined;
+
+    // 1) Categoria específica no dropdown (prioridade sobre o texto)
+    if (selectedCategory && selectedCategory !== 'Todas as categorias') {
+      const path = CATEGORY_ROUTES[selectedCategory];
+      if (path) {
+        navigate(path, { state: searchState });
         return;
       }
-      if (s.includes('restaurante') || s.includes('comida') || s.includes('almoço') || s.includes('jantar') || s.includes('pizzaria')) {
-        navigate('/restaurantes');
-        return;
-      }
-      if (s.includes('loja') || s.includes('religioso') || s.includes('souvenir') || s.includes('terço') || s.includes('vela')) {
-        navigate('/lojas-religiosas');
-        return;
-      }
-      if (s.includes('ponto') || s.includes('turístico') || s.includes('atração') || s.includes('basílica') || s.includes('museu') || s.includes('mirante')) {
-        navigate('/pontos-turisticos');
-        return;
-      }
-      if (s.includes('evento') || s.includes('missa') || s.includes('procissão') || s.includes('festa') || s.includes('celebração') || s.includes('caravana')) {
-        navigate('/eventos');
-        return;
-      }
-      navigate('/', { state: { searchTerm: searchTerm.trim() } });
-      return;
     }
 
-    if (!selectedCategory || selectedCategory === 'Todas as categorias') {
-      navigate('/produtos', { state: { showAllCategories: true } });
-    } else if (selectedCategory === 'Hotéis e Pousadas') {
-      navigate('/hoteis-em-aparecida-sp');
-    } else if (selectedCategory === 'Restaurantes') {
-      navigate('/restaurantes');
-    } else if (selectedCategory === 'Lojas Religiosas') {
-      navigate('/lojas-religiosas');
-    } else if (selectedCategory === 'Pontos Turísticos') {
-      navigate('/pontos-turisticos');
-    } else if (selectedCategory === 'Eventos') {
-      navigate('/eventos');
-    } else {
-      navigate('/');
+    // 2) Inferir pelo texto (acentos já normalizados)
+    if (norm) {
+      if (
+        norm.includes('hotel') ||
+        norm.includes('hoteis') ||
+        norm.includes('pousad') ||
+        norm.includes('hosped') ||
+        norm.includes('hostel')
+      ) {
+        navigate('/hoteis-em-aparecida-sp', { state: searchState });
+        return;
+      }
+      if (
+        norm.includes('restaurant') ||
+        norm.includes('comida') ||
+        norm.includes('almoco') ||
+        norm.includes('jantar') ||
+        norm.includes('lanche') ||
+        norm.includes('pizz') ||
+        norm.includes('gastronom') ||
+        norm.includes('cantina') ||
+        norm.includes('churrasc')
+      ) {
+        navigate('/restaurantes-em-aparecida-sp', { state: searchState });
+        return;
+      }
+      if (
+        norm.includes('loja') ||
+        norm.includes('souvenir') ||
+        norm.includes('terco') ||
+        norm.includes('religios') ||
+        norm.includes('vela') ||
+        norm.includes('imagem') ||
+        norm.includes('compra') ||
+        norm.includes('artigo')
+      ) {
+        navigate('/lojas-religiosas-em-aparecida-sp', { state: searchState });
+        return;
+      }
+      if (
+        norm.includes('turismo') ||
+        norm.includes('passeio') ||
+        norm.includes('atra') ||
+        norm.includes('basilic') ||
+        norm.includes('santuario') ||
+        norm.includes('museu') ||
+        norm.includes('mirante') ||
+        norm.includes('ponto tur') ||
+        norm.includes('pontos tur')
+      ) {
+        navigate('/pontos-turisticos-em-aparecida-sp', { state: searchState });
+        return;
+      }
+      if (
+        norm.includes('evento') ||
+        norm.includes('missa') ||
+        norm.includes('procissa') ||
+        norm.includes('novena') ||
+        norm.includes('festa') ||
+        norm.includes('celebra') ||
+        norm.includes('caravana') ||
+        norm.includes('retiro')
+      ) {
+        navigate('/eventos', { state: searchState });
+        return;
+      }
     }
+
+    // 3) Sem match ou sem texto: levar às categorias na home (evita rota inexistente /produtos)
+    navigate({ pathname: '/', hash: 'categorias' });
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleSearch();
     }
   };
@@ -206,7 +267,7 @@ const Hero = () => {
                   placeholder="O que você está procurando?"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleSearchKeyDown}
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border-0 bg-white/90 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all duration-75 text-sm sm:text-base"
                 />
               </div>

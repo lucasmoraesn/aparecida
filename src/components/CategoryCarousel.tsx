@@ -100,6 +100,7 @@ const CategoryCarousel: React.FC = () => {
 
   return (
     <section
+      id="categorias"
       className="py-24 sm:py-32 bg-white relative overflow-hidden"
       aria-label="Categorias de Aparecida"
       onMouseEnter={() => { pausedRef.current = true; }}

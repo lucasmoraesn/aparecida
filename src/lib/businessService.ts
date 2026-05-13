@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getApiBaseUrl } from './apiBase';
 
 export interface BusinessRegistration {
    id?: number;
@@ -40,8 +41,9 @@ export interface Payment {
 }
 
 export class BusinessService {
-   // Use environment variable or relative URL
-   private static API_BASE = import.meta.env.VITE_API_URL || "";
+   private static get API_BASE(): string {
+      return getApiBaseUrl();
+   }
 
    // 🔹 Buscar planos via backend (evita problemas de RLS)
    static async getPlans(): Promise<BusinessPlan[]> {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Check, Star, Shield, Award, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getApiBaseUrl } from '../lib/apiBase';
 
 const PRICE_IDS: Record<string, string> = {
   basico: 'price_1TIwRWJRpc53eVmKjZLUHo0z',
@@ -8,8 +9,7 @@ const PRICE_IDS: Record<string, string> = {
   premium: 'price_1TIwRXJRpc53eVmKREwQNMjt'
 };
 
-// Use environment variable or relative URL
-const API_BASE = import.meta.env.VITE_API_URL || "";
+const API_BASE = getApiBaseUrl();
 
 const PlanosMotoristas = () => {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -36,16 +36,29 @@ const PlanosMotoristas = () => {
         }),
       });
 
-      const data = await response.json();
-      
+      const text = await response.text();
+      let data: { checkoutUrl?: string; error?: string };
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error('Resposta inválida do servidor');
+      }
+
       if (response.ok && data.checkoutUrl) {
-        window.location.href = data.checkoutUrl; // Redireciona para o Stripe Checkout
+        window.location.href = data.checkoutUrl;
       } else {
         throw new Error(data.error || 'Erro ao criar sessão');
       }
     } catch (error) {
       console.error('Erro ao redirecionar para o Stripe:', error);
-      alert('Tivemos um problema ao conectar com o provedor de pagamentos. Tente novamente.');
+      const hint =
+        import.meta.env.DEV
+          ? '\n\n(Desenvolvimento: suba o backend com "cd server && npm start" na porta 3001.)'
+          : '';
+      alert(
+        'Não foi possível conectar à API de pagamentos. Verifique sua internet ou tente mais tarde.' +
+          hint
+      );
     } finally {
       setLoadingPlan(null);
     }
