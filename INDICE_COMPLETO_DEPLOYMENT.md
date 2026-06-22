@@ -271,7 +271,7 @@ Antes de começar, tenha tudo isso:
 - [ ] Supabase Service Key
 - [ ] Stripe Secret Key
 - [ ] Stripe Webhook Secret
-- [ ] AWS SES Keys (se for usar)
+- [ ] Resend API Key
 
 **Local:**
 - [ ] Node.js 18+ instalado

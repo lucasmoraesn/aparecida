@@ -241,11 +241,11 @@ export default Home;
 
 ## 📱 WhatsApp Integration
 
-**Número configurado:** `5512992126779`
+**Número configurado:** `555512982382931`
 
 **Para mudar:**
 1. Abra `src/pages/Advertise.tsx`
-2. Localize `const whatsappNumber = '5512992126779'`
+2. Localize `const whatsappNumber = '555512982382931'`
 3. Substitua pelo seu número (formato: país + área + número, sem símbolos)
 4. Faça o mesmo em todos os componentes
 

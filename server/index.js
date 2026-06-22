@@ -11,7 +11,10 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { createClient } from "@supabase/supabase-js";
+import jwt from 'jsonwebtoken';
+import { getSupabaseAdmin } from './lib/supabaseAdmin.js';
+import createEbookRouter from './routes/ebook.js';
+import { handleEbookStripeEvent } from './webhooks/stripeEbookHandler.js';
 import Stripe from "stripe";
 import logger, { requestLoggerMiddleware } from "./services/logger.js";
 import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer, sendNewMotoristaNotification, sendMotoristaAnaliseEmail } from "./services/emailService.js";
@@ -22,23 +25,22 @@ import * as businessRegistrationService from './services/businessRegistrationSer
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 import { scannerBlockerMiddleware } from "./middleware/scannerBlocker.js";
 import healthRouter from './routes/health.js';
+import { ensureEbookPurchasesTable } from './services/databaseInitService.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 logger.info('ENV carregado', {
   path: join(__envDir, '.env'),
   SUPABASE_URL: process.env.SUPABASE_URL ? '✅' : '❌ AUSENTE',
+  SUPABASE_SECRET_KEY: (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY) ? '✅' : '❌ AUSENTE',
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ? '✅' : '❌ AUSENTE',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ? '✅' : '❌ AUSENTE',
-  AWS_REGION: process.env.AWS_REGION ? '✅' : '❌ AUSENTE',
-  EMAIL_FROM: process.env.EMAIL_FROM ? '✅' : '❌ AUSENTE (e-mails falharão!)'
+  RESEND_API_KEY: process.env.RESEND_API_KEY ? '✅' : '❌ AUSENTE',
+  RESEND_FROM: process.env.RESEND_FROM ? '✅' : '❌ AUSENTE (e-mails falharão!)'
 });
 
-// --- Inicializar Supabase (precisa estar disponível no webhook) ---
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+// --- Inicializar Supabase (service role — apenas backend) ---
+const supabase = getSupabaseAdmin();
 logger.info('✅ Supabase client created');
 
 // --- Inicializar Stripe (precisa estar disponível no webhook) ---
@@ -123,8 +125,24 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   // 2. Responder imediatamente para o Stripe
   res.status(200).json({ received: true });
 
-  // 3. Processar evento de forma assíncrona
+  // 3. Processar evento de forma assíncrona (com idempotência)
   try {
+    console.log(`📌 Event ID: ${event.id} (para rastreamento de duplicação)`);
+
+    // 🔹 VERIFICAÇÃO DIRETA E EXPLÍCITA DE EBOOK
+    // Sem dependência de função auxiliar - verificação rígida aqui
+    if (event.data.object?.metadata?.type === 'ebook') {
+      console.log(`📖 [EBOOK ROUTE] Evento: ${event.type} — session ${event.data.object.id}`);
+      
+      // Processar ebook e sair (nunca entra no switch de subscription)
+      await handleEbookStripeEvent(event);
+      return;
+    }
+
+    // 🔹 ROTA DE SUBSCRIPTION (apenas eventos que NÃO são ebook)
+    // Verificação: se chegou aqui, é garantido que NÃO é ebook
+    console.log(`💳 [SUBSCRIPTION ROUTE] Evento: ${event.type} — metadata.type: ${event.data.object?.metadata?.type || 'N/A'}`);
+
     switch (event.type) {
 
       // A) CHECKOUT COMPLETADO
@@ -134,6 +152,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         console.log('   Customer ID:', session.customer);
         console.log('   Subscription ID:', session.subscription);
         console.log('   Mode:', session.mode);
+        console.log('   Metadata:', session.metadata);
 
         // 🔍 RASTREAMENTO DE ORIGEM DO EMAIL (Debug)
         console.log('\n🔍 [DEBUG] Rastreando origem do email:');
@@ -483,9 +502,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   } catch (error) {
     console.error('❌ Erro ao processar webhook:', error);
   }
-
-  // Sempre responder com 200 OK (Stripe requer confirmação)
-  res.status(200).json({ received: true });
+  // Resposta já foi enviada no início (linha ~125)
 });
 
 /* =============================
@@ -711,6 +728,11 @@ app.get("/api/check-session", async (req, res) => {
     });
   }
 });
+
+/* =============================
+   EBOOK (KIT DO ROMEIRO 2026) ROTAS
+============================= */
+app.use('/api/ebook', createEbookRouter({ stripe }));
 
 /* =============================
    CADASTRAR NEGÓCIO + CRIAR ASSINATURA
@@ -1233,15 +1255,53 @@ app.post('/api/register-motorista', (req, res, next) => {
 
 // ─── ADMIN: Motoristas Pendentes ──────────────────────────────────────────────
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const JWT_SECRET = process.env.JWT_SECRET || 'super_segredo_token_jwt_aparecida_tour_2026_xyz';
 
 function checkAdminPassword(req, res) {
+  // Mantém retrocompatibilidade com 'x-admin-password' e também com 'Authorization: Bearer <token>'
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
   const senha = req.headers['x-admin-password'] || req.body?.adminPassword;
-  if (senha !== ADMIN_PASSWORD) {
-    res.status(401).json({ error: 'Não autorizado' });
-    return false;
+
+  // 1. Tentar validar via JWT
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded && decoded.role === 'admin') {
+        return true;
+      }
+    } catch (err) {
+      console.warn('⚠️ Token JWT inválido ou expirado:', err.message);
+      res.status(401).json({ error: 'Sessão expirada ou inválida. Faça login novamente.', code: 'TOKEN_EXPIRED' });
+      return false;
+    }
   }
-  return true;
+
+  // 2. Se não houver JWT, tentar validar via senha antiga (para testes, Postman e retrocompatibilidade)
+  if (senha === ADMIN_PASSWORD) {
+    return true;
+  }
+
+  res.status(401).json({ error: 'Não autorizado' });
+  return false;
 }
+
+// Endpoint de login real do Administrador (JWT)
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  if (!password) {
+    return res.status(400).json({ error: 'Senha é obrigatória' });
+  }
+
+  if (password === ADMIN_PASSWORD) {
+    // Gerar token JWT com expiração de 24 horas
+    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+    return res.json({ success: true, token, role: 'admin' });
+  }
+
+  return res.status(401).json({ error: 'Senha incorreta. Tente novamente.' });
+});
+
 
 app.get('/api/admin/motoristas-pendentes', async (req, res) => {
   if (!checkAdminPassword(req, res)) return;
@@ -1992,9 +2052,13 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-const server = app.listen(port, '0.0.0.0', () => {
+const server = app.listen(port, '0.0.0.0', async () => {
   console.log(`🚀 Server on http://0.0.0.0:${port}`);
   console.log("✅ Server is ready and listening for requests");
+  
+  // Inicializar banco de dados
+  await ensureEbookPurchasesTable();
+  
   console.log("💳 Stripe Billing integrado e ativo");
   console.log(`   Webhook endpoint: https://www.aparecidadonortesp.com.br/api/webhook`);
   console.log(`   Success URL: ${process.env.FRONTEND_URL || 'https://www.aparecidadonortesp.com.br'}/subscription/success`);

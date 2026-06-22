@@ -216,7 +216,7 @@ Anualizado: R$ 17.820/ano
 ## 📱 Customizações Recomendadas
 
 ### 1. Número do WhatsApp
-Atual: `5512992126779`
+Atual: `555512982382931`
 ```tsx
 // Em Advertise.tsx, AdvertiseCard.tsx, AdvertiseSection.tsx
 const whatsappNumber = '55SEU_NUMERO'; // Seu WhatsApp

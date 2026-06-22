@@ -181,7 +181,7 @@ Receita: (50 × R$ 99) + (15 × R$ 299)
 ### Seu número do WhatsApp
 ```
 Arquivo: Advertise.tsx linha ~40
-const whatsappNumber = '5512992126779'  →  SEU_NUMERO
+const whatsappNumber = '555512982382931'  →  SEU_NUMERO
 ```
 
 ### Seu nome/email de contato

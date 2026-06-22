@@ -61,3 +61,39 @@ export function trackPurchase(params: {
       : undefined,
   });
 }
+
+/** Disparado quando o usuário visita a landing page do Kit do Romeiro. */
+export function trackKitView() {
+  gtag('event', 'kit_view', {
+    event_category: 'engagement',
+    event_label: 'Visualizou Kit do Romeiro',
+  });
+}
+
+/** Disparado quando o usuário clica no CTA de compra do Kit do Romeiro. */
+export function trackKitCheckoutStarted() {
+  gtag('event', 'kit_checkout_started', {
+    event_category: 'ecommerce',
+    event_label: 'Iniciou Checkout do Kit',
+  });
+}
+
+/** Disparado quando a compra do Kit do Romeiro é finalizada com sucesso. */
+export function trackKitCheckoutCompleted(transactionId: string, value = 19.90) {
+  gtag('event', 'kit_checkout_completed', {
+    event_category: 'conversion',
+    transaction_id: transactionId,
+    value: value,
+    currency: 'BRL',
+    items: [{ item_name: 'Kit Oficial do Romeiro 2026', price: value }]
+  });
+}
+
+/** Disparado quando o usuário clica no botão para baixar o PDF. */
+export function trackKitDownloaded() {
+  gtag('event', 'kit_downloaded', {
+    event_category: 'engagement',
+    event_label: 'Baixou PDF do Kit',
+  });
+}
+

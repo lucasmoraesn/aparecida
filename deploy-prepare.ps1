@@ -217,11 +217,9 @@ SUPABASE_SERVICE_KEY=sua_service_key_aqui
 STRIPE_SECRET_KEY=sk_live_sua_chave_aqui
 STRIPE_WEBHOOK_SECRET=whsec_sua_webhook_secret_aqui
 
-# AWS SES (Emails)
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=sua_access_key_aqui
-AWS_SECRET_ACCESS_KEY=sua_secret_key_aqui
-EMAIL_FROM=noreply@aparecida.com.br
+# RESEND (Emails Transacionais)
+RESEND_API_KEY=re_sua_api_key_aqui
+RESEND_FROM=noreply@aparecida.com.br
 VITE_ADMIN_EMAIL=admin@aparecida.com.br
 
 # SERVER CONFIGURATION

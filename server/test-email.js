@@ -1,19 +1,18 @@
 /**
- * 🧪 SCRIPT DE TESTE — Amazon SES com IAM Role
+ * 🧪 SCRIPT DE TESTE — Resend
  *
- * Testa o envio de e-mails via Amazon SES sem iniciar o servidor Express.
- * Usa a IAM Role da EC2 para autenticação — sem credenciais no .env.
+ * Testa o envio de e-mails via Resend sem iniciar o servidor Express.
  *
- * Uso (na instância EC2):
+ * Uso:
  *   node test-email.js seu@email.com
  *
  * Variáveis de ambiente necessárias no .env:
- *   AWS_REGION=us-east-2
- *   EMAIL_FROM=Explore Aparecida <noreply@aparecidadonortesp.com.br>
+ *   RESEND_API_KEY=re_seu_api_key
+ *   RESEND_FROM=Explore Aparecida <noreply@aparecidadonortesp.com.br>
  */
 
 import 'dotenv/config';
-import { sendTestEmail } from './services/sesEmailService.js';
+import { sendTestEmail } from './services/emailService.js';
 
 const recipient = process.argv[2];
 
@@ -24,42 +23,35 @@ if (!recipient) {
 }
 
 // Validação das variáveis de ambiente
-const required = ['AWS_REGION', 'EMAIL_FROM'];
+const required = ['RESEND_API_KEY', 'RESEND_FROM'];
 const missing = required.filter(k => !process.env[k]);
 
 if (missing.length > 0) {
-  console.error('❌ Variáveis de ambiente faltando no .env:');
+  console.error('\n❌ Variáveis de ambiente faltando:');
   missing.forEach(k => console.error(`   - ${k}`));
+  console.error('\nConfigure no .env e tente novamente.\n');
   process.exit(1);
 }
 
-console.log('');
-console.log('🚀 Iniciando teste de envio via Amazon SES (IAM Role)...');
-console.log(`   Remetente   : ${process.env.EMAIL_FROM}`);
-console.log(`   Destinatário: ${recipient}`);
-console.log(`   Região AWS  : ${process.env.AWS_REGION}`);
-console.log(`   Autenticação: IAM Role da EC2 (automática)`);
-console.log('');
+console.log('\n🧪 Testando envio de e-mail via Resend...\n');
+console.log(`   Para: ${recipient}`);
+console.log(`   De: ${process.env.RESEND_FROM}\n`);
 
 try {
   const result = await sendTestEmail(recipient);
-
+  
   if (result.success) {
-    console.log('✅ E-mail de teste enviado com sucesso!');
-    console.log(`   MessageId: ${result.messageId}`);
-    console.log('');
-    console.log('📬 Verifique sua caixa de entrada (e a pasta de spam).');
+    console.log('\n✅ E-mail enviado com sucesso!');
+    console.log(`   MessageId: ${result.messageId}\n`);
+    console.log('📬 Verifique sua caixa de entrada (e a pasta de spam).\n');
+    process.exit(0);
   } else {
-    console.error('❌ Falha ao enviar e-mail:', result.error);
-    console.error('');
-    console.error('Dicas de diagnóstico:');
-    console.error('  1. Verifique se a IAM Role da EC2 tem permissão ses:SendEmail');
-    console.error('  2. Verifique se o domínio está verificado no SES (us-east-2)');
-    console.error('  3. Se estiver em sandbox, o destinatário também precisa ser verificado');
-    console.error('  4. Confirme que EMAIL_FROM usa um endereço verificado no SES');
+    console.error('\n❌ Falha ao enviar e-mail:');
+    console.error(`   ${result.error}\n`);
     process.exit(1);
   }
 } catch (err) {
-  console.error('❌ Erro inesperado:', err.message);
+  console.error('\n❌ Erro ao enviar e-mail:');
+  console.error(`   ${err.message}\n`);
   process.exit(1);
 }

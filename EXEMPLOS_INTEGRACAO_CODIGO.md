@@ -216,7 +216,7 @@ export default Home;
       </Link>
     </li>
     <li>
-      <a href=\"https://wa.me/5512992126779\" className=\"hover:text-green-600 transition\">
+      <a href=\"https://wa.me/555512982382931\" className=\"hover:text-green-600 transition\">
         Fale conosco
       </a>
     </li>
@@ -258,7 +258,7 @@ import { MessageCircle } from 'lucide-react';
   animate={{ opacity: 1, scale: 1 }}
   whileHover={{ scale: 1.1 }}
   whileTap={{ scale: 0.95 }}
-  onClick={() => window.open('https://wa.me/5512992126779?text=Gostaria de anunciar meu negócio', '_blank')}
+  onClick={() => window.open('https://wa.me/555512982382931?text=Gostaria de anunciar meu negócio', '_blank')}
   className=\"fixed bottom-20 right-4 md:bottom-32 md:right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all z-50\"
   title=\"Anuncie sua empresa\"
 >
@@ -325,7 +325,7 @@ const AdvertiseForm = () => {
       `WhatsApp: ${formData.whatsapp}`
     );
     
-    window.open(`https://wa.me/5512992126779?text=${message}`, '_blank');
+    window.open(`https://wa.me/555512982382931?text=${message}`, '_blank');
   };
 
   return (

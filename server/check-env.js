@@ -15,23 +15,23 @@ const vars = [
     { key: 'FRONTEND_URL', show: true },
     // Supabase
     { key: 'SUPABASE_URL', show: true },
-    { key: 'SUPABASE_SERVICE_KEY', show: false },
+    { key: 'SUPABASE_SECRET_KEY', show: false, altKey: 'SUPABASE_SERVICE_KEY' },
     // Stripe
     { key: 'STRIPE_SECRET_KEY', show: false },
     { key: 'STRIPE_WEBHOOK_SECRET', show: false },
-    // SES
-    { key: 'AWS_REGION', show: true },
-    { key: 'EMAIL_FROM', show: true },
+    // Resend
+    { key: 'RESEND_API_KEY', show: false },
+    { key: 'RESEND_FROM', show: true },
     { key: 'ADMIN_EMAIL', show: true },
-    // Variáveis antigas (não devem existir)
-    { key: 'RESEND_API_KEY', show: false, shouldBeAbsent: true },
-    { key: 'FROM_EMAIL', show: false, shouldBeAbsent: true },
+    // Variáveis antigas (não devem existir - REMOVIDAS)
+    { key: 'AWS_REGION', show: false, shouldBeAbsent: true },
+    { key: 'EMAIL_FROM', show: false, shouldBeAbsent: true },
 ];
 
 let hasError = false;
 
-for (const { key, show, shouldBeAbsent } of vars) {
-    const value = process.env[key];
+for (const { key, show, shouldBeAbsent, altKey } of vars) {
+    const value = process.env[key] || (altKey ? process.env[altKey] : undefined);
 
     if (shouldBeAbsent) {
         if (value) {

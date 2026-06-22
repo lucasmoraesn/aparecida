@@ -14,7 +14,7 @@ const AdvertiseSection: React.FC<AdvertiseSectionProps> = ({
   description = "Anuncie seu negócio gratuitamente e alcance milhares de visitantes.",
   variant = 'default'
 }) => {
-  const whatsappNumber = '5512992126779';
+  const whatsappNumber = '5512982382931';
   const message = encodeURIComponent('Olá! Gostaria de anunciar meu negócio em Aparecida do Norte.');
 
   const sendWhatsApp = () => {

@@ -1,10 +1,11 @@
 /**
  * 📧 EMAIL SERVICE (compatibilidade retroativa)
  *
- * Re-exporta as funções do sesEmailService.js para manter
- * compatibilidade com imports existentes no index.js.
+ * Re-exporta as funções do resendEmailService.js para manter
+ * compatibilidade com imports existentes no código.
  *
- * Todos os e-mails são enviados via Amazon SES com IAM Role da EC2.
+ * Todos os e-mails são enviados via Resend.
+ * Documentação: https://resend.com/docs
  */
 
 export {
@@ -19,4 +20,5 @@ export {
   sendMotoristaAnaliseEmail,
   sendNewBusinessNotification,
   sendBusinessAnalisisEmail,
-} from './sesEmailService.js';
+  sendEbookPurchaseConfirmation,
+} from './resendEmailService.js';

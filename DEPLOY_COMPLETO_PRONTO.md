@@ -187,16 +187,15 @@ Você precisa ter prontas:
   - STRIPE_SECRET_KEY
   - STRIPE_WEBHOOK_SECRET
   
-☐ AWS (opcional, para emails):
-  - AWS_REGION
-  - AWS_ACCESS_KEY_ID
-  - AWS_SECRET_ACCESS_KEY
+☐ Resend (para emails transacionais):
+  - RESEND_API_KEY
+  - RESEND_FROM
 ```
 
 Onde obter:
 - **Supabase:** supabase.com → Seu Projeto → Settings → API Keys
 - **Stripe:** dashboard.stripe.com → Developers → API Keys
-- **AWS:** aws.amazon.com → IAM → Access Keys
+- **Resend:** resend.com → API Keys (verifique seu domínio antes)
 
 ---
 
@@ -309,7 +308,7 @@ Antes de começar, valide:
 🎯 Credenciais:
   ☐ Supabase URL e Service Key
   ☐ Stripe Secret Key e Webhook Secret
-  ☐ AWS SES keys (se vai usar)
+  ☐ Resend API Key
   
 📦 Arquivos:
   ☐ deploy-prepare.ps1 existe

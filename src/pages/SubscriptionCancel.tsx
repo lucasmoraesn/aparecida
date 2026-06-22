@@ -47,7 +47,7 @@ const SubscriptionCancel: React.FC = () => {
               <strong>Precisa de ajuda?</strong>
             </p>
             <a
-              href="https://wa.me/5512999999999"
+              href="https://wa.me/5512982382931"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline"

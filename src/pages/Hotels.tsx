@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { HotelBookingSection } from '../components/booking';
 import HotelCard from '../components/HotelCard';
 import { hotels } from '../data/hotels';
+import EbookCTA from '../components/EbookCTA';
 
 const Hotels = () => {
   useEffect(() => {
@@ -83,6 +84,9 @@ const Hotels = () => {
 
       {/* ── Conteúdo SEO + CTA ────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        {/* Banner CTA Ebook */}
+        <EbookCTA className="mb-12" />
 
 <section aria-labelledby="budget-stays" className="mb-12">
           <h3 id="budget-stays" className="text-xl font-semibold text-gray-900 mb-3">Hospedagem econômica em Aparecida</h3>

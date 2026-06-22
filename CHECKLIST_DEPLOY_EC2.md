@@ -6,7 +6,7 @@
 - [ ] Security Group com portas 22, 80, 443 abertas
 - [ ] Supabase URL e Service Key prontos
 - [ ] Stripe Secret Key e Webhook Secret prontos
-- [ ] AWS SES configurado (opcional mas recomendado)
+- [ ] Resend API Key pronto
 - [ ] Domínio apontando para IP da EC2 (ou Route 53 configurado)
 
 ---

@@ -1,9 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_5drwG2WzPvYNO4fhVD-cUg_8HSJW9sh';
+/**
+ * Cliente Supabase do frontend — apenas chave publishable (anon).
+ * Compras e downloads passam pela API backend; este client não acessa ebook_purchases.
+ */
+const supabaseUrl = (
+  import.meta.env.VITE_SUPABASE_URL ||
+  (import.meta.env.DEV ? 'https://rhkwickoweflamflgzeo.supabase.co' : '')
+).trim();
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabasePublishableKey = (
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  ''
+).trim();
+
+if (!supabaseUrl) {
+  throw new Error(
+    'Defina VITE_SUPABASE_URL no build (ex.: .env.production) ou use .env.local em desenvolvimento.'
+  );
+}
+
+if (!supabasePublishableKey) {
+  throw new Error(
+    'Defina VITE_SUPABASE_PUBLISHABLE_KEY (ou VITE_SUPABASE_ANON_KEY) no frontend.'
+  );
+}
+
+export const supabase = createClient(supabaseUrl, supabasePublishableKey);
 
 export type Establishment = {
   id: number;

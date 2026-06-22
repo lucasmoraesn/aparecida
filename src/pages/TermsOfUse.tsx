@@ -123,7 +123,7 @@ const TermsOfUse = () => {
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">11. Contato</h2>
               <p>Para dúvidas ou questões sobre estes termos:</p>
               <div className="bg-gray-50 p-4 rounded-lg mt-3">
-                <p><strong>E-mail:</strong> aparecidatoursp@hotmail.com</p>
+                <p><strong>E-mail:</strong> contato@aparecidadonortesp.com.br</p>
                 <p><strong>Telefone:</strong> (12) 99212-6779</p>
                 <p><strong>WhatsApp:</strong> (12) 99212-6779</p>
               </div>

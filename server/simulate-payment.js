@@ -15,7 +15,7 @@
 
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer } from './services/sesEmailService.js';
+import { sendNewSubscriptionNotification, sendSubscriptionConfirmationToCustomer } from './services/emailService.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

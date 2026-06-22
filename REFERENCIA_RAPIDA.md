@@ -87,7 +87,7 @@ https://aparecidadonortesp.com.br/advertise-standalone.html
 
 ### Número Configurado
 ```
-5512992126779
+555512982382931
 ```
 
 ### Formato Correto
@@ -98,13 +98,13 @@ https://aparecidadonortesp.com.br/advertise-standalone.html
 
 ### Para Mudar
 1. Abrir: `src/pages/Advertise.tsx`
-2. Procurar: `const whatsappNumber = '5512992126779'`
+2. Procurar: `const whatsappNumber = '555512982382931'`
 3. Substituir por seu número
 4. Fazer o mesmo em todos os componentes
 
 ### Teste Rápido
 ```
-Link: https://wa.me/5512992126779?text=Teste
+Link: https://wa.me/555512982382931?text=Teste
 Resultado: Deve abrir WhatsApp
 ```
 
@@ -327,7 +327,7 @@ PROJETO_PUBLICIDADE_CONCLUIDO.md
 
 ### Seu Contato
 ```
-WhatsApp: 5512992126779
+WhatsApp: 555512982382931
 Email: seu-email@email.com
 ```
 

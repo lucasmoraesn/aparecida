@@ -283,7 +283,7 @@ const SubscriptionSuccess: React.FC = () => {
         {/* Rodapé de suporte */}
         <p className="text-center text-gray-500 text-sm mt-6">
           Precisa de ajuda? Entre em contato com nosso suporte em{' '}
-          <a href="tel:+5512992126779" className="text-gray-700 hover:underline">
+          <a href="tel:+555512982382931" className="text-gray-700 hover:underline">
             (12) 99212-6779
           </a>
         </p>

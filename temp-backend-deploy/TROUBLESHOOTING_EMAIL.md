@@ -43,7 +43,7 @@ Abra `server/.env` e confirme:
 ```env
 AWS_REGION=us-east-2
 EMAIL_FROM=Explore Aparecida <noreply@aparecidadonortesp.com.br>
-ADMIN_EMAIL=aparecidatoursp@hotmail.com
+ADMIN_EMAIL=contato@aparecidadonortesp.com.br
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```

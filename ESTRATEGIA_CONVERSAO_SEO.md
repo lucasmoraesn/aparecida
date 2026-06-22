@@ -279,10 +279,10 @@ Descrição: "Junte-se a 500+ empresas já anunciando em Aparecida"
 
 ```javascript
 // Anuncie sua empresa (empresários/donos)
-const advertisePhone = '555112992126779'; // Seu número
+const advertisePhone = '55515512982382931'; // Seu número
 
 // Suporte geral (visitantes)
-const supportPhone = '555112992126779';
+const supportPhone = '55515512982382931';
 
 // Mensagens pré-formatadas
 const messages = {

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Search, Car, Shield, Clock, Star } from 'lucide-react';
 import MotoristaCard from '../components/MotoristaCard';
 import { getMotoristasOrdenados, type Motorista } from '../data/motoristas';
+import EbookCTA from '../components/EbookCTA';
 
 import { getApiBaseUrl } from '../lib/apiBase';
 
@@ -184,6 +185,8 @@ const MotoristasParticulares = () => {
             </p>
           </div>
         </div>
+        {/* Banner CTA Ebook */}
+        <EbookCTA className="mb-12" />
 
         {motoristasFiltrados.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">

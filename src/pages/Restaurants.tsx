@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Phone, Clock, Utensils, Navigation, MessageCircle } from 'lucide-react';
 import { generateCompleteSrcSet } from '../lib/imageUtils';
+import EbookCTA from '../components/EbookCTA';
 
 const restaurants = [
   {
@@ -109,6 +110,10 @@ const Restaurants = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        {/* Banner CTA Ebook */}
+        <EbookCTA className="mb-12" />
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {restaurants.map((restaurant) => (
             <div key={restaurant.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">

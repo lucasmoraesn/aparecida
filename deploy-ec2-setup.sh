@@ -182,12 +182,10 @@ STRIPE_SECRET_KEY=PREENCHA_AQUI
 STRIPE_WEBHOOK_SECRET=PREENCHA_AQUI
 
 # ============================================
-# AWS SES (Emails)
+# RESEND (Emails Transacionais)
 # ============================================
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=PREENCHA_AQUI
-AWS_SECRET_ACCESS_KEY=PREENCHA_AQUI
-EMAIL_FROM=noreply@aparecida.com.br
+RESEND_API_KEY=PREENCHA_AQUI
+RESEND_FROM=noreply@aparecida.com.br
 VITE_ADMIN_EMAIL=admin@aparecida.com.br
 
 # ============================================

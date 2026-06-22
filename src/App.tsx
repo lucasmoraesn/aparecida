@@ -15,6 +15,9 @@ import BusinessRegistration from './pages/BusinessRegistration';
 // import Payment from './pages/Payment'; // ❌ OBSOLETO - Stripe Billing usa checkout.stripe.com
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SubscriptionCancel from './pages/SubscriptionCancel';
+import EbookLanding from './pages/EbookLanding';
+import EbookSuccess from './pages/EbookSuccess';
+import EbookCancel from './pages/EbookCancel';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfUse from './pages/TermsOfUse';
 import CookiePolicy from './pages/CookiePolicy';
@@ -37,7 +40,7 @@ import { trackLogin } from './lib/analytics';
 
 function App() {
   const handleWhatsAppClick = () => {
-    const phoneNumber = '5512992126779'; // Número no formato internacional
+    const phoneNumber = '5512982382931'; // Número no formato internacional
     const message = encodeURIComponent('Olá! Vim através do site Aparecida do Norte.');
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
@@ -78,6 +81,12 @@ function App() {
         {/* ❌ ROTA OBSOLETA - Stripe Billing redireciona para checkout.stripe.com */}
         <Route path="/subscription/success" element={<SubscriptionSuccess />} />
         <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
+        
+        {/* Rotas do Ebook Kit do Romeiro */}
+        <Route path="/kit-do-romeiro" element={<EbookLanding />} />
+        <Route path="/ebook/sucesso" element={<EbookSuccess />} />
+        <Route path="/ebook/cancelado" element={<EbookCancel />} />
+
         <Route path="/politica-privacidade" element={<PrivacyPolicy />} />
         <Route path="/termos-uso" element={<TermsOfUse />} />
         <Route path="/cookies" element={<CookiePolicy />} />

@@ -8,7 +8,7 @@ interface AdvertiseCardProps {
 }
 
 const AdvertiseCard: React.FC<AdvertiseCardProps> = ({ compact = false }) => {
-  const whatsappNumber = '5512992126779';
+  const whatsappNumber = '5512982382931';
   const message = encodeURIComponent('Olá! Gostaria de anunciar meu negócio em Aparecida do Norte.');
 
   const sendWhatsApp = () => {

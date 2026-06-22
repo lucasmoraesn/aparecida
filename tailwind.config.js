@@ -4,8 +4,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        forum: ['Forum', 'serif'],
-        poppins: ['Poppins', 'sans-serif'],
+        sans: ['Segoe UI', 'sans-serif'],
+        forum: ['Segoe UI', 'sans-serif'],
+        poppins: ['Segoe UI', 'sans-serif'],
+        segoe: ['Segoe UI', 'sans-serif'],
       },
       screens: {
         'xs': '475px',
